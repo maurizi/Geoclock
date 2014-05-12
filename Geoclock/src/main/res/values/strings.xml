@@ -12,5 +12,16 @@
     <string name="add_geo_alarm_continue">Continue</string>
     <string name="add_geo_alarm_radius_label">Size</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="min_radius_label">0m</string>
+    <string name="max_radius_label">200m</string>
+    <string name="add_geo_alarm_days_label">Repeats on</string>
+    <string name="saturday">Sa</string>
+    <string name="friday">F</string>
+    <string name="thursday">Th</string>
+    <string name="wednesday">W</string>
+    <string name="tuesday">T</string>
+    <string name="monday">M</string>
+    <string name="sunday">S</string>
+    <string name="add_geo_alarm_time_label">Time</string>
 
 </resources>
