@@ -6,12 +6,15 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.provider.AlarmClock;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.SeekBar;
+import android.widget.TimePicker;
 
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -22,12 +25,26 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+
+import java.util.Calendar;
+import java.util.Map;
 
 
 /**
  * A simple {@link Fragment} subclass.
  */
 public class AddGeoAlarmFragment extends DialogFragment {
+
+	public interface Listener {
+		public void onAddGeoAlarmFragmentClose(DialogFragment dialog);
+	}
+
+	private static final Gson gson = new Gson();
 
 	public final static String INITIAL_LATLNG = "INITIAL_LATLNG";
 	public final static String INITIAL_ZOOM = "INITIAL_ZOOM";
@@ -49,45 +66,6 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		radiusBar = (SeekBar) dialogView.findViewById(R.id.add_geo_alarm_radius);
 		radiusBar.setProgress(INITIAL_RADIUS);
 		radiusBar.setMax(MAX_RADIUS);
-
-		ToastLocationClientHandler handler = new ToastLocationClientHandler(getActivity());
-		locationClient = new LocationClient(getActivity(), handler, handler);
-
-		return new AlertDialog.Builder(getActivity())
-				.setTitle(R.string.add_geo_alarm_title)
-				.setNegativeButton(R.string.add_geo_alarm_cancel, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						AddGeoAlarmFragment.this.getDialog().cancel();
-					}
-				})
-				.setPositiveButton(R.string.add_geo_alarm_continue, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						Intent alarmIntent = new Intent(AlarmClock.ACTION_SET_ALARM);
-					}
-				})
-				.setView(dialogView)
-				.create();
-	}
-
-	public void onDestroyView() {
-		super.onDestroyView();
-
-		// When you have fragments in fragments, you need to remove the children before you can re-inflate the view later
-		try {
-			Fragment fragment = (getFragmentManager().findFragmentById(R.id.add_geo_alarm_map));
-			FragmentTransaction ft = getActivity().getFragmentManager().beginTransaction();
-			ft.remove(fragment);
-			ft.commit();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	@Override
-	public void onStart() {
-		super.onStart();
 
 		map = ((MapFragment)getFragmentManager().findFragmentById(R.id.add_geo_alarm_map)).getMap();
 		if (map != null) {
@@ -135,6 +113,74 @@ public class AddGeoAlarmFragment extends DialogFragment {
 				public void onStopTrackingTouch(SeekBar seekBar) {
 				}
 			});
+
+			ToastLocationClientHandler handler = new ToastLocationClientHandler(getActivity());
+			locationClient = new LocationClient(getActivity(), handler, handler);
+
+			return new AlertDialog.Builder(getActivity())
+					.setTitle(R.string.add_geo_alarm_title)
+					.setNegativeButton(R.string.add_geo_alarm_cancel, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							((Listener)getActivity()).onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
+							AddGeoAlarmFragment.this.getDialog().cancel();
+						}
+					})
+					.setPositiveButton(R.string.add_geo_alarm_continue, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							final Map<Integer, CheckBox> checkboxes = ImmutableMap.<Integer, CheckBox>builder()
+									.put(Calendar.SUNDAY, (CheckBox)dialogView.findViewById(R.id.sun))
+									.put(Calendar.MONDAY, (CheckBox)dialogView.findViewById(R.id.mon))
+									.put(Calendar.TUESDAY, (CheckBox)dialogView.findViewById(R.id.tues))
+									.put(Calendar.WEDNESDAY, (CheckBox)dialogView.findViewById(R.id.wed))
+									.put(Calendar.THURSDAY, (CheckBox)dialogView.findViewById(R.id.thu))
+									.put(Calendar.FRIDAY, (CheckBox)dialogView.findViewById(R.id.fri))
+									.put(Calendar.SATURDAY, (CheckBox)dialogView.findViewById(R.id.sat))
+									.build();
+							final TimePicker timePicker = (TimePicker)dialogView.findViewById(R.id.add_geo_alarm_time);
+							GeoAlarm alarm = new GeoAlarm.Builder()
+									.location(marker.getPosition())
+									.name(((EditText)dialogView.findViewById(R.id.add_geo_alarm_name)).getText().toString())
+									.radius(radiusBar.getProgress())
+									.days(Lists.newArrayList(Maps.filterValues(checkboxes, new Predicate<CheckBox>() {
+										@Override
+										public boolean apply(CheckBox cb) {
+											return cb.isChecked();
+										}
+									}).keySet()))
+									.hour(timePicker.getCurrentHour())
+									.minute(timePicker.getCurrentMinute())
+								.create();
+
+							SharedPreferences prefs = getActivity().getPreferences(Context.MODE_PRIVATE);
+							prefs.edit().putString(alarm.name, gson.toJson(alarm, GeoAlarm.class)).commit();
+							((Listener)getActivity()).onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
+						}
+					})
+					.setView(dialogView)
+					.create();
 		}
+		return null;
+	}
+
+	public void onDestroyView() {
+		super.onDestroyView();
+
+		// When you have fragments in fragments, you need to remove the children before you can re-inflate the view later
+		try {
+			Fragment fragment = (getFragmentManager().findFragmentById(R.id.add_geo_alarm_map));
+			FragmentTransaction ft = getActivity().getFragmentManager().beginTransaction();
+			ft.remove(fragment);
+			ft.commit();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+		locationClient.connect();
 	}
 }

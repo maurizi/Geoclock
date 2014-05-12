@@ -62,13 +62,27 @@
             android:stretchColumns="*" >
             <TableRow
                 android:id="@+id/add_geo_alarm_checkbox_row">
-                <CheckBox android:layout_gravity="center_horizontal" />
-                <CheckBox android:layout_gravity="center_horizontal" />
-                <CheckBox android:layout_gravity="center_horizontal" />
-                <CheckBox android:layout_gravity="center_horizontal" />
-                <CheckBox android:layout_gravity="center_horizontal" />
-                <CheckBox android:layout_gravity="center_horizontal" />
-                <CheckBox android:layout_gravity="center_horizontal" />
+                <CheckBox
+                    android:id="@+id/sun"
+                    android:layout_gravity="center_horizontal" />
+                <CheckBox
+                    android:id="@+id/mon"
+                    android:layout_gravity="center_horizontal" />
+                <CheckBox
+                    android:id="@+id/tues"
+                    android:layout_gravity="center_horizontal" />
+                <CheckBox
+                    android:id="@+id/wed"
+                    android:layout_gravity="center_horizontal" />
+                <CheckBox
+                    android:id="@+id/thu"
+                    android:layout_gravity="center_horizontal" />
+                <CheckBox
+                    android:id="@+id/fri"
+                    android:layout_gravity="center_horizontal" />
+                <CheckBox
+                    android:id="@+id/sat"
+                    android:layout_gravity="center_horizontal" />
             </TableRow>
             <TableRow>
                 <TextView
