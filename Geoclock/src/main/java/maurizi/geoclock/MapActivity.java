@@ -2,6 +2,8 @@ package maurizi.geoclock;
 
 import android.app.ActionBar;
 import android.app.DialogFragment;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -14,10 +16,16 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.Gson;
+
+import java.util.Map;
 
 
-public class Map extends FragmentActivity
-		implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+public class MapActivity extends FragmentActivity
+		implements NavigationDrawerFragment.NavigationDrawerCallbacks,
+		           AddGeoAlarmFragment.Listener{
+
+	private final static Gson gson = new Gson();
 
 	public final static int DEFAULT_ZOOM_LEVEL = 14;
 
@@ -43,7 +51,7 @@ public class Map extends FragmentActivity
 			map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
 				@Override
 				public void onMapClick(LatLng latLng) {
-					DialogFragment popup = new AddGeoAlarmFragment();
+					AddGeoAlarmFragment popup = new AddGeoAlarmFragment();
 					Bundle args = new Bundle();
 					args.putParcelable(AddGeoAlarmFragment.INITIAL_LATLNG, latLng);
 					args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
@@ -67,6 +75,12 @@ public class Map extends FragmentActivity
 	public void onStart() {
 		super.onStart();
 		locationClient.connect();
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		redrawGeoAlarms();
 	}
 
 	@Override
@@ -109,8 +123,26 @@ public class Map extends FragmentActivity
 		return super.onOptionsItemSelected(item);
 	}
 
+	@Override
+	public void onAddGeoAlarmFragmentClose(DialogFragment dialog) {
+		redrawGeoAlarms();
+	}
+
+	private void redrawGeoAlarms() {
+		if (map != null) {
+			map.clear();
+			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
+			for(Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
+				String name = entry.getKey();
+				GeoAlarm alarm = gson.fromJson((String) entry.getValue(), GeoAlarm.class);
+				map.addMarker(alarm.getMarkerOptions());
+				map.addCircle(alarm.getCircleOptions());
+			}
+		}
+	}
+
 	private class LocationClientHandler extends ToastLocationClientHandler {
-		public LocationClientHandler() { super(Map.this); }
+		public LocationClientHandler() { super(MapActivity.this); }
 
 		@Override
 		public void onConnected(Bundle bundle) {
