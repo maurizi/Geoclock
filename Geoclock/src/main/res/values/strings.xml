@@ -2,12 +2,15 @@
 <resources>
 
     <string name="app_name">Geoclock</string>
-    <string name="title_section1">Section 1</string>
-    <string name="title_section2">Section 2</string>
-    <string name="title_section3">Section 3</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="action_example">Example action</string>
     <string name="action_settings">Settings</string>
+    <string name="add_geo_alarm_title">Add alarm area</string>
+    <string name="add_geo_alarm_name_label">Name</string>
+    <string name="add_geo_alarm_cancel">Cancel</string>
+    <string name="add_geo_alarm_continue">Continue</string>
+    <string name="add_geo_alarm_radius_label">Size</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

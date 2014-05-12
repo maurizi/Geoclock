@@ -1,16 +1,14 @@
 package maurizi.geoclock;
 
 import android.app.ActionBar;
+import android.app.DialogFragment;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.widget.DrawerLayout;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -19,12 +17,10 @@ import com.google.android.gms.maps.model.LatLng;
 
 
 public class Map extends FragmentActivity
-		implements NavigationDrawerFragment.NavigationDrawerCallbacks,
+		implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 
-		GooglePlayServicesClient.ConnectionCallbacks,
-		GooglePlayServicesClient.OnConnectionFailedListener{
+	public final static int DEFAULT_ZOOM_LEVEL = 14;
 
-	private final static int ZOOM_LEVEL = 14;
 	private GoogleMap map = null;
 	private LocationClient locationClient = null;
 
@@ -38,11 +34,24 @@ public class Map extends FragmentActivity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
 
-		locationClient = new LocationClient(this, this, this);
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
+		LocationClientHandler handler = new LocationClientHandler();
+		locationClient = new LocationClient(this, handler, handler);
 
 		if (map != null) {
 			map.setMyLocationEnabled(true);
+			map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+				@Override
+				public void onMapClick(LatLng latLng) {
+					DialogFragment popup = new AddGeoAlarmFragment();
+					Bundle args = new Bundle();
+					args.putParcelable(AddGeoAlarmFragment.INITIAL_LATLNG, latLng);
+					args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+					popup.setArguments(args);
+					popup.show(getFragmentManager(), "AddGeoAlarmFragment");
+
+				}
+			});
 		}
 
 		navigationDrawerFragment = (NavigationDrawerFragment)
@@ -68,7 +77,6 @@ public class Map extends FragmentActivity
 //                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
 //                .commit();
 	}
-
 
 	public void restoreActionBar() {
 		ActionBar actionBar = getActionBar();
@@ -101,23 +109,18 @@ public class Map extends FragmentActivity
 		return super.onOptionsItemSelected(item);
 	}
 
-	@Override
-	public void onConnected(Bundle bundle) {
-		if (map != null) {
-			Location loc = locationClient.getLastLocation();
-			if (loc != null) {
-				map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(loc.getLatitude(), loc.getLongitude()), ZOOM_LEVEL));
+	private class LocationClientHandler extends ToastLocationClientHandler {
+		public LocationClientHandler() { super(Map.this); }
+
+		@Override
+		public void onConnected(Bundle bundle) {
+			super.onConnected(bundle);
+			if (map != null) {
+				Location loc = locationClient.getLastLocation();
+				if (loc != null) {
+					map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(loc.getLatitude(), loc.getLongitude()), DEFAULT_ZOOM_LEVEL));
+				}
 			}
 		}
-	}
-
-	@Override
-	public void onDisconnected() {
-		Toast.makeText(this, "Lost location", Toast.LENGTH_SHORT).show();
-	}
-
-	@Override
-	public void onConnectionFailed(ConnectionResult connectionResult) {
-		Toast.makeText(this, "Failed to get location", Toast.LENGTH_SHORT).show();
 	}
 }

@@ -1,0 +1,52 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/add_geo_alarm"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="10dp"
+    android:orientation="vertical"
+    android:background="@android:color/background_light"
+    tools:context="maurizi.geoclock.AddGeoAlarmDialogFragment">
+
+    <fragment
+        class="com.google.android.gms.maps.MapFragment"
+        android:id="@+id/add_geo_alarm_map"
+        android:layout_width="match_parent"
+        android:layout_height="250dp"/>
+
+    <TextView
+        style="@style/add_geo_alarm_label"
+        android:text="@string/add_geo_alarm_name_label"/>
+
+    <EditText
+        style="@style/add_geo_alarm_item"
+        android:id="@+id/add_geo_alarm_name" />
+
+    <TextView
+        style="@style/add_geo_alarm_label"
+        android:text="@string/add_geo_alarm_radius_label"/>
+
+    <LinearLayout
+        style="@style/add_geo_alarm_item"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            style="@style/add_geo_alarm_item"
+            android:layout_width="48dp"
+            android:text="0m" />
+
+        <SeekBar
+            android:id="@+id/add_geo_alarm_radius"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            />
+
+        <TextView
+            style="@style/add_geo_alarm_item"
+            android:layout_width="48dp"
+            android:text="200m" />
+    </LinearLayout>
+
+</LinearLayout>
