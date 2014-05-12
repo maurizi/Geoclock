@@ -1,13 +1,7 @@
 .gradle
 /local.properties
 
-.idea/workspace.xml
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/dataSources.ids
-.idea/dataSources.xml
-.idea/sqlDataSources.xml
-.idea/dynamic.xml
+.idea/
 *.ipr
 *.iws
 *.iml
