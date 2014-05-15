@@ -106,18 +106,16 @@ public class AddGeoAlarmFragment extends DialogFragment {
 				}
 
 				@Override
-				public void onStartTrackingTouch(SeekBar seekBar) {
-				}
+				public void onStartTrackingTouch(SeekBar seekBar) { }
 
 				@Override
-				public void onStopTrackingTouch(SeekBar seekBar) {
-				}
+				public void onStopTrackingTouch(SeekBar seekBar) { }
 			});
 
 			ToastLocationClientHandler handler = new ToastLocationClientHandler(getActivity());
 			locationClient = new LocationClient(getActivity(), handler, handler);
 
-			return new AlertDialog.Builder(getActivity())
+			final AlertDialog dialog= new AlertDialog.Builder(getActivity())
 					.setTitle(R.string.add_geo_alarm_title)
 					.setNegativeButton(R.string.add_geo_alarm_cancel, new DialogInterface.OnClickListener() {
 						@Override
@@ -126,9 +124,21 @@ public class AddGeoAlarmFragment extends DialogFragment {
 							AddGeoAlarmFragment.this.getDialog().cancel();
 						}
 					})
-					.setPositiveButton(R.string.add_geo_alarm_continue, new DialogInterface.OnClickListener() {
+					.setPositiveButton(R.string.add_geo_alarm_continue, null) // Implemented later to allow conditional dismissal
+					.setView(dialogView)
+					.create();
+			dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+				@Override
+				public void onShow(DialogInterface _) {
+					dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
 						@Override
-						public void onClick(DialogInterface dialog, int which) {
+						public void onClick(View _) {
+							final String name = ((EditText)dialogView.findViewById(R.id.add_geo_alarm_name)).getText().toString();
+							SharedPreferences prefs = getActivity().getPreferences(Context.MODE_PRIVATE);
+							if ("".equals(name) || prefs.contains(name)) {
+								Toast.makeText(getActivity(), R.string.add_geo_alarm_validation, Toast.LENGTH_SHORT).show();
+								return;
+							}
 							final Map<Integer, CheckBox> checkboxes = ImmutableMap.<Integer, CheckBox>builder()
 									.put(Calendar.SUNDAY, (CheckBox)dialogView.findViewById(R.id.sun))
 									.put(Calendar.MONDAY, (CheckBox)dialogView.findViewById(R.id.mon))
@@ -141,7 +151,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 							final TimePicker timePicker = (TimePicker)dialogView.findViewById(R.id.add_geo_alarm_time);
 							GeoAlarm alarm = new GeoAlarm.Builder()
 									.location(marker.getPosition())
-									.name(((EditText)dialogView.findViewById(R.id.add_geo_alarm_name)).getText().toString())
+									.name(name)
 									.radius(radiusBar.getProgress())
 									.days(Lists.newArrayList(Maps.filterValues(checkboxes, new Predicate<CheckBox>() {
 										@Override
@@ -151,15 +161,19 @@ public class AddGeoAlarmFragment extends DialogFragment {
 									}).keySet()))
 									.hour(timePicker.getCurrentHour())
 									.minute(timePicker.getCurrentMinute())
-								.create();
+									.create();
 
-							SharedPreferences prefs = getActivity().getPreferences(Context.MODE_PRIVATE);
+
 							prefs.edit().putString(alarm.name, gson.toJson(alarm, GeoAlarm.class)).commit();
 							((Listener)getActivity()).onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
+
+							dialog.dismiss();
 						}
-					})
-					.setView(dialogView)
-					.create();
+					});
+				}
+			});
+
+			return dialog;
 		}
 		return null;
 	}
