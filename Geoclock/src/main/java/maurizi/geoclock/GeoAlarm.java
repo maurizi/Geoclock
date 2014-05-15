@@ -13,10 +13,48 @@ import java.util.List;
  */
 public class GeoAlarm {
 	public final LatLng location;
+
+	@Override
+	public String toString() {
+		return name;
+	}
+
 	public final String name;
 	public final double radius;
 	public final List<Integer> days;
 	public final Integer hour;
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		GeoAlarm geoAlarm = (GeoAlarm) o;
+
+		if (Double.compare(geoAlarm.radius, radius) != 0) return false;
+		if (days != null ? !days.equals(geoAlarm.days) : geoAlarm.days != null) return false;
+		if (!hour.equals(geoAlarm.hour)) return false;
+		if (!location.equals(geoAlarm.location)) return false;
+		if (!minute.equals(geoAlarm.minute)) return false;
+		if (!name.equals(geoAlarm.name)) return false;
+
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		int result;
+		long temp;
+		result = location.hashCode();
+		result = 31 * result + name.hashCode();
+		temp = Double.doubleToLongBits(radius);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		result = 31 * result + (days != null ? days.hashCode() : 0);
+		result = 31 * result + hour.hashCode();
+		result = 31 * result + minute.hashCode();
+		return result;
+	}
+
 	public final Integer minute;
 
 	public MarkerOptions getMarkerOptions() {

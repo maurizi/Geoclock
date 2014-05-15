@@ -16,8 +16,15 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.gson.Gson;
 
+import java.util.Collection;
 import java.util.Map;
 
 
@@ -31,11 +38,34 @@ public class MapActivity extends FragmentActivity
 
 	private GoogleMap map = null;
 	private LocationClient locationClient = null;
+	private Map<GeoAlarm, Marker> markers = null;
 
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
 	 */
 	private NavigationDrawerFragment navigationDrawerFragment;
+
+	public static Collection<GeoAlarm> getGeoAlarms(SharedPreferences prefs) {
+		return new ImmutableSortedMap.Builder<String, GeoAlarm>(Ordering.natural()).putAll(
+			Maps.filterValues(
+				Maps.transformValues(prefs.getAll(), new Function<Object, GeoAlarm>() {
+					@Override
+					public GeoAlarm apply(Object json) {
+					try {
+						return gson.fromJson((String) json, GeoAlarm.class);
+					} catch (Exception e) {
+						return null;
+					}
+					}
+				}), new Predicate<GeoAlarm>() {
+
+				@Override
+				public boolean apply(GeoAlarm geoAlarm) {
+					return geoAlarm != null;
+				}
+			})
+		).build().values();
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -84,12 +114,11 @@ public class MapActivity extends FragmentActivity
 	}
 
 	@Override
-	public void onNavigationDrawerItemSelected(int position) {
-		// update the main content by replacing fragments
-//        FragmentManager fragmentManager = getFragmentManager();
-//        fragmentManager.beginTransaction()
-//                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-//                .commit();
+	public void onNavigationDrawerItemSelected(GeoAlarm alarm) {
+		if (map != null) {
+			map.animateCamera(CameraUpdateFactory.newLatLng(alarm.location));
+			markers.get(alarm).showInfoWindow();
+		}
 	}
 
 	public void restoreActionBar() {
@@ -129,13 +158,12 @@ public class MapActivity extends FragmentActivity
 	}
 
 	private void redrawGeoAlarms() {
+		Collection<GeoAlarm> alarms  = getGeoAlarms(getPreferences(Context.MODE_PRIVATE));
+		navigationDrawerFragment.setGeoAlarms(alarms);
 		if (map != null) {
 			map.clear();
-			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
-			for(Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
-				String name = entry.getKey();
-				GeoAlarm alarm = gson.fromJson((String) entry.getValue(), GeoAlarm.class);
-				map.addMarker(alarm.getMarkerOptions());
+			for(GeoAlarm alarm : alarms) {
+				markers.put(alarm, map.addMarker(alarm.getMarkerOptions()));
 				map.addCircle(alarm.getCircleOptions());
 			}
 		}
