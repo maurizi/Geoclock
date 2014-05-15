@@ -1,5 +1,6 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<maurizi.geoclock.LockableScrollView xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:tools="http://schemas.android.com/tools"
+            android:id="@+id/scrollView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/background_light"
@@ -132,4 +133,4 @@
             android:id="@+id/add_geo_alarm_time" />
 
     </LinearLayout>
-</ScrollView>
+</maurizi.geoclock.LockableScrollView>

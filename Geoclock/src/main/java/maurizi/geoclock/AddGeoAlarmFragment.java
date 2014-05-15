@@ -15,6 +15,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -63,6 +64,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
 		dialogView = getActivity().getLayoutInflater().inflate(R.layout.fragment_add_geo_alarm_dialog, null);
+		final LockableScrollView scrollView = (LockableScrollView) dialogView.findViewById(R.id.scrollView);
 		radiusBar = (SeekBar) dialogView.findViewById(R.id.add_geo_alarm_radius);
 		radiusBar.setProgress(INITIAL_RADIUS);
 		radiusBar.setMax(MAX_RADIUS);
@@ -86,6 +88,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 				public void onMarkerDragStart(Marker marker) {
 					circle.setCenter(marker.getPosition());
 					map.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
+					scrollView.setScrollingEnabled(false);
 				}
 
 				@Override
@@ -96,6 +99,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 
 				@Override
 				public void onMarkerDragEnd(Marker marker) {
+					scrollView.setScrollingEnabled(true);
 				}
 			});
 
