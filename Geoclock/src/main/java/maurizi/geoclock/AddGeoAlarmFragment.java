@@ -153,7 +153,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 									.put(Calendar.SATURDAY, (CheckBox)dialogView.findViewById(R.id.sat))
 									.build();
 							final TimePicker timePicker = (TimePicker)dialogView.findViewById(R.id.add_geo_alarm_time);
-							GeoAlarm alarm = new GeoAlarm.Builder()
+							GeoAlarm alarm = GeoAlarm.builder()
 									.location(marker.getPosition())
 									.name(name)
 									.radius(radiusBar.getProgress())
@@ -165,8 +165,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 									}).keySet()))
 									.hour(timePicker.getCurrentHour())
 									.minute(timePicker.getCurrentMinute())
-									.create();
-
+									.build();
 
 							prefs.edit().putString(alarm.name, gson.toJson(alarm, GeoAlarm.class)).commit();
 							((Listener)getActivity()).onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);

@@ -29,5 +29,6 @@ dependencies {
     compile 'com.google.android.gms:play-services:4.3.23'
     compile 'com.google.code.gson:gson:1.7.2'
     compile 'com.google.guava:guava:17.0'
+    compile 'org.projectlombok:lombok:1.12.6'
     compile fileTree(dir: 'libs', include: ['*.jar'])
 }
