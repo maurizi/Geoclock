@@ -19,11 +19,11 @@ public class ToastLocationClientHandler implements GooglePlayServicesClient.Conn
 
 	@Override
 	public void onDisconnected() {
-		Toast.makeText(context, "Lost location", Toast.LENGTH_SHORT).show();
+		Toast.makeText(context, R.string.lost_location, Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
 	public void onConnectionFailed(ConnectionResult connectionResult) {
-		Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show();
+		Toast.makeText(context, R.string.fail_location, Toast.LENGTH_SHORT).show();
 	}
 }

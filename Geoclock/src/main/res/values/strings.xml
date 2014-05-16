@@ -9,7 +9,7 @@
     <string name="add_geo_alarm_title">Add alarm area</string>
     <string name="add_geo_alarm_name_label">Name</string>
     <string name="add_geo_alarm_cancel">Cancel</string>
-    <string name="add_geo_alarm_continue">Continue</string>
+    <string name="add_geo_alarm_continue">Save</string>
     <string name="add_geo_alarm_radius_label">Size</string>
     <string name="min_radius_label">0m</string>
     <string name="max_radius_label">200m</string>
@@ -23,5 +23,7 @@
     <string name="sunday">S</string>
     <string name="add_geo_alarm_time_label">Time</string>
     <string name="add_geo_alarm_validation">That name is blank or already taken</string>
+    <string name="lost_location">Lost location</string>
+    <string name="fail_location">Failed to get location</string>
 
 </resources>

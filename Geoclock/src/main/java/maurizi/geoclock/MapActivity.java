@@ -32,9 +32,9 @@ public class MapActivity extends FragmentActivity
 		implements NavigationDrawerFragment.NavigationDrawerCallbacks,
 		           AddGeoAlarmFragment.Listener{
 
-	private final static Gson gson = new Gson();
+	private static final Gson gson = new Gson();
 
-	public final static int DEFAULT_ZOOM_LEVEL = 14;
+	public static final int DEFAULT_ZOOM_LEVEL = 14;
 
 	private GoogleMap map = null;
 	private LocationClient locationClient = null;
@@ -53,7 +53,7 @@ public class MapActivity extends FragmentActivity
 					public GeoAlarm apply(Object json) {
 					try {
 						return gson.fromJson((String) json, GeoAlarm.class);
-					} catch (Exception e) {
+					} catch (Exception _) {
 						return null;
 					}
 					}
@@ -73,7 +73,7 @@ public class MapActivity extends FragmentActivity
 		setContentView(R.layout.activity_map);
 
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
-		LocationClientHandler handler = new LocationClientHandler();
+		final LocationClientHandler handler = new LocationClientHandler();
 		locationClient = new LocationClient(this, handler, handler);
 
 		if (map != null) {
@@ -158,11 +158,11 @@ public class MapActivity extends FragmentActivity
 	}
 
 	private void redrawGeoAlarms() {
-		Collection<GeoAlarm> alarms  = getGeoAlarms(getPreferences(Context.MODE_PRIVATE));
+		final Collection<GeoAlarm> alarms  = getGeoAlarms(getPreferences(Context.MODE_PRIVATE));
 		navigationDrawerFragment.setGeoAlarms(alarms);
 		if (map != null) {
 			map.clear();
-			for(GeoAlarm alarm : alarms) {
+			for(final GeoAlarm alarm : alarms) {
 				markers.put(alarm, map.addMarker(alarm.getMarkerOptions()));
 				map.addCircle(alarm.getCircleOptions());
 			}
@@ -176,7 +176,7 @@ public class MapActivity extends FragmentActivity
 		public void onConnected(Bundle bundle) {
 			super.onConnected(bundle);
 			if (map != null) {
-				Location loc = locationClient.getLastLocation();
+				final Location loc = locationClient.getLastLocation();
 				if (loc != null) {
 					map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(loc.getLatitude(), loc.getLongitude()), DEFAULT_ZOOM_LEVEL));
 				}

@@ -186,8 +186,8 @@ public class AddGeoAlarmFragment extends DialogFragment {
 
 		// When you have fragments in fragments, you need to remove the children before you can re-inflate the view later
 		try {
-			Fragment fragment = (getFragmentManager().findFragmentById(R.id.add_geo_alarm_map));
-			FragmentTransaction ft = getActivity().getFragmentManager().beginTransaction();
+			final Fragment fragment = (getFragmentManager().findFragmentById(R.id.add_geo_alarm_map));
+			final FragmentTransaction ft = getActivity().getFragmentManager().beginTransaction();
 			ft.remove(fragment);
 			ft.commit();
 		} catch (Exception e) {
