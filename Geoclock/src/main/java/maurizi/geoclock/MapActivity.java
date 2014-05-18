@@ -19,13 +19,14 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.gson.Gson;
 
 import java.util.Collection;
-import java.util.Map;
 
 
 public class MapActivity extends FragmentActivity
@@ -38,7 +39,7 @@ public class MapActivity extends FragmentActivity
 
 	private GoogleMap map = null;
 	private LocationClient locationClient = null;
-	private Map<GeoAlarm, Marker> markers = null;
+	private BiMap<GeoAlarm, Marker> markers = null;
 
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -51,11 +52,11 @@ public class MapActivity extends FragmentActivity
 				Maps.transformValues(prefs.getAll(), new Function<Object, GeoAlarm>() {
 					@Override
 					public GeoAlarm apply(Object json) {
-					try {
-						return gson.fromJson((String) json, GeoAlarm.class);
-					} catch (Exception _) {
-						return null;
-					}
+						try {
+							return gson.fromJson((String) json, GeoAlarm.class);
+						} catch (Exception _) {
+							return null;
+						}
 					}
 				}), new Predicate<GeoAlarm>() {
 
@@ -75,6 +76,7 @@ public class MapActivity extends FragmentActivity
 		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 		final LocationClientHandler handler = new LocationClientHandler();
 		locationClient = new LocationClient(this, handler, handler);
+		markers = HashBiMap.create();
 
 		if (map != null) {
 			map.setMyLocationEnabled(true);
@@ -87,7 +89,19 @@ public class MapActivity extends FragmentActivity
 					args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
 					popup.setArguments(args);
 					popup.show(getFragmentManager(), "AddGeoAlarmFragment");
-
+				}
+			});
+			map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+				@Override
+				public boolean onMarkerClick(Marker marker) {
+					final GeoAlarm alarm = markers.inverse().get(marker);
+					AddGeoAlarmFragment popup = new AddGeoAlarmFragment();
+					Bundle args = new Bundle();
+					args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+					args.putString(AddGeoAlarmFragment.EXISTING_ALARM, gson.toJson(alarm, GeoAlarm.class));
+					popup.setArguments(args);
+					popup.show(getFragmentManager(), "AddGeoAlarmFragment");
+					return true;
 				}
 			});
 		}

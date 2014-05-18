@@ -23,7 +23,9 @@
     <string name="sunday">S</string>
     <string name="add_geo_alarm_time_label">Time</string>
     <string name="add_geo_alarm_validation">That name is blank or already taken</string>
+    <string name="add_geo_alarm_delete">Delete</string>
     <string name="lost_location">Lost location</string>
     <string name="fail_location">Failed to get location</string>
+    <string name="fail_map">Failed to load map</string>
 
 </resources>
