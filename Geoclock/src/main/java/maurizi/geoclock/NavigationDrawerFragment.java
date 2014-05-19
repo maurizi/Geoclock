@@ -16,7 +16,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -87,12 +86,7 @@ public class NavigationDrawerFragment extends Fragment {
 	                         Bundle savedInstanceState) {
 		mDrawerListView = (ListView) inflater.inflate(
 				R.layout.fragment_navigation_drawer, container, false);
-		mDrawerListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				selectItem(position);
-			}
-		});
+		mDrawerListView.setOnItemClickListener((parent, view, position, id) -> selectItem(position));
 		geoAlarmAdapter = new ArrayAdapter<>(
 				getActionBar().getThemedContext(),
 				android.R.layout.simple_list_item_activated_1,
@@ -157,12 +151,7 @@ public class NavigationDrawerFragment extends Fragment {
 		};
 
 		// Defer code dependent on restoration of previous instance state.
-		mDrawerLayout.post(new Runnable() {
-			@Override
-			public void run() {
-				mDrawerToggle.syncState();
-			}
-		});
+		mDrawerLayout.post(mDrawerToggle::syncState);
 
 		mDrawerLayout.setDrawerListener(mDrawerToggle);
 	}
