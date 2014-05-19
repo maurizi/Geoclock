@@ -50,8 +50,8 @@ public class AddGeoAlarmFragment extends DialogFragment {
 	public final static String INITIAL_ZOOM = "INITIAL_ZOOM";
 	public static final String EXISTING_ALARM = "ALARM";
 
-	public final static int INITIAL_RADIUS = 20;
-	public final static int MAX_RADIUS = 200;
+	private final static int INITIAL_RADIUS = 20;
+	private final static int MAX_RADIUS = 200;
 
 	private LocationClient locationClient = null;
 
@@ -63,6 +63,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 
 		if (map == null) {
 			Toast.makeText(activity, R.string.fail_map, Toast.LENGTH_SHORT).show();
+			return null;
 		}
 
 		final SharedPreferences prefs = activity.getPreferences(Context.MODE_PRIVATE);
@@ -167,7 +168,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 			});
 		}
 		final AlertDialog dialog = b.create();
-		dialog.setOnShowListener(dialogInterface -> {
+		dialog.setOnShowListener(dialogInterface ->
 			dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
 				final String name = nameTextBox.getText().toString();
 
@@ -190,8 +191,8 @@ public class AddGeoAlarmFragment extends DialogFragment {
 				activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
 
 				dialog.dismiss();
-			});
-		});
+			})
+		);
 
 		return dialog;
 	}

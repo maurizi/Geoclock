@@ -3,7 +3,6 @@
             android:id="@+id/scrollView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@android:color/background_light"
             tools:context="maurizi.geoclock.AddGeoAlarmDialogFragment">
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,6 +22,7 @@
 
         <EditText
             style="@style/add_geo_alarm_item"
+            android:hint="@string/add_geo_alarm_name_hint"
             android:id="@+id/add_geo_alarm_name" />
 
         <TextView

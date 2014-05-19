@@ -14,8 +14,10 @@ public class ToastLocationClientHandler implements GooglePlayServicesClient.Conn
 	public ToastLocationClientHandler(Context context) {
 		this.context = context;
 	}
+
 	@Override
-	public void onConnected(Bundle bundle) {}
+	public void onConnected(Bundle bundle) {
+	}
 
 	@Override
 	public void onDisconnected() {

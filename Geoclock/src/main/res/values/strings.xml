@@ -27,5 +27,6 @@
     <string name="lost_location">Lost location</string>
     <string name="fail_location">Failed to get location</string>
     <string name="fail_map">Failed to load map</string>
+    <string name="add_geo_alarm_name_hint">alarm name</string>
 
 </resources>

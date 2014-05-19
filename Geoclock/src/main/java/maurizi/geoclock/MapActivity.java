@@ -1,13 +1,13 @@
 package maurizi.geoclock;
 
-import android.app.ActionBar;
+import android.support.v7.app.ActionBar;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -28,13 +28,13 @@ import com.google.gson.JsonSyntaxException;
 import java.util.Collection;
 
 
-public class MapActivity extends FragmentActivity
+public class MapActivity extends ActionBarActivity
 		implements NavigationDrawerFragment.NavigationDrawerCallbacks,
 		AddGeoAlarmFragment.Listener {
 
 	private static final Gson gson = new Gson();
 
-	public static final int DEFAULT_ZOOM_LEVEL = 14;
+	private static final int DEFAULT_ZOOM_LEVEL = 14;
 
 	private GoogleMap map = null;
 	private LocationClient locationClient = null;
@@ -54,7 +54,7 @@ public class MapActivity extends FragmentActivity
 							} catch (JsonSyntaxException e) {
 								return null;
 							}
-						}), geoAlarm -> geoAlarm != null
+						}), (GeoAlarm geoAlarm) -> geoAlarm != null
 				)
 		).build().values();
 	}
@@ -104,10 +104,12 @@ public class MapActivity extends FragmentActivity
 		}
 	}
 
-	public void restoreActionBar() {
-		ActionBar actionBar = getActionBar();
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-		actionBar.setDisplayShowTitleEnabled(true);
+	void restoreActionBar() {
+		ActionBar actionBar = getSupportActionBar();
+		if (actionBar != null) {
+			actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+			actionBar.setDisplayShowTitleEnabled(true);
+		}
 	}
 
 	@Override
@@ -129,10 +131,7 @@ public class MapActivity extends FragmentActivity
 		// automatically handle clicks on the Home/Up button, so long
 		// as you specify a parent activity in AndroidManifest.xml.
 		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
+		return id == R.id.action_settings || super.onOptionsItemSelected(item);
 	}
 
 	@Override
