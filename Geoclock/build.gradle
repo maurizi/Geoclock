@@ -3,10 +3,10 @@ apply plugin: 'retrolambda'
 
 android {
     compileSdkVersion 19
-    buildToolsVersion "19.0.3"
+    buildToolsVersion "19.1.0"
 
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 10
         targetSdkVersion 19
         versionCode 1
         versionName "1.0"
@@ -26,8 +26,8 @@ android {
 
 dependencies {
     compile 'com.android.support:support-v4:+'
-    compile 'com.android.support:appcompat-v7:+'
-    compile 'com.google.android.gms:play-services:4.3.23'
+    compile 'com.android.support:appcompat-v7:19.1.+'
+    compile 'com.google.android.gms:play-services:4.4.52'
     compile 'com.google.code.gson:gson:2.2.4'
     compile 'com.google.guava:guava:17.0'
     compile 'org.projectlombok:lombok:1.12.6'

@@ -1,12 +1,12 @@
 package maurizi.geoclock;
 
-import android.support.v7.app.ActionBar;
-import android.app.DialogFragment;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,7 +14,7 @@ import android.view.MenuItem;
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.common.collect.BiMap;
@@ -64,7 +64,7 @@ public class MapActivity extends ActionBarActivity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
 
-		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
+		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
 		final LocationClientHandler handler = new LocationClientHandler();
 		locationClient = new LocationClient(this, handler, handler);
 		markers = HashBiMap.create();
@@ -76,7 +76,7 @@ public class MapActivity extends ActionBarActivity
 		}
 
 		navigationDrawerFragment = (NavigationDrawerFragment)
-				getFragmentManager().findFragmentById(R.id.navigation_drawer);
+				getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 
 		// Set up the drawer.
 		navigationDrawerFragment.setUp(
@@ -168,7 +168,7 @@ public class MapActivity extends ActionBarActivity
 		}
 	}
 
-	private boolean showPopup(LatLng latLng) {
+	boolean showPopup(LatLng latLng) {
 		Bundle args = new Bundle();
 		args.putParcelable(AddGeoAlarmFragment.INITIAL_LATLNG, latLng);
 		args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
@@ -176,7 +176,7 @@ public class MapActivity extends ActionBarActivity
 		return showPopup(args);
 	}
 
-	private boolean showPopup(Marker marker) {
+	boolean showPopup(Marker marker) {
 		final GeoAlarm alarm = markers.inverse().get(marker);
 		Bundle args = new Bundle();
 		args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
@@ -185,10 +185,10 @@ public class MapActivity extends ActionBarActivity
 		return showPopup(args);
 	}
 
-	private boolean showPopup(Bundle args) {
+	boolean showPopup(Bundle args) {
 		AddGeoAlarmFragment popup = new AddGeoAlarmFragment();
 		popup.setArguments(args);
-		popup.show(getFragmentManager(), "AddGeoAlarmFragment");
+		popup.show(getSupportFragmentManager(), "AddGeoAlarmFragment");
 
 		return true;
 	}
