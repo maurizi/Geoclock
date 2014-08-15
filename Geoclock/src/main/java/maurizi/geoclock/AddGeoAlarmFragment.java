@@ -159,6 +159,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		Button deleteButton = (Button) dialogView.findViewById(R.id.add_geo_alarm_delete);
 		if (isEdit) {
 			deleteButton.setOnClickListener(view -> {
+				// TODO: Remove any existing notifications and geofences and alarms
 				GeoAlarm.remove(activity, alarm);
 				activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
 				dialog.dismiss();
@@ -170,8 +171,6 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		final Collection<String> savedNames = transform(GeoAlarm.getGeoAlarms(activity), savedAlarm -> savedAlarm.name);
 		dialogView.findViewById(R.id.add_geo_alarm_save).setOnClickListener(view -> {
 			final String name = nameTextBox.getText().toString();
-			final LatLng location = marker.getPosition();
-			final float radius = radiusBar.getProgress();
 
 			if ("".equals(name) || savedNames.contains(name)) {
 				Toast.makeText(activity, R.string.add_geo_alarm_validation, Toast.LENGTH_SHORT).show();

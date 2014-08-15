@@ -15,6 +15,8 @@ import com.google.common.collect.Lists;
 
 import java.util.List;
 
+import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
+
 public class GeofenceReceiver extends AbstractGeoReceiver {
 
 	private static final int NOTIFICATION_ID = 42;
@@ -23,7 +25,7 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 	public void onConnected(Bundle bundle) {
 		int transition = LocationClient.getGeofenceTransition(this.intent);
 		List<Geofence> affectedGeofences = LocationClient.getTriggeringGeofences(intent);
-		List<GeoAlarm> affectedAlarms = Lists.transform(affectedGeofences, GeoAlarm.getGeoAlarmForGeofenceFn(context));
+		List<GeoAlarm> affectedAlarms = Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context));
 
 		/* TODO: Need to keep track of which notifications are being shown currently
 		 * When you leave a GeoFence, you may still have some alarms left due to overlapping geofences
@@ -34,6 +36,7 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 		if ((transition == Geofence.GEOFENCE_TRANSITION_ENTER)) {
 			setNotification(notificationManager);
 
+			// TODO: Use Alarm Manager to set alarms, using GeoAlarm.getAlarmManagerTime
 //			final AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 //			for (Geofence geofence : affectedGeofences) {
 //				manager.setExact(AlarmManager.RTC_WAKEUP, 1, PendingIntent.get);
@@ -42,6 +45,7 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 		} else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
 			notificationManager.cancelAll();
 			// TODO: Reset by iterating through geofences?? It's unclear
+			// TODO: Remove AlarmMAnager alarms for geofences we are leaving
 		}
 	}
 
@@ -54,12 +58,17 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 
 		PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-		Notification notification = new NotificationCompat.Builder(context).setSmallIcon(R.drawable.ic_launcher)
-		                                                                   .setOngoing(true)
-		                                                                   .setContentTitle("Alarm")
-		                                                                   .setContentText("Next alarm goes off in <ENTER TIME HERE>")
-		                                                                   .setContentIntent(notificationPendingIntent)
-		                                                                   .build();
+		// TODO: Fill in <ENTER TIME HERE>
+		// TODO: Add a cancel button
+		// TODO: Make clicking the notification open the GeoAlarmFragment
+		Notification notification = new NotificationCompat
+				.Builder(context)
+				.setSmallIcon(R.drawable.ic_launcher)
+				.setOngoing(true)
+				.setContentTitle("Alarm")
+				.setContentText("Next alarm goes off in <ENTER TIME HERE>")
+				.setContentIntent(notificationPendingIntent)
+				.build();
 
 		// Issue the notification
 		manager.notify(NOTIFICATION_ID, notification);

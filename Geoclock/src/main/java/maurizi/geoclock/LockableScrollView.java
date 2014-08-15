@@ -18,7 +18,6 @@ class LockableScrollView extends ScrollView {
 		mScrollable = enabled;
 	}
 
-
 	public LockableScrollView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 	}

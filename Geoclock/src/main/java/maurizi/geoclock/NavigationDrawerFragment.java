@@ -88,6 +88,7 @@ public class NavigationDrawerFragment extends Fragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		mDrawerListView = (ListView) inflater.inflate(R.layout.fragment_navigation_drawer, container, false);
 		mDrawerListView.setOnItemClickListener((parent, view, position, id) -> selectItem(position));
+		// TODO: Fix API issues
 		geoAlarmAdapter = new ArrayAdapter<>(
 				getActionBar().getThemedContext(),
 				android.R.layout.simple_list_item_activated_1,
