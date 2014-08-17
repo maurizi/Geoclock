@@ -30,14 +30,13 @@ public class MapActivity extends ActionBarActivity
 
 	private static final int DEFAULT_ZOOM_LEVEL = 14;
 
-	private GoogleMap map = null;
-	private LocationClient locationClient = null;
-	private BiMap<GeoAlarm, Marker> markers = null;
-
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
 	 */
-	private NavigationDrawerFragment navigationDrawerFragment;
+	NavigationDrawerFragment navigationDrawerFragment;
+	GoogleMap map = null;
+	private LocationClient locationClient = null;
+	private BiMap<GeoAlarm, Marker> markers = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
