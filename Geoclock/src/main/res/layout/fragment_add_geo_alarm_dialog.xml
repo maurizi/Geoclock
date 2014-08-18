@@ -1,15 +1,17 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:orientation="vertical">
-    <maurizi.geoclock.LockableScrollView
-                android:id="@+id/scrollView"
+                xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@android:color/background_light"
-                android:layout_above="@+id/button_container"
-                tools:context="maurizi.geoclock.AddGeoAlarmDialogFragment">
+                android:orientation="vertical">
+
+    <maurizi.geoclock.LockableScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/background_light"
+        android:layout_above="@+id/button_container"
+        tools:context="maurizi.geoclock.AddGeoAlarmDialogFragment">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -19,7 +21,7 @@
             <FrameLayout
                 android:id="@+id/add_geo_alarm_map_container"
                 android:layout_width="match_parent"
-                android:layout_height="250dp" />
+                android:layout_height="250dp"/>
 
             <TextView
                 style="@style/add_geo_alarm_label"
@@ -28,7 +30,7 @@
             <EditText
                 style="@style/add_geo_alarm_item"
                 android:hint="@string/add_geo_alarm_name_hint"
-                android:id="@+id/add_geo_alarm_name" />
+                android:id="@+id/add_geo_alarm_name"/>
 
             <TextView
                 style="@style/add_geo_alarm_label"
@@ -42,7 +44,7 @@
                 <TextView
                     style="@style/add_geo_alarm_item"
                     android:layout_width="48dp"
-                    android:text="@string/min_radius_label" />
+                    android:text="@string/min_radius_label"/>
 
                 <SeekBar
                     android:id="@+id/add_geo_alarm_radius"
@@ -54,91 +56,108 @@
                 <TextView
                     style="@style/add_geo_alarm_item"
                     android:layout_width="48dp"
-                    android:text="@string/max_radius_label" />
+                    android:text="@string/max_radius_label"/>
             </LinearLayout>
 
             <TextView
                 style="@style/add_geo_alarm_label"
-                android:text="@string/add_geo_alarm_days_label" />
+                android:text="@string/add_geo_alarm_days_label"/>
 
             <TableLayout
                 style="@style/add_geo_alarm_item"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:stretchColumns="*" >
+                android:stretchColumns="*">
+
                 <TableRow
                     android:id="@+id/add_geo_alarm_checkbox_row">
+
                     <CheckBox
                         android:id="@+id/sun"
-                        android:layout_gravity="center_horizontal" />
+                        android:layout_gravity="center_horizontal"/>
+
                     <CheckBox
                         android:id="@+id/mon"
-                        android:layout_gravity="center_horizontal" />
+                        android:layout_gravity="center_horizontal"/>
+
                     <CheckBox
                         android:id="@+id/tues"
-                        android:layout_gravity="center_horizontal" />
+                        android:layout_gravity="center_horizontal"/>
+
                     <CheckBox
                         android:id="@+id/wed"
-                        android:layout_gravity="center_horizontal" />
+                        android:layout_gravity="center_horizontal"/>
+
                     <CheckBox
                         android:id="@+id/thu"
-                        android:layout_gravity="center_horizontal" />
+                        android:layout_gravity="center_horizontal"/>
+
                     <CheckBox
                         android:id="@+id/fri"
-                        android:layout_gravity="center_horizontal" />
+                        android:layout_gravity="center_horizontal"/>
+
                     <CheckBox
                         android:id="@+id/sat"
-                        android:layout_gravity="center_horizontal" />
+                        android:layout_gravity="center_horizontal"/>
                 </TableRow>
+
                 <TableRow>
+
                     <TextView
                         android:text="@string/sunday"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center" />
+                        android:gravity="center"/>
+
                     <TextView
                         android:text="@string/monday"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center" />
+                        android:gravity="center"/>
+
                     <TextView
                         android:text="@string/tuesday"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center" />
+                        android:gravity="center"/>
+
                     <TextView
                         android:text="@string/wednesday"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center" />
+                        android:gravity="center"/>
+
                     <TextView
                         android:text="@string/thursday"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center" />
+                        android:gravity="center"/>
+
                     <TextView
                         android:text="@string/friday"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center" />
+                        android:gravity="center"/>
+
                     <TextView
                         android:text="@string/saturday"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:gravity="center" />
+                        android:gravity="center"/>
                 </TableRow>
             </TableLayout>
 
             <TextView
                 style="@style/add_geo_alarm_label"
-                android:text="@string/add_geo_alarm_time_label" />
+                android:text="@string/add_geo_alarm_time_label"/>
 
             <TimePicker
                 style="@style/add_geo_alarm_item"
-                android:id="@+id/add_geo_alarm_time" />
+                android:id="@+id/add_geo_alarm_time"/>
 
         </LinearLayout>
     </maurizi.geoclock.LockableScrollView>
+
     <LinearLayout
         android:id="@+id/button_container"
         android:layout_width="match_parent"
@@ -146,24 +165,27 @@
         android:orientation="horizontal"
         android:layout_alignParentBottom="true"
         android:measureWithLargestChild="true">
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:id="@+id/add_geo_alarm_cancel"
-            android:text="@string/add_geo_alarm_cancel" />
+            android:text="@string/add_geo_alarm_cancel"/>
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:id="@+id/add_geo_alarm_delete"
-            android:text="@string/add_geo_alarm_delete" />
+            android:text="@string/add_geo_alarm_delete"/>
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:id="@+id/add_geo_alarm_save"
-            android:text="@string/add_geo_alarm_continue" />
+            android:text="@string/add_geo_alarm_continue"/>
     </LinearLayout>
 
 </RelativeLayout>

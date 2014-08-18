@@ -23,14 +23,14 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 	public void onConnected(Bundle bundle) {
 		int transition = LocationClient.getGeofenceTransition(this.intent);
 		List<Geofence> affectedGeofences = LocationClient.getTriggeringGeofences(intent);
-		List<GeoAlarm> affectedAlarms = Lists.transform(affectedGeofences,
-				GeoAlarm.getGeoAlarmForGeofenceFn(context));
+		List<GeoAlarm> affectedAlarms = Lists.transform(affectedGeofences, GeoAlarm.getGeoAlarmForGeofenceFn(context));
 
 		/* TODO: Need to keep track of which notifications are being shown currently
 		 * When you leave a GeoFence, you may still have some alarms left due to overlapping geofences
 		 * So we need to know if (current alarms - removedAlarms) is empty before removing the notifications
 		 */
-		final NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+		final NotificationManager notificationManager =
+				(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 		if ((transition == Geofence.GEOFENCE_TRANSITION_ENTER)) {
 			setNotification(notificationManager);
 
@@ -54,14 +54,12 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 
 		PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-		Notification notification = new NotificationCompat
-				.Builder(context)
-				.setSmallIcon(R.drawable.ic_launcher)
-				.setOngoing(true)
-				.setContentTitle("Alarm")
-				.setContentText("Next alarm goes off in <ENTER TIME HERE>")
-				.setContentIntent(notificationPendingIntent)
-				.build();
+		Notification notification = new NotificationCompat.Builder(context).setSmallIcon(R.drawable.ic_launcher)
+		                                                                   .setOngoing(true)
+		                                                                   .setContentTitle("Alarm")
+		                                                                   .setContentText("Next alarm goes off in <ENTER TIME HERE>")
+		                                                                   .setContentIntent(notificationPendingIntent)
+		                                                                   .build();
 
 		// Issue the notification
 		manager.notify(NOTIFICATION_ID, notification);

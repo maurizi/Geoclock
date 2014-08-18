@@ -26,9 +26,9 @@ import com.google.common.collect.Lists;
 import java.util.Collection;
 
 /**
- * Fragment used for managing interactions for and presentation of a navigation drawer.
- * See the <a href="https://developer.android.com/design/patterns/navigation-drawer.html#Interaction">
- * design guidelines</a> for a complete explanation of the behaviors implemented here.
+ * Fragment used for managing interactions for and presentation of a navigation drawer. See the <a
+ * href="https://developer.android.com/design/patterns/navigation-drawer.html#Interaction"> design guidelines</a> for a
+ * complete explanation of the behaviors implemented here.
  */
 public class NavigationDrawerFragment extends Fragment {
 
@@ -85,10 +85,8 @@ public class NavigationDrawerFragment extends Fragment {
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-	                         Bundle savedInstanceState) {
-		mDrawerListView = (ListView) inflater.inflate(
-				R.layout.fragment_navigation_drawer, container, false);
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		mDrawerListView = (ListView) inflater.inflate(R.layout.fragment_navigation_drawer, container, false);
 		mDrawerListView.setOnItemClickListener((parent, view, position, id) -> selectItem(position));
 		geoAlarmAdapter = new ArrayAdapter<>(
 				getActionBar().getThemedContext(),
@@ -208,8 +206,8 @@ public class NavigationDrawerFragment extends Fragment {
 	}
 
 	/**
-	 * Per the navigation drawer design guidelines, updates the action bar to show the global app
-	 * 'context', rather than just what's in the current screen.
+	 * Per the navigation drawer design guidelines, updates the action bar to show the global app 'context', rather than
+	 * just what's in the current screen.
 	 */
 	private void showGlobalContextActionBar() {
 		ActionBar actionBar = getActionBar();
@@ -219,7 +217,7 @@ public class NavigationDrawerFragment extends Fragment {
 	}
 
 	public ActionBarActivity getSupportActivity() {
-		return (ActionBarActivity)super.getActivity();
+		return (ActionBarActivity) super.getActivity();
 	}
 
 	private ActionBar getActionBar() {

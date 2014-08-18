@@ -18,7 +18,7 @@ public abstract class AbstractGeoReceiver extends BroadcastReceiver
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		if (! LocationClient.hasError(intent)) {
+		if (!LocationClient.hasError(intent)) {
 			this.context = context;
 			this.client = new LocationClient(context, this, this);
 		}

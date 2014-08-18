@@ -79,12 +79,8 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		final LatLng initalPoint = args.getParcelable(AddGeoAlarmFragment.INITIAL_LATLNG);
 		final float initalZoom = args.getFloat(AddGeoAlarmFragment.INITIAL_ZOOM);
 		final GeoAlarm alarm = isEdit
-				? gson.fromJson(args.getString(AddGeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class)
-				: GeoAlarm.builder()
-				          .location(initalPoint)
-				          .radius(INITIAL_RADIUS)
-				          .name("")
-				          .build();
+		                       ? gson.fromJson(args.getString(AddGeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class)
+		                       : GeoAlarm.builder().location(initalPoint).radius(INITIAL_RADIUS).name("").build();
 
 		final LockableScrollView scrollView = (LockableScrollView) dialogView.findViewById(R.id.scrollView);
 
@@ -105,14 +101,11 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		radiusBar.setProgress((int) alarm.radius);
 		radiusBar.setMax(MAX_RADIUS);
 
-		final Marker marker = map.addMarker(new MarkerOptions()
-				.position(alarm.location)
-				.draggable(true));
+		final Marker marker = map.addMarker(new MarkerOptions().position(alarm.location).draggable(true));
 
-		final Circle circle = map.addCircle(new CircleOptions()
-				.center(alarm.location)
-				.radius(alarm.radius)
-				.fillColor(R.color.geofence_fill_color));
+		final Circle circle = map.addCircle(new CircleOptions().center(alarm.location)
+		                                                       .radius(alarm.radius)
+		                                                       .fillColor(R.color.geofence_fill_color));
 
 		final TimePicker timePicker = (TimePicker) dialogView.findViewById(R.id.add_geo_alarm_time);
 		if (isEdit) {
@@ -186,16 +179,19 @@ public class AddGeoAlarmFragment extends DialogFragment {
 			}
 
 			final GeoAlarm newAlarm = GeoAlarm.builder()
-					.location(marker.getPosition())
-					.name(name)
-					.radius(radiusBar.getProgress())
-					.days(Lists.newArrayList(Maps.filterValues(checkboxes, CompoundButton::isChecked).keySet()))
-					.hour(timePicker.getCurrentHour())
-					.minute(timePicker.getCurrentMinute())
-					.geofenceId(alarm.geofenceId)
-					.build();
+			                                  .location(marker.getPosition())
+			                                  .name(name)
+			                                  .radius(radiusBar.getProgress())
+			                                  .days(Lists.newArrayList(Maps.filterValues(checkboxes,
+			                                                                             CompoundButton::isChecked)
+			                                                               .keySet()))
+			                                  .hour(timePicker.getCurrentHour())
+			                                  .minute(timePicker.getCurrentMinute())
+			                                  .geofenceId(alarm.geofenceId)
+			                                  .build();
 
-			locationClient.addGeofences(Arrays.asList(newAlarm.getGeofence()), GeofenceReceiver.getPendingIntent(getActivity()), (status, ids) -> {
+			locationClient.addGeofences(Arrays.asList(newAlarm.getGeofence()),
+			                            GeofenceReceiver.getPendingIntent(getActivity()), (status, ids) -> {
 				if (status == LocationStatusCodes.SUCCESS) {
 					GeoAlarm addedAlarm = newAlarm.withGeofenceId(ids[0]);
 					GeoAlarm.replace(activity, alarm, addedAlarm);

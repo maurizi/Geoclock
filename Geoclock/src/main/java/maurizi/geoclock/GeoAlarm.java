@@ -56,25 +56,20 @@ public class GeoAlarm {
 	}
 
 	public MarkerOptions getMarkerOptions() {
-		return new MarkerOptions()
-				.position(location)
-				.title(name);
+		return new MarkerOptions().position(location).title(name);
 	}
 
 	public Geofence getGeofence() {
-		return new Geofence.Builder()
-		                   .setCircularRegion(location.latitude, location.longitude, radius)
-		                   .setRequestId(name)
-		                   .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
-		                   .setExpirationDuration(Duration.ofDays(1).toMillis())
-		                   .build();
+		return new Geofence.Builder().setCircularRegion(location.latitude, location.longitude, radius)
+		                             .setRequestId(name)
+		                             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
+		                                                 Geofence.GEOFENCE_TRANSITION_EXIT)
+		                             .setExpirationDuration(Duration.ofDays(1).toMillis())
+		                             .build();
 	}
 
 	public CircleOptions getCircleOptions() {
-		return new CircleOptions()
-				.center(location)
-				.radius(radius)
-				.fillColor(R.color.geofence_fill_color);
+		return new CircleOptions().center(location).radius(radius).fillColor(R.color.geofence_fill_color);
 	}
 
 	private LocalTime getAlarmTime() {
@@ -92,8 +87,10 @@ public class GeoAlarm {
 		final LocalTime alarmTime = getAlarmTime();
 
 		final LocalDateTime alarmDateTime = days.isEmpty()
-				? alarmTime.atDate(isAlarmForToday() ? LocalDate.now() : LocalDate.now().plusDays(1))
-				: alarmTime.atDate(getSoonestDayForRepeatingAlarm());
+		                                    ? alarmTime.atDate(isAlarmForToday()
+		                                                       ? LocalDate.now()
+		                                                       : LocalDate.now().plusDays(1))
+		                                    : alarmTime.atDate(getSoonestDayForRepeatingAlarm());
 
 		return alarmDateTime.atZone(ZoneId.systemDefault()).toEpochSecond();
 	}
@@ -126,10 +123,10 @@ public class GeoAlarm {
 
 	static Collection<GeoAlarm> getGeoAlarms(Context context) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
-		return ImmutableList.<GeoAlarm>builder().addAll(
-				filter(transform(prefs.getAll().values(), GeoAlarm::parse),
-						(GeoAlarm geoAlarm) -> geoAlarm != null)
-		).build();
+		return ImmutableList.<GeoAlarm>builder()
+		                    .addAll(filter(transform(prefs.getAll().values(), GeoAlarm::parse),
+		                                   (GeoAlarm geoAlarm) -> geoAlarm != null))
+		                    .build();
 	}
 
 	static Function<Geofence, GeoAlarm> getGeoAlarmForGeofenceFn(Context context) {
@@ -147,9 +144,7 @@ public class GeoAlarm {
 
 	static void remove(Context context, GeoAlarm oldAlarm) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
-		prefs.edit()
-		     .remove(oldAlarm.geofenceId)
-		     .commit();
+		prefs.edit().remove(oldAlarm.geofenceId).commit();
 	}
 
 	private static GeoAlarm parse(Object json) {

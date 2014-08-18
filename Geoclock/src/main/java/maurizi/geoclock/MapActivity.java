@@ -24,8 +24,7 @@ import java.util.Collection;
 
 
 public class MapActivity extends ActionBarActivity
-		implements NavigationDrawerFragment.NavigationDrawerCallbacks,
-		AddGeoAlarmFragment.Listener {
+		implements NavigationDrawerFragment.NavigationDrawerCallbacks, AddGeoAlarmFragment.Listener {
 
 	private static final Gson gson = new Gson();
 
@@ -40,7 +39,7 @@ public class MapActivity extends ActionBarActivity
 	 */
 	private NavigationDrawerFragment navigationDrawerFragment;
 
-    @Override
+	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
@@ -56,13 +55,11 @@ public class MapActivity extends ActionBarActivity
 			map.setOnMarkerClickListener(this::showPopup);
 		}
 
-		navigationDrawerFragment = (NavigationDrawerFragment)
-				getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
+		navigationDrawerFragment =
+				(NavigationDrawerFragment) getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 
 		// Set up the drawer.
-		navigationDrawerFragment.setUp(
-				R.id.navigation_drawer,
-				(DrawerLayout) findViewById(R.id.drawer_layout));
+		navigationDrawerFragment.setUp(R.id.navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout));
 	}
 
 	@Override
@@ -143,7 +140,8 @@ public class MapActivity extends ActionBarActivity
 			if (map != null) {
 				final Location loc = locationClient.getLastLocation();
 				if (loc != null) {
-					map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(loc.getLatitude(), loc.getLongitude()), DEFAULT_ZOOM_LEVEL));
+					map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(loc.getLatitude(), loc.getLongitude()),
+					                                                 DEFAULT_ZOOM_LEVEL));
 				}
 			}
 		}
