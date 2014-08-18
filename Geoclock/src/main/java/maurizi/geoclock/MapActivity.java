@@ -1,7 +1,6 @@
 package maurizi.geoclock;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
@@ -19,11 +18,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 
 import java.util.Collection;
 
@@ -45,21 +40,7 @@ public class MapActivity extends ActionBarActivity
 	 */
 	private NavigationDrawerFragment navigationDrawerFragment;
 
-	public static Collection<GeoAlarm> getGeoAlarms(SharedPreferences prefs) {
-		return new ImmutableSortedMap.Builder<String, GeoAlarm>(Ordering.natural()).putAll(
-				Maps.filterValues(
-						Maps.transformValues(prefs.getAll(), json -> {
-							try {
-								return gson.fromJson((String) json, GeoAlarm.class);
-							} catch (JsonSyntaxException e) {
-								return null;
-							}
-						}), (GeoAlarm geoAlarm) -> geoAlarm != null
-				)
-		).build().values();
-	}
-
-	@Override
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
@@ -140,7 +121,7 @@ public class MapActivity extends ActionBarActivity
 	}
 
 	private void redrawGeoAlarms() {
-		final Collection<GeoAlarm> alarms = getGeoAlarms(getPreferences(Context.MODE_PRIVATE));
+		final Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
 		navigationDrawerFragment.setGeoAlarms(alarms);
 		if (map != null) {
 			map.clear();

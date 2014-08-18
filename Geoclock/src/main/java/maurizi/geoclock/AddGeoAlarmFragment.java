@@ -2,8 +2,6 @@ package maurizi.geoclock;
 
 
 import android.app.Dialog;
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
@@ -35,7 +33,10 @@ import com.google.gson.Gson;
 
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Map;
+
+import static com.google.common.collect.Collections2.transform;
 
 
 /**
@@ -73,7 +74,6 @@ public class AddGeoAlarmFragment extends DialogFragment {
 			return;
 		}
 
-		final SharedPreferences prefs = getActivity().getPreferences(Context.MODE_PRIVATE);
 		final Bundle args = getArguments();
 		final boolean isEdit = args.containsKey(AddGeoAlarmFragment.EXISTING_ALARM);
 		final LatLng initalPoint = args.getParcelable(AddGeoAlarmFragment.INITIAL_LATLNG);
@@ -166,7 +166,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		Button deleteButton = (Button) dialogView.findViewById(R.id.add_geo_alarm_delete);
 		if (isEdit) {
 			deleteButton.setOnClickListener(view -> {
-				prefs.edit().remove(alarm.name).commit();
+				GeoAlarm.remove(activity, alarm);
 				activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
 				dialog.dismiss();
 			});
@@ -174,12 +174,13 @@ public class AddGeoAlarmFragment extends DialogFragment {
 			deleteButton.setVisibility(View.GONE);
 		}
 
+		final Collection<String> savedNames = transform(GeoAlarm.getGeoAlarms(activity), savedAlarm -> savedAlarm.name);
 		dialogView.findViewById(R.id.add_geo_alarm_save).setOnClickListener(view -> {
 			final String name = nameTextBox.getText().toString();
 			final LatLng location = marker.getPosition();
 			final float radius = radiusBar.getProgress();
 
-			if ("".equals(name) || (prefs.contains(name) && !name.equals(alarm.name))) {
+			if ("".equals(name) || savedNames.contains(name)) {
 				Toast.makeText(activity, R.string.add_geo_alarm_validation, Toast.LENGTH_SHORT).show();
 				return;
 			}
@@ -193,12 +194,17 @@ public class AddGeoAlarmFragment extends DialogFragment {
 					.minute(timePicker.getCurrentMinute())
 					.geofenceId(alarm.geofenceId)
 					.build();
-			prefs.edit()
-			     .remove(alarm.name)
-			     .putString(addedAlarm.name, gson.toJson(addedAlarm, GeoAlarm.class)).commit();
-			activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
-			dialog.dismiss();
-			locationClient.disconnect();
+
+			locationClient.addGeofences(Arrays.asList(newAlarm.getGeofence()), GeofenceReceiver.getPendingIntent(getActivity()), (status, ids) -> {
+				if (status == LocationStatusCodes.SUCCESS) {
+					GeoAlarm addedAlarm = newAlarm.withGeofenceId(ids[0]);
+					GeoAlarm.replace(activity, alarm, addedAlarm);
+					activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
+
+					dialog.dismiss();
+				}
+				locationClient.disconnect();
+			});
 		});
 	}
 

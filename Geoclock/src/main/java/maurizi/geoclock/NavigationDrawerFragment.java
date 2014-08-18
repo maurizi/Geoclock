@@ -94,7 +94,7 @@ public class NavigationDrawerFragment extends Fragment {
 				getActionBar().getThemedContext(),
 				android.R.layout.simple_list_item_activated_1,
 				android.R.id.text1,
-				Lists.newArrayList(MapActivity.getGeoAlarms(getActivity().getPreferences(Context.MODE_PRIVATE)))
+				Lists.newArrayList(GeoAlarm.getGeoAlarms(getActivity()))
 		);
 		mDrawerListView.setAdapter(geoAlarmAdapter);
 		mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
