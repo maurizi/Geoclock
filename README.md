@@ -1,3 +1,5 @@
+[![Travis build status](https://travis-ci.org/maurizi/Geoclock.png?branch=master)](https://travis-ci.org/maurizi/Geoclock)
+
 Geoclock
 ========
 
