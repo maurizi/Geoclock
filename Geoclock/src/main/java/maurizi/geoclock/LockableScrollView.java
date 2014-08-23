@@ -18,7 +18,6 @@ class LockableScrollView extends ScrollView {
 		mScrollable = enabled;
 	}
 
-
 	public LockableScrollView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 	}
@@ -35,10 +34,7 @@ class LockableScrollView extends ScrollView {
 	public boolean onTouchEvent(MotionEvent ev) {
 		switch (ev.getAction()) {
 			case MotionEvent.ACTION_DOWN:
-				if (mScrollable) {
-					return super.onTouchEvent(ev);
-				}
-				return false;
+				return mScrollable && super.onTouchEvent(ev);
 			default:
 				return super.onTouchEvent(ev);
 		}
@@ -46,12 +42,7 @@ class LockableScrollView extends ScrollView {
 
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
-		if (!mScrollable) {
-			return false;
-		}
-		else {
-			return super.onInterceptTouchEvent(ev);
-		}
+		return mScrollable && super.onInterceptTouchEvent(ev);
 	}
 
 }

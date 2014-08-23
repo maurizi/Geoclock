@@ -1,15 +1,16 @@
 package maurizi.geoclock;
 
 
-import android.app.ActionBar;
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,9 +26,9 @@ import com.google.common.collect.Lists;
 import java.util.Collection;
 
 /**
- * Fragment used for managing interactions for and presentation of a navigation drawer.
- * See the <a href="https://developer.android.com/design/patterns/navigation-drawer.html#Interaction">
- * design guidelines</a> for a complete explanation of the behaviors implemented here.
+ * Fragment used for managing interactions for and presentation of a navigation drawer. See the <a
+ * href="https://developer.android.com/design/patterns/navigation-drawer.html#Interaction"> design guidelines</a> for a
+ * complete explanation of the behaviors implemented here.
  */
 public class NavigationDrawerFragment extends Fragment {
 
@@ -59,7 +60,9 @@ public class NavigationDrawerFragment extends Fragment {
 
 	public void setGeoAlarms(Collection<GeoAlarm> alarms) {
 		geoAlarmAdapter.clear();
-		geoAlarmAdapter.addAll(alarms);
+		for (GeoAlarm alarm : alarms) {
+			geoAlarmAdapter.add(alarm);
+		}
 	}
 
 	@Override
@@ -82,16 +85,15 @@ public class NavigationDrawerFragment extends Fragment {
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-	                         Bundle savedInstanceState) {
-		mDrawerListView = (ListView) inflater.inflate(
-				R.layout.fragment_navigation_drawer, container, false);
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		mDrawerListView = (ListView) inflater.inflate(R.layout.fragment_navigation_drawer, container, false);
 		mDrawerListView.setOnItemClickListener((parent, view, position, id) -> selectItem(position));
+		// TODO: Fix API issues
 		geoAlarmAdapter = new ArrayAdapter<>(
 				getActionBar().getThemedContext(),
 				android.R.layout.simple_list_item_activated_1,
 				android.R.id.text1,
-				Lists.newArrayList(MapActivity.getGeoAlarms(getActivity().getPreferences(Context.MODE_PRIVATE)))
+				Lists.newArrayList(GeoAlarm.getGeoAlarms(getActivity()))
 		);
 		mDrawerListView.setAdapter(geoAlarmAdapter);
 		mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
@@ -114,7 +116,6 @@ public class NavigationDrawerFragment extends Fragment {
 
 		// set a custom shadow that overlays the main content when the drawer opens
 		mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
-		// set up the drawer's list view with items and click listener
 
 		ActionBar actionBar = getActionBar();
 		actionBar.setDisplayHomeAsUpEnabled(true);
@@ -123,32 +124,12 @@ public class NavigationDrawerFragment extends Fragment {
 		// ActionBarDrawerToggle ties together the the proper interactions
 		// between the navigation drawer and the action bar app icon.
 		mDrawerToggle = new ActionBarDrawerToggle(
-				getActivity(),                    /* host Activity */
-				mDrawerLayout,                    /* DrawerLayout object */
-				R.drawable.ic_drawer,             /* nav drawer image to replace 'Up' caret */
-				R.string.navigation_drawer_open,  /* "open drawer" description for accessibility */
-				R.string.navigation_drawer_close  /* "close drawer" description for accessibility */
-		) {
-			@Override
-			public void onDrawerClosed(View drawerView) {
-				super.onDrawerClosed(drawerView);
-				if (!isAdded()) {
-					return;
-				}
-
-				getActivity().invalidateOptionsMenu(); // calls onPrepareOptionsMenu()
-			}
-
-			@Override
-			public void onDrawerOpened(View drawerView) {
-				super.onDrawerOpened(drawerView);
-				if (!isAdded()) {
-					return;
-				}
-
-				getActivity().invalidateOptionsMenu(); // calls onPrepareOptionsMenu()
-			}
-		};
+				getActivity(),
+				mDrawerLayout,
+				R.drawable.ic_drawer,
+				R.string.navigation_drawer_open,
+				R.string.navigation_drawer_close
+		);
 
 		// Defer code dependent on restoration of previous instance state.
 		mDrawerLayout.post(mDrawerToggle::syncState);
@@ -226,8 +207,8 @@ public class NavigationDrawerFragment extends Fragment {
 	}
 
 	/**
-	 * Per the navigation drawer design guidelines, updates the action bar to show the global app
-	 * 'context', rather than just what's in the current screen.
+	 * Per the navigation drawer design guidelines, updates the action bar to show the global app 'context', rather than
+	 * just what's in the current screen.
 	 */
 	private void showGlobalContextActionBar() {
 		ActionBar actionBar = getActionBar();
@@ -236,8 +217,12 @@ public class NavigationDrawerFragment extends Fragment {
 		actionBar.setTitle(R.string.app_name);
 	}
 
+	public ActionBarActivity getSupportActivity() {
+		return (ActionBarActivity) super.getActivity();
+	}
+
 	private ActionBar getActionBar() {
-		return getActivity().getActionBar();
+		return getSupportActivity().getSupportActionBar();
 	}
 
 	/**

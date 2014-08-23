@@ -1,0 +1,27 @@
+language: android
+jdk: oraclejdk8
+env:
+  matrix:
+    - ANDROID_TARGET=android-19 ANDROID_ABI=armeabi-v7a
+
+android:
+  components:
+    - build-tools-19.1.0
+    - platform-tools
+    - android-19
+    - addon-google_apis-google-19
+    - extra-android-m2repository
+    - extra-google-m2repository
+    - extra-android-support
+
+  licenses:
+    - android-sdk-license-bcbbd656
+    - android-sdk-license-5be876d5
+    - android-sdk-license-598b93a6
+    - 'android-*'
+    - '.*intel.+'
+
+before_install:
+  - export "JAVA8_HOME=/usr/lib/jvm/java-8-oracle"
+
+script: ./gradlew assembleDebug test

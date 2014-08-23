@@ -1,70 +1,49 @@
 package maurizi.geoclock;
 
-import android.app.ActionBar;
-import android.app.DialogFragment;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 
 import java.util.Collection;
 
 
-public class MapActivity extends FragmentActivity
-		implements NavigationDrawerFragment.NavigationDrawerCallbacks,
-		AddGeoAlarmFragment.Listener {
+public class MapActivity extends ActionBarActivity
+		implements NavigationDrawerFragment.NavigationDrawerCallbacks, AddGeoAlarmFragment.Listener {
 
 	private static final Gson gson = new Gson();
 
-	public static final int DEFAULT_ZOOM_LEVEL = 14;
-
-	private GoogleMap map = null;
-	private LocationClient locationClient = null;
-	private BiMap<GeoAlarm, Marker> markers = null;
+	private static final int DEFAULT_ZOOM_LEVEL = 14;
 
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
 	 */
-	private NavigationDrawerFragment navigationDrawerFragment;
-
-	public static Collection<GeoAlarm> getGeoAlarms(SharedPreferences prefs) {
-		return new ImmutableSortedMap.Builder<String, GeoAlarm>(Ordering.natural()).putAll(
-				Maps.filterValues(
-						Maps.transformValues(prefs.getAll(), json -> {
-							try {
-								return gson.fromJson((String) json, GeoAlarm.class);
-							} catch (JsonSyntaxException e) {
-								return null;
-							}
-						}), geoAlarm -> geoAlarm != null
-				)
-		).build().values();
-	}
+	NavigationDrawerFragment navigationDrawerFragment;
+	GoogleMap map = null;
+	private LocationClient locationClient = null;
+	private BiMap<GeoAlarm, Marker> markers = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
 
-		map = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
+		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
 		final LocationClientHandler handler = new LocationClientHandler();
 		locationClient = new LocationClient(this, handler, handler);
 		markers = HashBiMap.create();
@@ -75,13 +54,11 @@ public class MapActivity extends FragmentActivity
 			map.setOnMarkerClickListener(this::showPopup);
 		}
 
-		navigationDrawerFragment = (NavigationDrawerFragment)
-				getFragmentManager().findFragmentById(R.id.navigation_drawer);
+		navigationDrawerFragment =
+				(NavigationDrawerFragment) getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 
 		// Set up the drawer.
-		navigationDrawerFragment.setUp(
-				R.id.navigation_drawer,
-				(DrawerLayout) findViewById(R.id.drawer_layout));
+		navigationDrawerFragment.setUp(R.id.navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout));
 	}
 
 	@Override
@@ -104,10 +81,12 @@ public class MapActivity extends FragmentActivity
 		}
 	}
 
-	public void restoreActionBar() {
-		ActionBar actionBar = getActionBar();
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-		actionBar.setDisplayShowTitleEnabled(true);
+	void restoreActionBar() {
+		ActionBar actionBar = getSupportActionBar();
+		if (actionBar != null) {
+			actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+			actionBar.setDisplayShowTitleEnabled(true);
+		}
 	}
 
 	@Override
@@ -129,10 +108,7 @@ public class MapActivity extends FragmentActivity
 		// automatically handle clicks on the Home/Up button, so long
 		// as you specify a parent activity in AndroidManifest.xml.
 		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
+		return id == R.id.action_settings || super.onOptionsItemSelected(item);
 	}
 
 	@Override
@@ -141,7 +117,7 @@ public class MapActivity extends FragmentActivity
 	}
 
 	private void redrawGeoAlarms() {
-		final Collection<GeoAlarm> alarms = getGeoAlarms(getPreferences(Context.MODE_PRIVATE));
+		final Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
 		navigationDrawerFragment.setGeoAlarms(alarms);
 		if (map != null) {
 			map.clear();
@@ -163,13 +139,14 @@ public class MapActivity extends FragmentActivity
 			if (map != null) {
 				final Location loc = locationClient.getLastLocation();
 				if (loc != null) {
-					map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(loc.getLatitude(), loc.getLongitude()), DEFAULT_ZOOM_LEVEL));
+					map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(loc.getLatitude(), loc.getLongitude()),
+					                                                 DEFAULT_ZOOM_LEVEL));
 				}
 			}
 		}
 	}
 
-	private boolean showPopup(LatLng latLng) {
+	boolean showPopup(LatLng latLng) {
 		Bundle args = new Bundle();
 		args.putParcelable(AddGeoAlarmFragment.INITIAL_LATLNG, latLng);
 		args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
@@ -177,7 +154,7 @@ public class MapActivity extends FragmentActivity
 		return showPopup(args);
 	}
 
-	private boolean showPopup(Marker marker) {
+	boolean showPopup(Marker marker) {
 		final GeoAlarm alarm = markers.inverse().get(marker);
 		Bundle args = new Bundle();
 		args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
@@ -186,10 +163,10 @@ public class MapActivity extends FragmentActivity
 		return showPopup(args);
 	}
 
-	private boolean showPopup(Bundle args) {
+	boolean showPopup(Bundle args) {
 		AddGeoAlarmFragment popup = new AddGeoAlarmFragment();
 		popup.setArguments(args);
-		popup.show(getFragmentManager(), "AddGeoAlarmFragment");
+		popup.show(getSupportFragmentManager(), "AddGeoAlarmFragment");
 
 		return true;
 	}

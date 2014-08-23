@@ -1,10 +1,19 @@
 .gradle
 /local.properties
 
-.idea/
-*.ipr
-*.iws
-*.iml
+
+# Android Studio file
+.idea/compiler.xml
+.idea/encodings.xml
+.idea/gradle.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/workspace.xml
+.idea/libraries/*
+.idea/copyright/*
+.idea/dictionaries/*
+.idea/.name
 out/
 
 .DS_Store
