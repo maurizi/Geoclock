@@ -46,6 +46,7 @@ public class MapActivity extends ActionBarActivity
 		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
 		final LocationClientHandler handler = new LocationClientHandler();
 		locationClient = new LocationClient(this, handler, handler);
+		locationClient.connect();
 		markers = HashBiMap.create();
 
 		if (map != null) {
@@ -59,12 +60,6 @@ public class MapActivity extends ActionBarActivity
 
 		// Set up the drawer.
 		navigationDrawerFragment.setUp(R.id.navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout));
-	}
-
-	@Override
-	public void onStart() {
-		super.onStart();
-		locationClient.connect();
 	}
 
 	@Override
