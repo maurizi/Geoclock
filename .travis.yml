@@ -9,7 +9,6 @@ android:
     - build-tools-19.1.0
     - platform-tools
     - android-19
-    - addon-google_apis-google-19
     - extra-android-m2repository
     - extra-google-m2repository
     - extra-android-support
@@ -24,4 +23,6 @@ android:
 before_install:
   - export "JAVA8_HOME=/usr/lib/jvm/java-8-oracle"
 
-script: ./gradlew assembleDebug test
+script:
+ - ./gradlew assembleDebug
+ - ./gradlew testDebug
