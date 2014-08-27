@@ -1,13 +1,19 @@
+apply plugin: 'android-sdk-manager'
 apply plugin: 'com.android.application'
 apply plugin: 'retrolambda'
 
+ext {
+    TARGET_SDK = 20
+    IS_TRAVIS = "true".equals(System.getenv("TRAVIS"))
+}
+
 android {
-    compileSdkVersion 19
-    buildToolsVersion "19.1.0"
+    compileSdkVersion TARGET_SDK
+    buildToolsVersion "20.0.0"
 
     defaultConfig {
         minSdkVersion 10
-        targetSdkVersion 19
+        targetSdkVersion TARGET_SDK
         versionCode 1
         versionName "1.0"
         applicationId "maurizi.geoclock"
@@ -17,6 +23,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    dexOptions {
+        preDexLibraries = !IS_TRAVIS
+    }
+
     buildTypes {
         release {
             runProguard false
@@ -28,6 +39,8 @@ android {
 apply plugin: 'android-unit-test'
 
 dependencies {
+    retrolambdaConfig 'net.orfjackal.retrolambda:retrolambda:1.5.0'
+
     compile 'com.android.support:support-v4:20.+'
     compile 'com.android.support:appcompat-v7:20.+'
     compile 'com.google.android.gms:play-services:4.4.+'
