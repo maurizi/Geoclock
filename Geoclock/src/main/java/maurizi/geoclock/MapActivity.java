@@ -22,18 +22,20 @@ import com.google.gson.Gson;
 
 import java.util.Collection;
 
+import lombok.Getter;
+
 
 public class MapActivity extends ActionBarActivity
 		implements NavigationDrawerFragment.NavigationDrawerCallbacks, AddGeoAlarmFragment.Listener {
 
 	private static final Gson gson = new Gson();
-
 	private static final int DEFAULT_ZOOM_LEVEL = 14;
 
+	private SupportMapFragment mapFragment = null;
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
 	 */
-	NavigationDrawerFragment navigationDrawerFragment;
+	@Getter NavigationDrawerFragment navigationDrawerFragment;
 	GoogleMap map = null;
 	private LocationClient locationClient = null;
 	private BiMap<GeoAlarm, Marker> markers = null;
@@ -43,28 +45,33 @@ public class MapActivity extends ActionBarActivity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
 
-		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+		mapFragment = new SupportMapFragment();
+		navigationDrawerFragment = new NavigationDrawerFragment();
+		getSupportFragmentManager().beginTransaction()
+		                           .replace(R.id.map, mapFragment)
+		                           .replace(R.id.navigation_drawer, navigationDrawerFragment)
+		                           .commit();
+
 		final LocationClientHandler handler = new LocationClientHandler();
 		locationClient = new LocationClient(this, handler, handler);
 		locationClient.connect();
 		markers = HashBiMap.create();
 
+		// Set up the drawer.
+		final DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+		navigationDrawerFragment.setUp(R.id.navigation_drawer, drawerLayout);
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		map = mapFragment.getMap();
 		if (map != null) {
 			map.setMyLocationEnabled(true);
 			map.setOnMapClickListener(this::showPopup);
 			map.setOnMarkerClickListener(this::showPopup);
 		}
 
-		navigationDrawerFragment =
-				(NavigationDrawerFragment) getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
-
-		// Set up the drawer.
-		navigationDrawerFragment.setUp(R.id.navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout));
-	}
-
-	@Override
-	public void onResume() {
-		super.onResume();
 		redrawGeoAlarms();
 	}
 

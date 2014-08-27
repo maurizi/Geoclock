@@ -1,10 +1,12 @@
-package maurizi.geoclock;
+package maurizi.geoclock.test;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+
+import maurizi.geoclock.MapActivity;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -13,9 +15,9 @@ import static org.junit.Assert.assertNotNull;
 public class MapActivityTest {
 
 	@Test
-	public void test_navigationDrawerGetsCreated() throws Exception {
+	public void test_navigationDrawerGetsCreated() {
 		MapActivity activity = Robolectric.buildActivity(MapActivity.class).create().get();
 
-		assertNotNull(activity.navigationDrawerFragment);
+		assertNotNull(activity.getNavigationDrawerFragment());
 	}
 }

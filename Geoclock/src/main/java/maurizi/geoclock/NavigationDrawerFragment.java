@@ -2,7 +2,6 @@ package maurizi.geoclock;
 
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
@@ -92,7 +91,6 @@ public class NavigationDrawerFragment extends Fragment {
 		geoAlarmAdapter = new ArrayAdapter<>(
 				getActionBar().getThemedContext(),
 				android.R.layout.simple_list_item_activated_1,
-				android.R.id.text1,
 				Lists.newArrayList(GeoAlarm.getGeoAlarms(getActivity()))
 		);
 		mDrawerListView.setAdapter(geoAlarmAdapter);

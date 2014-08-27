@@ -11,8 +11,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
@@ -36,12 +36,16 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Map;
 
+import butterknife.InjectView;
+import lombok.Getter;
+
 import static com.google.common.collect.Collections2.transform;
 
 
 /**
  * A simple {@link Fragment} subclass.
  */
+@Getter
 public class AddGeoAlarmFragment extends DialogFragment {
 
 	private SupportMapFragment mapFragment;
@@ -61,6 +65,15 @@ public class AddGeoAlarmFragment extends DialogFragment {
 
 	private LocationClient locationClient = null;
 
+	@InjectView(R.id.scrollView) LockableScrollView scrollView;
+	@InjectView(R.id.add_geo_alarm_name) TextView nameTextBox;
+	@InjectView(R.id.add_geo_alarm_radius) SeekBar radiusBar;
+	@InjectView(R.id.add_geo_alarm_time) TimePicker timePicker;
+
+	@InjectView(R.id.add_geo_alarm_cancel) Button cancelButton;
+	@InjectView(R.id.add_geo_alarm_delete) Button deleteButton;
+	@InjectView(R.id.add_geo_alarm_save) Button saveButton;
+
 	@Override
 	public void onResume() {
 		super.onResume();
@@ -78,24 +91,9 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		final boolean isEdit = args.containsKey(AddGeoAlarmFragment.EXISTING_ALARM);
 		final LatLng initalPoint = args.getParcelable(AddGeoAlarmFragment.INITIAL_LATLNG);
 		final float initalZoom = args.getFloat(AddGeoAlarmFragment.INITIAL_ZOOM);
-		final GeoAlarm alarm = isEdit
-		                       ? gson.fromJson(args.getString(AddGeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class)
-		                       : GeoAlarm.builder().location(initalPoint).radius(INITIAL_RADIUS).name("").build();
+		final GeoAlarm alarm = getEffectiveGeoAlarm(args, isEdit, initalPoint);
 
-		final LockableScrollView scrollView = (LockableScrollView) dialogView.findViewById(R.id.scrollView);
-
-		final EditText nameTextBox = (EditText) dialogView.findViewById(R.id.add_geo_alarm_name);
-		final SeekBar radiusBar = (SeekBar) dialogView.findViewById(R.id.add_geo_alarm_radius);
-		final Map<Integer, CheckBox> checkboxes =
-				ImmutableMap.<Integer, CheckBox>builder()
-				            .put(Calendar.SUNDAY, (CheckBox) dialogView.findViewById(R.id.sun))
-				            .put(Calendar.MONDAY, (CheckBox) dialogView.findViewById(R.id.mon))
-				            .put(Calendar.TUESDAY, (CheckBox) dialogView.findViewById(R.id.tues))
-				            .put(Calendar.WEDNESDAY, (CheckBox) dialogView.findViewById(R.id.wed))
-				            .put(Calendar.THURSDAY, (CheckBox) dialogView.findViewById(R.id.thu))
-				            .put(Calendar.FRIDAY, (CheckBox) dialogView.findViewById(R.id.fri))
-				            .put(Calendar.SATURDAY, (CheckBox) dialogView.findViewById(R.id.sat))
-				            .build();
+		final Map<Integer, CheckBox> checkboxes = getWeekdaysCheckBoxMap(dialogView);
 
 		map.moveCamera(CameraUpdateFactory.newLatLngZoom(alarm.location, initalZoom));
 		radiusBar.setProgress((int) alarm.radius);
@@ -107,7 +105,6 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		                                                       .radius(alarm.radius)
 		                                                       .fillColor(R.color.geofence_fill_color));
 
-		final TimePicker timePicker = (TimePicker) dialogView.findViewById(R.id.add_geo_alarm_time);
 		if (isEdit) {
 			timePicker.setCurrentHour(alarm.hour);
 			timePicker.setCurrentMinute(alarm.minute);
@@ -154,9 +151,8 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		});
 
 		final Dialog dialog = getDialog();
-		dialogView.findViewById(R.id.add_geo_alarm_cancel).setOnClickListener(view -> dialog.cancel());
+		cancelButton.setOnClickListener(view -> dialog.cancel());
 
-		Button deleteButton = (Button) dialogView.findViewById(R.id.add_geo_alarm_delete);
 		if (isEdit) {
 			deleteButton.setOnClickListener(view -> {
 				// TODO: Remove any existing notifications and geofences and alarms
@@ -169,7 +165,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		}
 
 		final Collection<String> savedNames = transform(GeoAlarm.getGeoAlarms(activity), savedAlarm -> savedAlarm.name);
-		dialogView.findViewById(R.id.add_geo_alarm_save).setOnClickListener(view -> {
+		saveButton.setOnClickListener(view -> {
 			final String name = nameTextBox.getText().toString();
 
 			if ("".equals(name) || savedNames.contains(name)) {
@@ -191,22 +187,21 @@ public class AddGeoAlarmFragment extends DialogFragment {
 
 			locationClient.addGeofences(Arrays.asList(newAlarm.getGeofence()),
 			                            GeofenceReceiver.getPendingIntent(getActivity()), (status, ids) -> {
-				if (status == LocationStatusCodes.SUCCESS) {
-					GeoAlarm addedAlarm = newAlarm.withGeofenceId(ids[0]);
-					GeoAlarm.replace(activity, alarm, addedAlarm);
-					activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
+						if (status == LocationStatusCodes.SUCCESS) {
+							GeoAlarm addedAlarm = newAlarm.withGeofenceId(ids[0]);
+							GeoAlarm.replace(activity, alarm, addedAlarm);
+							activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
 
-					dialog.dismiss();
-				}
-				locationClient.disconnect();
-			});
+							dialog.dismiss();
+						}
+						locationClient.disconnect();
+					});
 		});
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		final View dialogView = inflater.inflate(R.layout.fragment_add_geo_alarm_dialog, null);
-		getDialog().setTitle(R.string.add_geo_alarm_title);
+		final View dialogView = inflater.inflate(R.layout.fragment_add_geo_alarm_dialog, container, false);
 
 		final ToastLocationClientHandler handler = new ToastLocationClientHandler(getActivity());
 		locationClient = new LocationClient(getActivity(), handler, handler);
@@ -221,5 +216,23 @@ public class AddGeoAlarmFragment extends DialogFragment {
 
 		mapFragment = SupportMapFragment.newInstance();
 		getChildFragmentManager().beginTransaction().replace(R.id.add_geo_alarm_map_container, mapFragment).commit();
+	}
+
+	private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit, final LatLng initalPoint) {
+		return isEdit
+		       ? gson.fromJson(args.getString(AddGeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class)
+		       : GeoAlarm.builder().location(initalPoint).radius(INITIAL_RADIUS).name("").build();
+	}
+
+	private Map<Integer, CheckBox> getWeekdaysCheckBoxMap(final View dialogView) {
+		return ImmutableMap.<Integer, CheckBox>builder()
+		                   .put(Calendar.SUNDAY, (CheckBox) dialogView.findViewById(R.id.sun))
+		                   .put(Calendar.MONDAY, (CheckBox) dialogView.findViewById(R.id.mon))
+		                   .put(Calendar.TUESDAY, (CheckBox) dialogView.findViewById(R.id.tues))
+		                   .put(Calendar.WEDNESDAY, (CheckBox) dialogView.findViewById(R.id.wed))
+		                   .put(Calendar.THURSDAY, (CheckBox) dialogView.findViewById(R.id.thu))
+		                   .put(Calendar.FRIDAY, (CheckBox) dialogView.findViewById(R.id.fri))
+		                   .put(Calendar.SATURDAY, (CheckBox) dialogView.findViewById(R.id.sat))
+		                   .build();
 	}
 }

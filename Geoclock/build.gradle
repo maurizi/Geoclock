@@ -23,6 +23,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
+
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+
+    packagingOptions {
+        exclude 'META-INF/services/javax.annotation.processing.Processor'
+    }
 }
 
 apply plugin: 'android-unit-test'
@@ -35,6 +43,7 @@ dependencies {
     compile 'com.google.guava:guava:17.0'
     compile 'org.projectlombok:lombok:1.12.6'
     compile 'org.threeten:threetenbp:0.9'
+    compile 'com.jakewharton:butterknife:5.1.2'
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
     testCompile 'junit:junit:4.10'
