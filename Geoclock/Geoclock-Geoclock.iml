@@ -87,7 +87,7 @@
       <excludeFolder url="file://$MODULE_DIR$/build/test-results" />
     </content>
     <orderEntry type="library" exported="" scope="TEST" name="junit-4.10" level="project" />
-    <orderEntry type="jdk" jdkName="Android API 19 Platform" jdkType="Android SDK" />
+    <orderEntry type="jdk" jdkName="Android API 20 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="play-services-4.4.52" level="project" />
     <orderEntry type="library" exported="" name="gson-2.2.4" level="project" />
