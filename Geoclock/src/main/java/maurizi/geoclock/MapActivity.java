@@ -56,10 +56,6 @@ public class MapActivity extends ActionBarActivity
 		locationClient = new LocationClient(this, handler, handler);
 		locationClient.connect();
 		markers = HashBiMap.create();
-
-		// Set up the drawer.
-		final DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-		navigationDrawerFragment.setUp(R.id.navigation_drawer, drawerLayout);
 	}
 
 	@Override
@@ -71,6 +67,10 @@ public class MapActivity extends ActionBarActivity
 			map.setOnMapClickListener(this::showPopup);
 			map.setOnMarkerClickListener(this::showPopup);
 		}
+
+		// Set up the drawer.
+		final DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+		navigationDrawerFragment.setUp(R.id.navigation_drawer, drawerLayout);
 
 		redrawGeoAlarms();
 	}
