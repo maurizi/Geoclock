@@ -9,6 +9,8 @@ android:
     - build-tools-19.1.0
     - platform-tools
     - android-19
+    - sys-img-armeabi-v7a-android-19
+    - addon-google_apis-google-19
     - extra-android-m2repository
     - extra-google-m2repository
     - extra-android-support
@@ -22,7 +24,17 @@ android:
 
 before_install:
   - export "JAVA8_HOME=/usr/lib/jvm/java-8-oracle"
+  - echo no | android create avd --force -n test -t $ANDROID_TARGET --abi $ANDROID_ABI
+  - sleep 5
+  - emulator -avd test -no-skin -no-audio -no-window &
+  - sleep 30
+
+
+before_script:
+  - bash ci/wait_for_emulator.sh
+  - adb shell input keyevent 82 &
 
 script:
- - ./gradlew assembleDebug
- - ./gradlew testDebug
+  - ./gradlew assemble
+  - ./gradlew test
+  - ./gradlew connectedAndroidTest
