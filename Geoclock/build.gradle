@@ -42,7 +42,7 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4'
     compile 'com.google.guava:guava:17.0'
     compile 'org.projectlombok:lombok:1.12.6'
-    compile 'org.threeten:threetenbp:0.9'
+    compile 'org.threeten:threetenbp:1.0'
     compile 'com.jakewharton:butterknife:5.1.2'
     compile fileTree(dir: 'libs', include: ['*.jar'])
 

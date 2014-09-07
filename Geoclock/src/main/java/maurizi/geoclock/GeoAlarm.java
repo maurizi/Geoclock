@@ -10,9 +10,11 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
+import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.Duration;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalDateTime;
@@ -32,6 +34,7 @@ import lombok.experimental.Wither;
 import static com.google.common.collect.Collections2.filter;
 import static com.google.common.collect.Collections2.transform;
 import static java.util.Collections.min;
+import static org.threeten.bp.temporal.TemporalAdjusters.next;
 
 @Value
 @Builder
@@ -47,7 +50,7 @@ public class GeoAlarm {
 
 	@Nullable public final Integer hour;
 	@Nullable public final Integer minute;
-	@Nullable public final List<Integer> days;
+	@Nullable public final ImmutableSet<DayOfWeek> days;
 	@Nullable public final String geofenceId;
 
 	@Override
@@ -76,49 +79,47 @@ public class GeoAlarm {
 		return LocalTime.of(hour, minute);
 	}
 
-	private boolean isAlarmForToday() {
-		return getAlarmTime().isAfter(LocalTime.now());
+	private boolean isAlarmForToday(LocalDateTime now) {
+		return getAlarmTime().isAfter(now.toLocalTime());
 	}
 
 	/**
 	 * @return A Date object for just before the alarm is due to go off
 	 */
-	public long getAlarmManagerTime() {
+	public long getAlarmManagerTime(LocalDateTime now) {
 		final LocalTime alarmTime = getAlarmTime();
 
-		final LocalDateTime alarmDateTime = days.isEmpty()
-		                                    ? alarmTime.atDate(isAlarmForToday()
-		                                                       ? LocalDate.now()
-		                                                       : LocalDate.now().plusDays(1))
-		                                    : alarmTime.atDate(getSoonestDayForRepeatingAlarm());
+		final LocalDateTime alarmDateTime = days == null || days.isEmpty()
+		                                    ? alarmTime.atDate(isAlarmForToday(now)
+		                                                       ? now.toLocalDate()
+		                                                       : now.toLocalDate().plusDays(1))
+		                                    : alarmTime.atDate(getSoonestDayForRepeatingAlarm(now));
 
 		return alarmDateTime.atZone(ZoneId.systemDefault()).toEpochSecond();
 	}
 
-	private LocalDate getSoonestDayForRepeatingAlarm() {
-		if (days.isEmpty()) {
+	private LocalDate getSoonestDayForRepeatingAlarm(LocalDateTime now) {
+		if (days == null || days.isEmpty()) {
 			throw new AssertionError();
 		}
 
-		final int currentDayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
+		final DayOfWeek currentDayOfWeek = now.getDayOfWeek();
 
-		if (isAlarmForToday() && days.contains(currentDayOfWeek)) {
-			return LocalDate.now();
+		if (isAlarmForToday(now) && days.contains(currentDayOfWeek)) {
+			return now.toLocalDate();
 		}
 
-		final Collection<Integer> daysAfterToday = filter(days, weekday -> weekday > currentDayOfWeek);
+		final Collection<DayOfWeek> daysAfterToday = filter(days, weekday -> weekday.getValue() > currentDayOfWeek.getValue());
 
-		final Collection<Integer> daysTodayAndBefore = filter(days, weekday -> weekday <= currentDayOfWeek);
-		final Collection<Integer> daysNextWeek = transform(daysTodayAndBefore, weekday -> weekday + 7);
+		final Collection<DayOfWeek> daysTodayAndBefore = filter(days, weekday -> weekday.getValue() <=
+		                                                                         currentDayOfWeek.getValue());
 
-		final Collection<Integer> allDays = new ArrayList<Integer>() {{
-			addAll(daysAfterToday);
-			addAll(daysNextWeek);
-		}};
+		final ImmutableList<DayOfWeek> allDays = ImmutableList.<DayOfWeek>builder()
+		                                                      .addAll(daysAfterToday)
+		                                                      .addAll(daysTodayAndBefore).build();
 
-		final int daysFromNow = min(allDays) - currentDayOfWeek;
-
-		return LocalDate.now().plusDays(daysFromNow);
+		final DayOfWeek nextDayForAlarm = allDays.get(0);
+		return now.toLocalDate().with(next(nextDayForAlarm));
 	}
 
 	static Collection<GeoAlarm> getGeoAlarms(Context context) {

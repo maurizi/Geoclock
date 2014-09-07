@@ -26,10 +26,14 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
+
+import org.threeten.bp.DayOfWeek;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -93,7 +97,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		final float initalZoom = args.getFloat(AddGeoAlarmFragment.INITIAL_ZOOM);
 		final GeoAlarm alarm = getEffectiveGeoAlarm(args, isEdit, initalPoint);
 
-		final Map<Integer, CheckBox> checkboxes = getWeekdaysCheckBoxMap(dialogView);
+		final Map<DayOfWeek, CheckBox> checkboxes = getWeekdaysCheckBoxMap(dialogView);
 
 		map.moveCamera(CameraUpdateFactory.newLatLngZoom(alarm.location, initalZoom));
 		radiusBar.setProgress((int) alarm.radius);
@@ -109,7 +113,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 			timePicker.setCurrentHour(alarm.hour);
 			timePicker.setCurrentMinute(alarm.minute);
 			nameTextBox.setText(alarm.name);
-			for (int day : alarm.days) {
+			for (DayOfWeek day : alarm.days) {
 				checkboxes.get(day).setChecked(true);
 			}
 		}
@@ -177,9 +181,9 @@ public class AddGeoAlarmFragment extends DialogFragment {
 			                                  .location(marker.getPosition())
 			                                  .name(name)
 			                                  .radius(radiusBar.getProgress())
-			                                  .days(Lists.newArrayList(Maps.filterValues(checkboxes,
-			                                                                             CompoundButton::isChecked)
-			                                                               .keySet()))
+			                                  .days(ImmutableSet.copyOf(Maps.filterValues(checkboxes,
+			                                                                              CompoundButton::isChecked)
+			                                                                .keySet()))
 			                                  .hour(timePicker.getCurrentHour())
 			                                  .minute(timePicker.getCurrentMinute())
 			                                  .geofenceId(alarm.geofenceId)
@@ -224,15 +228,15 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		       : GeoAlarm.builder().location(initalPoint).radius(INITIAL_RADIUS).name("").build();
 	}
 
-	private Map<Integer, CheckBox> getWeekdaysCheckBoxMap(final View dialogView) {
-		return ImmutableMap.<Integer, CheckBox>builder()
-		                   .put(Calendar.SUNDAY, (CheckBox) dialogView.findViewById(R.id.sun))
-		                   .put(Calendar.MONDAY, (CheckBox) dialogView.findViewById(R.id.mon))
-		                   .put(Calendar.TUESDAY, (CheckBox) dialogView.findViewById(R.id.tues))
-		                   .put(Calendar.WEDNESDAY, (CheckBox) dialogView.findViewById(R.id.wed))
-		                   .put(Calendar.THURSDAY, (CheckBox) dialogView.findViewById(R.id.thu))
-		                   .put(Calendar.FRIDAY, (CheckBox) dialogView.findViewById(R.id.fri))
-		                   .put(Calendar.SATURDAY, (CheckBox) dialogView.findViewById(R.id.sat))
+	private Map<DayOfWeek, CheckBox> getWeekdaysCheckBoxMap(final View dialogView) {
+		return ImmutableMap.<DayOfWeek, CheckBox>builder()
+		                   .put(DayOfWeek.SUNDAY, (CheckBox) dialogView.findViewById(R.id.sun))
+		                   .put(DayOfWeek.MONDAY, (CheckBox) dialogView.findViewById(R.id.mon))
+		                   .put(DayOfWeek.TUESDAY, (CheckBox) dialogView.findViewById(R.id.tues))
+		                   .put(DayOfWeek.WEDNESDAY, (CheckBox) dialogView.findViewById(R.id.wed))
+		                   .put(DayOfWeek.THURSDAY, (CheckBox) dialogView.findViewById(R.id.thu))
+		                   .put(DayOfWeek.FRIDAY, (CheckBox) dialogView.findViewById(R.id.fri))
+		                   .put(DayOfWeek.SATURDAY, (CheckBox) dialogView.findViewById(R.id.sat))
 		                   .build();
 	}
 }
