@@ -38,3 +38,6 @@ script:
   - ./gradlew assemble
   - ./gradlew test
   - ./gradlew connectedAndroidTest
+
+after_success:
+  - ./gradlew jacocoTestReport coveralls

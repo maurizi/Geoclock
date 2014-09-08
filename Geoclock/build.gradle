@@ -1,6 +1,5 @@
 apply plugin: 'com.android.application'
 apply plugin: 'retrolambda'
-apply plugin: 'jacoco'
 
 android {
     compileSdkVersion 19
@@ -54,6 +53,13 @@ dependencies {
     testCompile 'org.robolectric:robolectric:2.3'
 }
 
+apply plugin: 'jacoco'
+apply plugin: 'com.github.kt3k.coveralls'
+
+coveralls {
+    jacocoReportPath 'build/reports/jacoco/test/jacocoTestReport.xml'
+}
+
 jacoco {
     toolVersion = "0.7.1.201405082137"
 }
@@ -61,7 +67,7 @@ jacoco {
 // Define coverage source.
 // If you have rs/aidl etc... add them here.
 def coverageSourceDirs = [
-        'src/main/java'
+    'src/main/java'
 ]
 
 // This differs per what flavors buildTypes etc.
@@ -104,5 +110,8 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
             newPath, oldPath ->
                 new File(newPath).renameTo(oldPath)
         }
+
+        // Move report into location where coveralls is looking for it
+        new File('Geoclock/build/reports/jacoco/jacocoTestReport').renameTo('Geoclock/build/reports/jacoco/test')
     }
 }
