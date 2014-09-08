@@ -35,9 +35,8 @@ before_script:
   - adb shell input keyevent 82 &
 
 script:
-  - ./gradlew assemble
+  - ./gradlew connectedAndroidTest -PdisablePreDex
   - ./gradlew test
-  - ./gradlew connectedAndroidTest
 
 after_success:
   - ./gradlew jacocoTestReport coveralls
