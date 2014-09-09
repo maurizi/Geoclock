@@ -7,12 +7,26 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:0.12.2'
         classpath 'me.tatarka:gradle-retrolambda:2.2.3'
-        classpath 'com.github.jcandksolutions.gradle:android-unit-test:1.2.+'
+        classpath 'com.github.jcandksolutions.gradle:android-unit-test:1.2.3'
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:1.0.2'
     }
 }
+
 
 allprojects {
     repositories {
         mavenCentral()
+    }
+}
+
+project.ext.preDexLibs = !project.hasProperty('disablePreDex')
+
+subprojects {
+    project.plugins.whenPluginAdded { plugin ->
+        if ("com.android.build.gradle.AppPlugin".equals(plugin.class.name)) {
+            project.android.dexOptions.preDexLibraries = rootProject.ext.preDexLibs
+        } else if ("com.android.build.gradle.LibraryPlugin".equals(plugin.class.name)) {
+            project.android.dexOptions.preDexLibraries = rootProject.ext.preDexLibs
+        }
     }
 }

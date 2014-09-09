@@ -22,6 +22,9 @@ android {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
+        debug {
+            testCoverageEnabled true
+        }
     }
 
     lintOptions {
@@ -48,4 +51,67 @@ dependencies {
 
     testCompile 'junit:junit:4.10'
     testCompile 'org.robolectric:robolectric:2.3'
+}
+
+apply plugin: 'jacoco'
+apply plugin: 'com.github.kt3k.coveralls'
+
+coveralls {
+    jacocoReportPath 'build/reports/jacoco/test/jacocoTestReport.xml'
+}
+
+jacoco {
+    toolVersion = "0.7.1.201405082137"
+}
+
+// Define coverage source.
+// If you have rs/aidl etc... add them here.
+def coverageSourceDirs = [
+    'src/main/java'
+]
+
+// This differs per what flavors buildTypes etc.
+// But this example shows the 'testDebug'
+// which is standard for Robolectric
+task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports after running tests."
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+    classDirectories = fileTree(
+            dir: './build/intermediates/classes/debug',
+            excludes: ['**/R.class',
+                       '**/R$*.class',
+                       '**/*$InjectAdapter.class',
+                       '**/*$ModuleAdapter.class',
+                       '**/*$ViewInjector*.class'
+            ])
+    sourceDirectories = files(coverageSourceDirs)
+    executionData = files('build/jacoco/testDebug.exec')
+
+    renamedFilesMap = [:]
+
+    // Hacky fix for issue: https://code.google.com/p/android/issues/detail?id=69174.
+    // Rename files with '$$' before generating report, and then rename back after
+    doFirst {
+        new File('Geoclock/build/intermediates/classes/debug').eachFileRecurse { file ->
+            if (file.name.contains('$$')) {
+                oldPath = file.path
+                newPath = oldPath.replace('$$', '$')
+                file.renameTo(newPath)
+                renamedFilesMap[newPath] = oldPath
+            }
+        }
+    }
+    doLast {
+        renamedFilesMap.each() {
+            newPath, oldPath ->
+                new File(newPath).renameTo(oldPath)
+        }
+
+        // Move report into location where coveralls is looking for it
+        new File('Geoclock/build/reports/jacoco/jacocoTestReport').renameTo('Geoclock/build/reports/jacoco/test')
+    }
 }
