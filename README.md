@@ -1,4 +1,5 @@
 [![Travis build status](https://travis-ci.org/maurizi/Geoclock.png?branch=master)](https://travis-ci.org/maurizi/Geoclock)
+[![Coveralls coverage percentage](https://coveralls.io/repos/maurizi/Geoclock/badge.png?branch=master)](https://coveralls.io/r/maurizi/Geoclock)
 
 Geoclock
 ========
