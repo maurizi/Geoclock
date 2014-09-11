@@ -1,6 +1,5 @@
 package maurizi.geoclock;
 
-import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
@@ -35,8 +34,8 @@ public class MapActivity extends ActionBarActivity
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
 	 */
-	@Getter NavigationDrawerFragment navigationDrawerFragment;
-	GoogleMap map = null;
+	private NavigationDrawerFragment navigationDrawerFragment;
+	private GoogleMap map = null;
 	private LocationClient locationClient = null;
 	private BiMap<GeoAlarm, Marker> markers = null;
 

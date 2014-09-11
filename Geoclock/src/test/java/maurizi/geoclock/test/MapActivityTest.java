@@ -1,7 +1,6 @@
 package maurizi.geoclock.test;
 
-import android.os.Build;
-import android.os.Build.VERSION_CODES;
+import com.google.android.gms.maps.SupportMapFragment;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -12,8 +11,10 @@ import org.robolectric.annotation.Config;
 import org.robolectric.util.ActivityController;
 
 import maurizi.geoclock.MapActivity;
+import maurizi.geoclock.NavigationDrawerFragment;
+import maurizi.geoclock.R;
 
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(emulateSdk = 18)
@@ -29,6 +30,7 @@ public class MapActivityTest {
 	@Test
 	public void test_onCreate() {
 		MapActivity activity = controller.create().get();
-		assertNotNull(activity.getNavigationDrawerFragment());
+		assertThat(activity.getSupportFragmentManager().findFragmentById(R.id.navigation_drawer)).isInstanceOf(NavigationDrawerFragment.class);
+		assertThat(activity.getSupportFragmentManager().findFragmentById(R.id.map)).isInstanceOf(SupportMapFragment.class);
 	}
 }
