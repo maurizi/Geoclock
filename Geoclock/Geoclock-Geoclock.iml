@@ -115,13 +115,13 @@
     <orderEntry type="library" exported="" scope="TEST" name="threetenbp-1.0" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="maven-error-diagnostics-2.2.1" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="asm-commons-5.0.1" level="project" />
-    <orderEntry type="library" exported="" scope="TEST" name="mockito-core-1.9.5" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="commons-logging-1.1.1" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="httpclient-4.0.3" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="maven-plugin-registry-2.2.1" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="maven-profile-2.2.1" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="assertj-android-appcompat-v7-1.0.0" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="assertj-android-play-services-1.0.0" level="project" />
+    <orderEntry type="library" exported="" scope="TEST" name="mockito-core-1.9.0" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="support-v4-20.0.0" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="assertj-android-support-v4-1.0.0" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="lombok-1.12.6" level="project" />
