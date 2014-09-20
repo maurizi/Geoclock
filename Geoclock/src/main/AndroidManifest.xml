@@ -42,7 +42,7 @@
             android:enabled="true"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.maurizi"/>
+                <action android:name="maurizi.geoclock.RECEIVE_GEOFENCE"/>
             </intent-filter>
         </receiver>
     </application>
