@@ -5,26 +5,32 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.LocationClient;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import java.util.Collection;
 import java.util.List;
 
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
 
 public class GeofenceReceiver extends AbstractGeoReceiver {
-
 	private static final int NOTIFICATION_ID = 42;
+
+	private static final String ACTIVE_ALARM_PREFS = "active_alarm_prefs";
 
 	@Override
 	public void onConnected(Bundle bundle) {
 		int transition = LocationClient.getGeofenceTransition(this.intent);
 		List<Geofence> affectedGeofences = LocationClient.getTriggeringGeofences(intent);
+
 		List<GeoAlarm> affectedAlarms = Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context));
 
 		/* TODO: Need to keep track of which notifications are being shown currently
@@ -77,5 +83,10 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 	public static PendingIntent getPendingIntent(Context context) {
 		Intent intent = new Intent(context, GeofenceReceiver.class);
 		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+	}
+
+	private ImmutableSet<GeoAlarm> getActiveAlarms() {
+		SharedPreferences activeAlarmsPrefs = context.getSharedPreferences(ACTIVE_ALARM_PREFS, Context.MODE_PRIVATE);
+		// TODO:
 	}
 }
