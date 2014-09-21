@@ -15,32 +15,43 @@ import com.google.android.gms.location.LocationClient;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.gson.Gson;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
+import static com.google.common.collect.Collections2.transform;
+import static com.google.common.collect.Sets.difference;
+import static com.google.common.collect.Sets.union;
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
 
 public class GeofenceReceiver extends AbstractGeoReceiver {
+	private static final Gson gson = new Gson();
+
 	private static final int NOTIFICATION_ID = 42;
 
 	private static final String ACTIVE_ALARM_PREFS = "active_alarm_prefs";
 
+	private interface SetOp<T> {
+		Set<T> apply(Set<T> a, Set<T> b);
+	}
+
 	@Override
 	public void onConnected(Bundle bundle) {
-		int transition = LocationClient.getGeofenceTransition(this.intent);
-		List<Geofence> affectedGeofences = LocationClient.getTriggeringGeofences(intent);
+		final int transition = LocationClient.getGeofenceTransition(this.intent);
 
-		List<GeoAlarm> affectedAlarms = Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context));
+		final List<Geofence> affectedGeofences = LocationClient.getTriggeringGeofences(intent);
+		final ImmutableSet<GeoAlarm> affectedAlarms = ImmutableSet.copyOf(Lists.transform(affectedGeofences,
+		                                                                                  getGeoAlarmForGeofenceFn(context)));
 
 		/* TODO: Need to keep track of which notifications are being shown currently
 		 * When you leave a GeoFence, you may still have some alarms left due to overlapping geofences
 		 * So we need to know if (current alarms - removedAlarms) is empty before removing the notifications
 		 */
-		final NotificationManager notificationManager =
-				(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 		if ((transition == Geofence.GEOFENCE_TRANSITION_ENTER)) {
-			setNotification(notificationManager);
+			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::difference);
 
 			// TODO: Use Alarm Manager to set alarms, using GeoAlarm.getAlarmManagerTime
 //			final AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -49,13 +60,20 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 //			}
 
 		} else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-			notificationManager.cancelAll();
+			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::difference);
 			// TODO: Reset by iterating through geofences?? It's unclear
 			// TODO: Remove AlarmMAnager alarms for geofences we are leaving
 		}
 	}
 
-	private void setNotification(final NotificationManager manager) {
+	private void setNotification(final ImmutableSet<GeoAlarm> activeAlarms) {
+		final NotificationManager notificationManager =
+				(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+		if (activeAlarms.isEmpty()) {
+			notificationManager.cancelAll();
+			return;
+		}
+
 		// Create an content intent that comes with a back stack
 		// This makes hitting back from the activity go to the home screen
 		TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
@@ -77,7 +95,7 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 				.build();
 
 		// Issue the notification
-		manager.notify(NOTIFICATION_ID, notification);
+		notificationManager.notify(NOTIFICATION_ID, notification);
 	}
 
 	public static PendingIntent getPendingIntent(Context context) {
@@ -85,8 +103,16 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
-	private ImmutableSet<GeoAlarm> getActiveAlarms() {
-		SharedPreferences activeAlarmsPrefs = context.getSharedPreferences(ACTIVE_ALARM_PREFS, Context.MODE_PRIVATE);
-		// TODO:
+	private ImmutableSet<GeoAlarm> changeActiveAlarms(ImmutableSet<GeoAlarm> triggerAlarms, SetOp<GeoAlarm> op) {
+		final SharedPreferences activeAlarmsPrefs = context.getSharedPreferences(ACTIVE_ALARM_PREFS, Context.MODE_PRIVATE);
+
+		final String savedActiveAlarmsJson = activeAlarmsPrefs.getString(ACTIVE_ALARM_PREFS, gson.toJson(new GeoAlarm[] {}));
+		final Set<GeoAlarm> savedAlarms = ImmutableSet.copyOf(gson.fromJson(savedActiveAlarmsJson, GeoAlarm[].class));
+
+		final ImmutableSet<GeoAlarm> currentAlarms = ImmutableSet.copyOf(op.apply(savedAlarms, triggerAlarms));
+		activeAlarmsPrefs.edit().putString(ACTIVE_ALARM_PREFS, gson.toJson(currentAlarms.toArray())).apply();
+		setNotification(currentAlarms);
+
+		return currentAlarms;
 	}
 }
