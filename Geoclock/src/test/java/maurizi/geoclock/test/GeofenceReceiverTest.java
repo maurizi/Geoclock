@@ -19,19 +19,30 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowApplication;
 import org.robolectric.shadows.ShadowApplication.Wrapper;
+import org.robolectric.shadows.ShadowNotification;
+import org.robolectric.shadows.ShadowNotificationManager;
 
 import java.util.List;
 
+import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.GeofenceReceiver;
 import maurizi.geoclock.test.shadows.ShadowLocationClient;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.robolectric.Robolectric.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(emulateSdk = 18, shadows = {ShadowLocationClient.class})
 public class GeofenceReceiverTest {
+
+	static final Geofence mockGeofence = mock(Geofence.class);
+
+	@Before
+	public void setUp() {
+		when(mockGeofence.getRequestId()).thenReturn(GeoAlarmTest.testAlarm.geofenceId);
+	}
 
 	@Test
 	public void testBroadcastReceiverRegistered() {
@@ -82,13 +93,22 @@ public class GeofenceReceiverTest {
 
 	@Test
 	public void testNotificationIsAdded() {
-		NotificationManager notificationManager = (NotificationManager) Robolectric.application.getSystemService(Context.NOTIFICATION_SERVICE);
-		ShadowLocationClient.setGeofences(ImmutableList.of(mock(Geofence.class)));
+		final NotificationManager notificationManager = (NotificationManager) Robolectric.application.getSystemService(Context.NOTIFICATION_SERVICE);
 
-		GeofenceReceiver receiver = setupGeofenceReceiver();
+		final GeoAlarm testAlarm = GeoAlarmTest.testAlarm.withHour(5).withMinute(0).withName("Place");
+		GeoAlarm.add(Robolectric.application, testAlarm);
+
+		final GeoAlarm laterTestAlarm = testAlarm.withHour(6).withName("Later").withGeofenceId("Different");
+		GeoAlarm.add(Robolectric.application, laterTestAlarm);
+		ShadowLocationClient.setGeofences(ImmutableList.of(mockGeofence));
+
+		final GeofenceReceiver receiver = setupGeofenceReceiver();
 		receiver.onConnected(new Bundle());
 
-		assertEquals(1, shadowOf(notificationManager).size());
+		final ShadowNotificationManager notificationManagerShadow = shadowOf(notificationManager);
+		assertEquals(1, notificationManagerShadow.size());
+		final ShadowNotification notificationShadow = shadowOf(notificationManagerShadow.getAllNotifications().get(0));
+		assertEquals("Alarm at 5:00 AM for Place", notificationShadow.getContentText());
 	}
 
 	private GeofenceReceiver setupGeofenceReceiver() {
