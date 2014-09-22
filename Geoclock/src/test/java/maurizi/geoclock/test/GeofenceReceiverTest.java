@@ -22,16 +22,25 @@ import org.robolectric.shadows.ShadowApplication.Wrapper;
 
 import java.util.List;
 
+import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.GeofenceReceiver;
 import maurizi.geoclock.test.shadows.ShadowLocationClient;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.robolectric.Robolectric.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(emulateSdk = 18, shadows = {ShadowLocationClient.class})
 public class GeofenceReceiverTest {
+
+	static final Geofence mockGeofence = mock(Geofence.class);
+
+	@Before
+	public void setUp() {
+		when(mockGeofence.getRequestId()).thenReturn(GeoAlarmTest.testAlarm.geofenceId);
+	}
 
 	@Test
 	public void testBroadcastReceiverRegistered() {
@@ -83,6 +92,8 @@ public class GeofenceReceiverTest {
 	@Test
 	public void testNotificationIsAdded() {
 		NotificationManager notificationManager = (NotificationManager) Robolectric.application.getSystemService(Context.NOTIFICATION_SERVICE);
+
+		GeoAlarm.add(Robolectric.application, GeoAlarmTest.testAlarm);
 		ShadowLocationClient.setGeofences(ImmutableList.of(mock(Geofence.class)));
 
 		GeofenceReceiver receiver = setupGeofenceReceiver();
