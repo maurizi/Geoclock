@@ -18,13 +18,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 
-import java.util.Collection;
+import org.threeten.bp.LocalDateTime;
+import org.threeten.bp.ZonedDateTime;
+import org.threeten.bp.format.DateTimeFormatter;
+import org.threeten.bp.format.FormatStyle;
+
 import java.util.List;
 import java.util.Set;
 
 import static com.google.common.collect.Collections2.transform;
-import static com.google.common.collect.Sets.difference;
-import static com.google.common.collect.Sets.union;
+import static java.util.Collections.min;
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
 
 public class GeofenceReceiver extends AbstractGeoReceiver {
@@ -51,7 +54,7 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 		 * So we need to know if (current alarms - removedAlarms) is empty before removing the notifications
 		 */
 		if ((transition == Geofence.GEOFENCE_TRANSITION_ENTER)) {
-			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::difference);
+			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::union);
 
 			// TODO: Use Alarm Manager to set alarms, using GeoAlarm.getAlarmManagerTime
 //			final AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -74,6 +77,10 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 			return;
 		}
 
+		final LocalDateTime now = LocalDateTime.now();
+		final ZonedDateTime nextAlarmTime = min(transform(activeAlarms, alarm -> alarm.getAlarmManagerTime(now)));
+		final String alarmFormattedTime = nextAlarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT));
+
 		// Create an content intent that comes with a back stack
 		// This makes hitting back from the activity go to the home screen
 		TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
@@ -82,15 +89,14 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 
 		PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-		// TODO: Fill in <ENTER TIME HERE>
 		// TODO: Add a cancel button
 		// TODO: Make clicking the notification open the GeoAlarmFragment
 		Notification notification = new NotificationCompat
 				.Builder(context)
 				.setSmallIcon(R.drawable.ic_launcher)
 				.setOngoing(true)
-				.setContentTitle("Alarm")
-				.setContentText("Next alarm goes off in <ENTER TIME HERE>")
+				.setContentTitle("Geo-Alarm")
+				.setContentText(String.format("Alarm in %s", alarmFormattedTime))
 				.setContentIntent(notificationPendingIntent)
 				.build();
 
