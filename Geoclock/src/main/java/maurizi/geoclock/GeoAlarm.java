@@ -2,6 +2,7 @@ package maurizi.geoclock;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.support.annotation.Nullable;
 
 import com.google.android.gms.location.Geofence;
@@ -20,6 +21,7 @@ import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.LocalTime;
 import org.threeten.bp.ZoneId;
+import org.threeten.bp.ZonedDateTime;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -86,7 +88,7 @@ public class GeoAlarm {
 	/**
 	 * @return A Date object for just before the alarm is due to go off
 	 */
-	public long getAlarmManagerTime(LocalDateTime now) {
+	public ZonedDateTime getAlarmManagerTime(LocalDateTime now) {
 		final LocalTime alarmTime = getAlarmTime();
 
 		final LocalDateTime alarmDateTime = days == null || days.isEmpty()
@@ -95,7 +97,7 @@ public class GeoAlarm {
 		                                                       : now.toLocalDate().plusDays(1))
 		                                    : alarmTime.atDate(getSoonestDayForRepeatingAlarm(now));
 
-		return alarmDateTime.atZone(ZoneId.systemDefault()).toEpochSecond();
+		return alarmDateTime.atZone(ZoneId.systemDefault());
 	}
 
 	private LocalDate getSoonestDayForRepeatingAlarm(LocalDateTime now) {
@@ -122,7 +124,7 @@ public class GeoAlarm {
 		return now.toLocalDate().with(next(nextDayForAlarm));
 	}
 
-	static Collection<GeoAlarm> getGeoAlarms(Context context) {
+	public static Collection<GeoAlarm> getGeoAlarms(Context context) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
 		return ImmutableList.<GeoAlarm>builder()
 		                    .addAll(filter(transform(prefs.getAll().values(), GeoAlarm::parse),
@@ -130,20 +132,26 @@ public class GeoAlarm {
 		                    .build();
 	}
 
-	static Function<Geofence, GeoAlarm> getGeoAlarmForGeofenceFn(Context context) {
-		SharedPreferences prefs = getSharedAlarmPreferences(context);
+	public static Function<Geofence, GeoAlarm> getGeoAlarmForGeofenceFn(Context context) {
+		final SharedPreferences prefs = getSharedAlarmPreferences(context);
 		return geofence -> parse(prefs.getString(geofence.getRequestId(), null));
 	}
 
-	static void replace(Context context, GeoAlarm oldAlarm, GeoAlarm newAlarm) {
-		SharedPreferences prefs = getSharedAlarmPreferences(context);
-		prefs.edit()
-		     .remove(oldAlarm.geofenceId)
-		     .putString(newAlarm.geofenceId, gson.toJson(newAlarm, GeoAlarm.class))
-		     .commit();
+	public static void add(Context context, GeoAlarm newAlarm) {
+		replace(context, null, newAlarm);
 	}
 
-	static void remove(Context context, GeoAlarm oldAlarm) {
+	public static void replace(Context context, GeoAlarm oldAlarm, GeoAlarm newAlarm) {
+		SharedPreferences prefs = getSharedAlarmPreferences(context);
+		Editor editor = prefs.edit();
+		if (oldAlarm != null && prefs.contains(oldAlarm.geofenceId)) {
+			editor.remove(oldAlarm.geofenceId);
+		}
+		editor.putString(newAlarm.geofenceId, gson.toJson(newAlarm, GeoAlarm.class))
+		      .commit();
+	}
+
+	public static void remove(Context context, GeoAlarm oldAlarm) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
 		prefs.edit().remove(oldAlarm.geofenceId).commit();
 	}

@@ -11,6 +11,7 @@ import org.threeten.bp.DayOfWeek;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.ZoneId;
+import org.threeten.bp.ZonedDateTime;
 
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.MapActivity;
@@ -22,7 +23,7 @@ import static org.threeten.bp.temporal.TemporalAdjusters.nextOrSame;
 @SuppressWarnings("ConstantConditions")
 public class GeoAlarmTest {
 
-	private static final GeoAlarm testAlarm = GeoAlarm.builder()
+	static final GeoAlarm testAlarm = GeoAlarm.builder()
 			.name("test")
 			.location(new LatLng(0,0))
 			.radius(1000)
@@ -33,17 +34,16 @@ public class GeoAlarmTest {
 		assertAlarmManager(alarmHour, alarmDay, currentTime, expectedTime, new DayOfWeek[] {}, message);
 	}
 
-	private void assertAlarmManager(int alarmHour, int alarmMinutes, LocalDateTime currentTime, LocalDateTime expectedTime, DayOfWeek[] days, String message) {
+	private void assertAlarmManager(int alarmHour, int alarmMinutes, LocalDateTime currentTime, LocalDateTime expectedLocalTime, DayOfWeek[] days, String message) {
 		final GeoAlarm timedTestAlarm = testAlarm.withDays(ImmutableSet.copyOf(days))
 		                                         .withHour(alarmHour)
 		                                         .withMinute(alarmMinutes);
 
-		final long expectedMillis = expectedTime.atZone(ZoneId.systemDefault())
-		                                        .toEpochSecond();
+		final ZonedDateTime expectedTime = expectedLocalTime.atZone(ZoneId.systemDefault());
 
-		final long actualMillis = timedTestAlarm.getAlarmManagerTime(currentTime);
+		final ZonedDateTime actualTime = timedTestAlarm.getAlarmManagerTime(currentTime);
 
-		assertEquals(message, expectedMillis, actualMillis);
+		assertEquals(message, expectedTime, actualTime);
 	}
 	@Test
 	public void testAlarmManagerTime() {
