@@ -21,8 +21,6 @@ import com.google.gson.Gson;
 
 import java.util.Collection;
 
-import lombok.Getter;
-
 
 public class MapActivity extends ActionBarActivity
 		implements NavigationDrawerFragment.NavigationDrawerCallbacks, AddGeoAlarmFragment.Listener {

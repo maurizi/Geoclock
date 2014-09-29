@@ -23,10 +23,7 @@ import org.threeten.bp.LocalTime;
 import org.threeten.bp.ZoneId;
 import org.threeten.bp.ZonedDateTime;
 
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
-import java.util.List;
 
 import lombok.NonNull;
 import lombok.Value;
@@ -35,7 +32,6 @@ import lombok.experimental.Wither;
 
 import static com.google.common.collect.Collections2.filter;
 import static com.google.common.collect.Collections2.transform;
-import static java.util.Collections.min;
 import static org.threeten.bp.temporal.TemporalAdjusters.next;
 
 @Value

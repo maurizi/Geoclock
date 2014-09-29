@@ -1,9 +1,6 @@
 package maurizi.geoclock.test;
 
-import android.test.ActivityInstrumentationTestCase2;
-
 import com.google.android.gms.maps.model.LatLng;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
@@ -14,10 +11,8 @@ import org.threeten.bp.ZoneId;
 import org.threeten.bp.ZonedDateTime;
 
 import maurizi.geoclock.GeoAlarm;
-import maurizi.geoclock.MapActivity;
 
 import static org.junit.Assert.assertEquals;
-import static org.threeten.bp.temporal.TemporalAdjusters.next;
 import static org.threeten.bp.temporal.TemporalAdjusters.nextOrSame;
 
 @SuppressWarnings("ConstantConditions")
