@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import com.google.android.gms.location.Geofence;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.common.collect.ImmutableList;
 
 import org.junit.Assert;

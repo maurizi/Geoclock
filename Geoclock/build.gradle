@@ -50,13 +50,25 @@ dependencies {
 
     compile 'com.android.support:support-v4:20.0.0'
     compile 'com.android.support:appcompat-v7:20.0.0'
-    compile 'com.google.android.gms:play-services:4.4.52'
+    compile 'com.google.android.gms:play-services:5.2.08'
     compile 'com.google.code.gson:gson:2.2.4'
     compile 'com.google.guava:guava:17.0'
     compile 'org.projectlombok:lombok:1.12.6'
     compile 'org.threeten:threetenbp:1.0'
     compile 'com.jakewharton:butterknife:5.1.2'
     compile fileTree(dir: 'libs', include: ['*.jar'])
+}
+
+// Workaround for Google Play services + Retrolambda
+retrolambda {
+    jvmArgs '-noverify'
+}
+
+// Workaround for Google Play services + Robolectric
+tasks.whenTaskAdded { task ->
+    if ("testDebug".toString().equals(task.name.toString())) {
+        task.jvmArgs('-noverify')
+    }
 }
 
 apply plugin: 'jacoco'
@@ -97,7 +109,7 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
     sourceDirectories = files(coverageSourceDirs)
     executionData = files('build/jacoco/testDebug.exec')
 
-    renamedFilesMap = [:]
+    def renamedFilesMap = [:]
 
     // Hacky fix for issue: https://code.google.com/p/android/issues/detail?id=69174.
     // Rename files with '$$' before generating report, and then rename back after

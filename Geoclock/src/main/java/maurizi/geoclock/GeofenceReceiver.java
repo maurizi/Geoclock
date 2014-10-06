@@ -12,7 +12,6 @@ import android.support.v4.app.TaskStackBuilder;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.LocationClient;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -27,7 +26,6 @@ import org.threeten.bp.format.FormatStyle;
 import java.util.List;
 import java.util.Set;
 
-import static com.google.common.collect.Collections2.transform;
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
 
 public class GeofenceReceiver extends AbstractGeoReceiver {
