@@ -2,7 +2,7 @@ package maurizi.geoclock;
 
 import android.os.Bundle;
 
-public class BootReceiver extends AbstractGeoReceiver {
+public class BootReceiver extends AbstractGeoAlarmReceiver {
 
 	@Override
 	public void onConnected(Bundle bundle) {

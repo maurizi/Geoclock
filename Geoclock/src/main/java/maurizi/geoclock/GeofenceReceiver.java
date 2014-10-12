@@ -1,43 +1,26 @@
 package maurizi.geoclock;
 
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.TaskStackBuilder;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.LocationClient;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
-
-import org.threeten.bp.LocalDateTime;
-import org.threeten.bp.ZonedDateTime;
-import org.threeten.bp.format.DateTimeFormatter;
-import org.threeten.bp.format.FormatStyle;
 
 import java.util.List;
 import java.util.Set;
 
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
 
-public class GeofenceReceiver extends AbstractGeoReceiver {
+public class GeofenceReceiver extends AbstractGeoAlarmReceiver {
 	private static final Gson gson = new Gson();
-
-	private static final int NOTIFICATION_ID = 42;
-
 	private static final String ACTIVE_ALARM_PREFS = "active_alarm_prefs";
-
-	private interface SetOp<T> {
-		Set<T> apply(Set<T> a, Set<T> b);
-	}
 
 	@Override
 	public void onConnected(Bundle bundle) {
@@ -67,50 +50,12 @@ public class GeofenceReceiver extends AbstractGeoReceiver {
 		}
 	}
 
-	private void setNotification(final ImmutableSet<GeoAlarm> activeAlarms) {
-		final NotificationManager notificationManager =
-				(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-		if (activeAlarms.isEmpty()) {
-			notificationManager.cancelAll();
-			return;
-		}
-
-		final LocalDateTime now = LocalDateTime.now();
-		final GeoAlarm nextAlarm = Ordering.from(ZonedDateTime.timeLineOrder())
-		                                   .onResultOf((GeoAlarm alarm) -> alarm.getAlarmManagerTime(now))
-		                                   .min(activeAlarms);
-		final ZonedDateTime nextAlarmTime = nextAlarm.getAlarmManagerTime(now);
-		final String alarmFormattedTime = nextAlarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT));
-
-		// Create an content intent that comes with a back stack
-		// This makes hitting back from the activity go to the home screen
-		TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
-		stackBuilder.addParentStack(MapActivity.class);
-		stackBuilder.addNextIntent(new Intent(context, MapActivity.class));
-
-		PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
-
-		// TODO: Add a cancel button
-		// TODO: Make clicking the notification open the GeoAlarmFragment
-		Notification notification = new NotificationCompat
-				.Builder(context)
-				.setSmallIcon(R.drawable.ic_launcher)
-				.setOngoing(true)
-				.setContentTitle("Geo Alarm")
-				.setContentText(String.format("Alarm at %s for %s", alarmFormattedTime, nextAlarm.name))
-				.setContentIntent(notificationPendingIntent)
-				.build();
-
-		// Issue the notification
-		notificationManager.notify(NOTIFICATION_ID, notification);
-	}
-
 	public static PendingIntent getPendingIntent(Context context) {
 		Intent intent = new Intent(context, GeofenceReceiver.class);
 		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
-	private ImmutableSet<GeoAlarm> changeActiveAlarms(ImmutableSet<GeoAlarm> triggerAlarms, SetOp<GeoAlarm> op) {
+	protected ImmutableSet<GeoAlarm> changeActiveAlarms(ImmutableSet<GeoAlarm> triggerAlarms, SetOp<GeoAlarm> op) {
 		final SharedPreferences activeAlarmsPrefs = context.getSharedPreferences(ACTIVE_ALARM_PREFS, Context.MODE_PRIVATE);
 
 		final String savedActiveAlarmsJson = activeAlarmsPrefs.getString(ACTIVE_ALARM_PREFS, gson.toJson(new GeoAlarm[] {}));
