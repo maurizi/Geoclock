@@ -9,8 +9,4 @@ import android.view.Menu;
 
 @Implements(SupportMenuInflater.class)
 public class ShadowSupportMenuInflater extends ShadowMenuInflater {
-	@Implementation
-	public void inflate(int menuRes, Menu menu) {
-		super.inflate(menuRes, menu);
-	}
 }
