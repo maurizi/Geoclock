@@ -126,6 +126,7 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
     doLast {
         renamedFilesMap.each() {
             newPath, oldPath ->
+                //noinspection GroovyAssignabilityCheck
                 new File(newPath).renameTo(oldPath)
         }
 

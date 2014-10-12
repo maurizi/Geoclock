@@ -19,6 +19,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
+@SuppressWarnings("CanBeFinal")
 @Implements(LocationClient.class)
 public class ShadowLocationClient {
 	@Getter @Setter static LatLng location = new LatLng(0, 0);
