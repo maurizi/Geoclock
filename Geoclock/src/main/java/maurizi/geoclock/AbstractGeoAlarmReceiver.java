@@ -35,6 +35,7 @@ public abstract class AbstractGeoAlarmReceiver extends BroadcastReceiver
 	}
 
 	private static final int NOTIFICATION_ID = 42;
+
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		if (!LocationClient.hasError(intent)) {

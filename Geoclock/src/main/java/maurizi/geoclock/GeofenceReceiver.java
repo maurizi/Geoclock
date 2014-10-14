@@ -30,10 +30,6 @@ public class GeofenceReceiver extends AbstractGeoAlarmReceiver {
 		final ImmutableSet<GeoAlarm> affectedAlarms = ImmutableSet.copyOf(Lists.transform(affectedGeofences,
 		                                                                                  getGeoAlarmForGeofenceFn(context)));
 
-		/* TODO: Need to keep track of which notifications are being shown currently
-		 * When you leave a GeoFence, you may still have some alarms left due to overlapping geofences
-		 * So we need to know if (current alarms - removedAlarms) is empty before removing the notifications
-		 */
 		if ((transition == Geofence.GEOFENCE_TRANSITION_ENTER)) {
 			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::union);
 
