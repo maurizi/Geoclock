@@ -1,9 +1,13 @@
 package maurizi.geoclock;
 
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 
 import com.google.android.gms.location.Geofence;
@@ -12,6 +16,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+
+import org.threeten.bp.LocalDateTime;
 
 import java.util.List;
 import java.util.Set;
@@ -33,11 +39,19 @@ public class GeofenceReceiver extends AbstractGeoAlarmReceiver {
 		if ((transition == Geofence.GEOFENCE_TRANSITION_ENTER)) {
 			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::union);
 
-			// TODO: Use Alarm Manager to set alarms, using GeoAlarm.getAlarmManagerTime
-//			final AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-//			for (Geofence geofence : affectedGeofences) {
-//				manager.setExact(AlarmManager.RTC_WAKEUP, 1, PendingIntent.get);
-//			}
+			// TODO: cancel already set alarms
+			// TODO: Only setup AlarmManager for *next* alarm?
+			final AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+			for (GeoAlarm alarm : currentAlarms) {
+				final long alarmTime = alarm.getAlarmManagerTime(LocalDateTime.now()).toInstant().toEpochMilli();
+				final PendingIntent intent = AlarmManagerReceiver.getPendingIntent(context);
+
+				if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
+					manager.setExact(AlarmManager.RTC_WAKEUP, alarmTime, intent);
+				} else {
+					manager.set(AlarmManager.RTC_WAKEUP, alarmTime, intent);
+				}
+			}
 
 		} else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
 			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::difference);
