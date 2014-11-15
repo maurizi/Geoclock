@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
+import butterknife.ButterKnife;
 import butterknife.InjectView;
 import lombok.Getter;
 
@@ -206,8 +207,15 @@ public class AddGeoAlarmFragment extends DialogFragment {
 
 		final ToastLocationClientHandler handler = new ToastLocationClientHandler(getActivity());
 		locationClient = new LocationClient(getActivity(), handler, handler);
+		ButterKnife.inject(this, dialogView);
 
 		return dialogView;
+	}
+
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		ButterKnife.reset(this);
 	}
 
 	@Override
