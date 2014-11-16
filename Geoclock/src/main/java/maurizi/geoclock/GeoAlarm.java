@@ -11,7 +11,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -24,6 +23,7 @@ import org.threeten.bp.ZoneId;
 import org.threeten.bp.ZonedDateTime;
 
 import java.util.Collection;
+import java.util.Set;
 
 import lombok.NonNull;
 import lombok.Value;
@@ -48,7 +48,7 @@ public class GeoAlarm {
 
 	@Nullable public final Integer hour;
 	@Nullable public final Integer minute;
-	@Nullable public final ImmutableSet<DayOfWeek> days;
+	@Nullable public final Set<DayOfWeek> days;
 	@Nullable public final String geofenceId;
 
 	@Override
