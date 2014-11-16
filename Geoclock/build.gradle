@@ -100,6 +100,8 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
                        '**/*$ModuleAdapter.class',
                        '**/*$ViewInjector*.class'
             ])
+
+    additionalSourceDirs = files(coverageSourceDirs)
     sourceDirectories = files(coverageSourceDirs)
     executionData = files('build/jacoco/testDebug.exec')
 
@@ -110,8 +112,8 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
     doFirst {
         new File('Geoclock/build/intermediates/classes/debug').eachFileRecurse { file ->
             if (file.name.contains('$$')) {
-                oldPath = file.path
-                newPath = oldPath.replace('$$', '$')
+                def oldPath = file.path
+                def newPath = oldPath.replace('$$', '$')
                 file.renameTo(newPath)
                 renamedFilesMap[newPath] = oldPath
             }
@@ -119,9 +121,8 @@ task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
     }
     doLast {
         renamedFilesMap.each() {
-            newPath, oldPath ->
-                //noinspection GroovyAssignabilityCheck
-                new File(newPath).renameTo(oldPath)
+            def newPath, def oldPath ->
+                new File(newPath as String).renameTo(oldPath as String)
         }
 
         // Move report into location where coveralls is looking for it
