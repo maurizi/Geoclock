@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 import static org.robolectric.Robolectric.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(emulateSdk = 18, shadows = {ShadowLocationClient.class})
+@Config(emulateSdk = 18, reportSdk = 18, shadows = {ShadowLocationClient.class})
 public class GeofenceReceiverTest {
 
 	static final Geofence mockGeofence = mock(Geofence.class);

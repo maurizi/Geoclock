@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(emulateSdk = 18, shadows = {ShadowSupportMenuInflater.class})
+@Config(emulateSdk = 18, reportSdk = 18, shadows = {ShadowSupportMenuInflater.class})
 public class MapActivityTest {
 
 	private ActivityController<MapActivity> controller;
