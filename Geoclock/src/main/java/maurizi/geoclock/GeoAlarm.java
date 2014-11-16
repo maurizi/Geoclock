@@ -74,6 +74,9 @@ public class GeoAlarm {
 	}
 
 	private LocalTime getAlarmTime() {
+		if (hour == null || minute == null) {
+			return null;
+		}
 		return LocalTime.of(hour, minute);
 	}
 
