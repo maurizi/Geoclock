@@ -41,7 +41,7 @@ apply plugin: 'android-unit-test'
 
 dependencies {
     // Robolectric must come before the support libraries in order for it to work
-    testCompile 'org.robolectric:robolectric:2.3'
+    testCompile 'org.robolectric:robolectric:2.4'
     testCompile 'junit:junit:4.10'
     testCompile 'com.squareup.assertj:assertj-android:1.0.0'
     testCompile 'com.squareup.assertj:assertj-android-support-v4:1.0.0'
@@ -63,13 +63,6 @@ dependencies {
 // Workaround for Google Play services + Retrolambda
 retrolambda {
     jvmArgs '-noverify'
-}
-
-// Workaround for Google Play services + Robolectric
-tasks.whenTaskAdded { task ->
-    if ("testDebug".toString().equals(task.name.toString())) {
-        task.jvmArgs('-noverify')
-    }
 }
 
 apply plugin: 'jacoco'
