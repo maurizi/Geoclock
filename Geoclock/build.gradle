@@ -31,6 +31,9 @@ android {
     packagingOptions {
         exclude 'META-INF/services/javax.annotation.processing.Processor'
     }
+    dexOptions {
+        javaMaxHeapSize "3g"
+    }
 }
 
 apply plugin: 'android-unit-test'

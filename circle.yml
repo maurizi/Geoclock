@@ -1,0 +1,15 @@
+machine:
+  java:
+    version: oraclejdk8
+
+
+dependencies:
+  override:
+    - ./gradlew dependencies || ./gradlew dependencies
+
+test:
+  override:
+    - ./gradlew assemble -PdisablePreDex
+    - ./gradlew test -PdisalbePreDex
+  post:
+    - ./gradlew jacocoTestReport coveralls
