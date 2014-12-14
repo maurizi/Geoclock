@@ -4,6 +4,8 @@ machine:
 
 
 dependencies:
+  cache_directories:
+    - ~/.android-sdk
   override:
     - ./gradlew dependencies || ./gradlew dependencies
 
