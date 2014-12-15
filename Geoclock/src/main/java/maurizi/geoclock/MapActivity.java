@@ -23,7 +23,7 @@ import java.util.Collection;
 
 
 public class MapActivity extends ActionBarActivity
-		implements NavigationDrawerFragment.NavigationDrawerCallbacks, AddGeoAlarmFragment.Listener {
+		implements NavigationDrawerFragment.NavigationDrawerCallbacks, GeoAlarmFragment.Listener {
 
 	private static final Gson gson = new Gson();
 	private static final int DEFAULT_ZOOM_LEVEL = 14;
@@ -147,8 +147,8 @@ public class MapActivity extends ActionBarActivity
 
 	boolean showPopup(LatLng latLng) {
 		Bundle args = new Bundle();
-		args.putParcelable(AddGeoAlarmFragment.INITIAL_LATLNG, latLng);
-		args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+		args.putParcelable(GeoAlarmFragment.INITIAL_LATLNG, latLng);
+		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
 
 		return showPopup(args);
 	}
@@ -156,14 +156,14 @@ public class MapActivity extends ActionBarActivity
 	boolean showPopup(Marker marker) {
 		final GeoAlarm alarm = markers.inverse().get(marker);
 		Bundle args = new Bundle();
-		args.putFloat(AddGeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
-		args.putString(AddGeoAlarmFragment.EXISTING_ALARM, gson.toJson(alarm, GeoAlarm.class));
+		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+		args.putString(GeoAlarmFragment.EXISTING_ALARM, gson.toJson(alarm, GeoAlarm.class));
 
 		return showPopup(args);
 	}
 
 	boolean showPopup(Bundle args) {
-		AddGeoAlarmFragment popup = new AddGeoAlarmFragment();
+		GeoAlarmFragment popup = new GeoAlarmFragment();
 		popup.setArguments(args);
 		popup.show(getSupportFragmentManager(), "AddGeoAlarmFragment");
 

@@ -48,7 +48,7 @@ import static com.google.common.collect.Collections2.transform;
  * A simple {@link Fragment} subclass.
  */
 @Getter
-public class AddGeoAlarmFragment extends DialogFragment {
+public class GeoAlarmFragment extends DialogFragment {
 
 	private SupportMapFragment mapFragment;
 
@@ -90,9 +90,9 @@ public class AddGeoAlarmFragment extends DialogFragment {
 		}
 
 		final Bundle args = getArguments();
-		final boolean isEdit = args.containsKey(AddGeoAlarmFragment.EXISTING_ALARM);
-		final LatLng initalPoint = args.getParcelable(AddGeoAlarmFragment.INITIAL_LATLNG);
-		final float initalZoom = args.getFloat(AddGeoAlarmFragment.INITIAL_ZOOM);
+		final boolean isEdit = args.containsKey(GeoAlarmFragment.EXISTING_ALARM);
+		final LatLng initalPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG);
+		final float initalZoom = args.getFloat(GeoAlarmFragment.INITIAL_ZOOM);
 		final GeoAlarm alarm = getEffectiveGeoAlarm(args, isEdit, initalPoint);
 
 		final Map<DayOfWeek, CheckBox> checkboxes = getWeekdaysCheckBoxMap(dialogView);
@@ -159,7 +159,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 			deleteButton.setOnClickListener(view -> {
 				// TODO: Remove any existing notifications and geofences and alarms
 				GeoAlarm.remove(activity, alarm);
-				activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
+				activity.onAddGeoAlarmFragmentClose(GeoAlarmFragment.this);
 				dialog.dismiss();
 			});
 		} else {
@@ -192,7 +192,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 						if (status == LocationStatusCodes.SUCCESS) {
 							GeoAlarm addedAlarm = newAlarm.withGeofenceId(ids[0]);
 							GeoAlarm.replace(activity, alarm, addedAlarm);
-							activity.onAddGeoAlarmFragmentClose(AddGeoAlarmFragment.this);
+							activity.onAddGeoAlarmFragmentClose(GeoAlarmFragment.this);
 
 							dialog.dismiss();
 						}
@@ -229,7 +229,7 @@ public class AddGeoAlarmFragment extends DialogFragment {
 
 	private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit, final LatLng initalPoint) {
 		return isEdit
-		       ? gson.fromJson(args.getString(AddGeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class)
+		       ? gson.fromJson(args.getString(GeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class)
 		       : GeoAlarm.builder().location(initalPoint).radius(INITIAL_RADIUS).name("").build();
 	}
 

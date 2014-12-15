@@ -1,16 +1,10 @@
 language: android
 jdk: oraclejdk8
-env:
-  matrix:
-    - ANDROID_TARGET=android-19
 
 before_install:
   - export "JAVA8_HOME=/usr/lib/jvm/java-8-oracle"
 
 script:
-# android-studio-unit test fails if build-tools are not there
-# build-tools is downloaded in the first run by sdk-manager
-  - ./gradlew assemble -PdisablePreDex || true
   - ./gradlew assemble -PdisablePreDex
   - ./gradlew test -PdisablePreDex
 

@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
+import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
@@ -49,12 +50,12 @@ public abstract class AbstractGeoAlarmReceiver extends BroadcastReceiver
 
 	@Override
 	public void onDisconnected() {
-		// TODO: insert logging here
+		Log.i("AbstractGeoAlarmReceiver", "LocationClient disconnected");
 	}
 
 	@Override
 	public void onConnectionFailed(ConnectionResult connectionResult) {
-		// TODO: insert logging here
+		Log.i("AbstractGeoAlarmReceiver", "LocationClient connect failed" + connectionResult.toString());
 	}
 
 	protected void setNotification(final ImmutableSet<GeoAlarm> activeAlarms) {
