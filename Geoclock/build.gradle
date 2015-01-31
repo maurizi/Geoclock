@@ -18,9 +18,22 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    signingConfigs {
+        debug {
+            storeFile rootProject.file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'android'
+            keyPassword 'android'
+        }
+    }
+
+
     buildTypes {
         debug {
             testCoverageEnabled true
+            applicationIdSuffix '.debug'
+            signingConfig signingConfigs.debug
         }
     }
 
