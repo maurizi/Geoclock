@@ -1,10 +1,8 @@
 package maurizi.geoclock;
 
-
 import android.app.Dialog;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,8 +14,6 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
-import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.location.LocationStatusCodes;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -33,28 +29,21 @@ import com.google.gson.Gson;
 
 import org.threeten.bp.DayOfWeek;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import lombok.Getter;
+import maurizi.geoclock.services.LocationService;
 
 import static com.google.common.collect.Collections2.transform;
 
-
-/**
- * A simple {@link Fragment} subclass.
- */
 @Getter
 public class GeoAlarmFragment extends DialogFragment {
 
 	private SupportMapFragment mapFragment;
-
-	public interface Listener {
-		public void onAddGeoAlarmFragmentClose(DialogFragment dialog);
-	}
+	private LocationService locationService;
 
 	private static final Gson gson = new Gson();
 
@@ -65,7 +54,6 @@ public class GeoAlarmFragment extends DialogFragment {
 	private final static int INITIAL_RADIUS = 20;
 	private final static int MAX_RADIUS = 200;
 
-	private LocationClient locationClient = null;
 
 	@InjectView(R.id.scrollView) LockableScrollView scrollView;
 	@InjectView(R.id.add_geo_alarm_name) TextView nameTextBox;
@@ -111,8 +99,10 @@ public class GeoAlarmFragment extends DialogFragment {
 			timePicker.setCurrentHour(alarm.hour);
 			timePicker.setCurrentMinute(alarm.minute);
 			nameTextBox.setText(alarm.name);
-			for (DayOfWeek day : alarm.days) {
-				checkboxes.get(day).setChecked(true);
+			if (alarm.days != null) {
+				for (DayOfWeek day : alarm.days) {
+					checkboxes.get(day).setChecked(true);
+				}
 			}
 		}
 
@@ -170,7 +160,7 @@ public class GeoAlarmFragment extends DialogFragment {
 		saveButton.setOnClickListener(view -> {
 			final String name = nameTextBox.getText().toString();
 
-			if ("".equals(name) || savedNames.contains(name)) {
+			if (name.isEmpty() || savedNames.contains(name)) {
 				Toast.makeText(activity, R.string.add_geo_alarm_validation, Toast.LENGTH_SHORT).show();
 				return;
 			}
@@ -184,31 +174,21 @@ public class GeoAlarmFragment extends DialogFragment {
 			                                                                .keySet()))
 			                                  .hour(timePicker.getCurrentHour())
 			                                  .minute(timePicker.getCurrentMinute())
-			                                  .geofenceId(alarm.geofenceId)
 			                                  .build();
 
-			locationClient.addGeofences(Arrays.asList(newAlarm.getGeofence()),
-			                            GeofenceReceiver.getPendingIntent(getActivity()), (status, ids) -> {
-						if (status == LocationStatusCodes.SUCCESS) {
-							GeoAlarm addedAlarm = newAlarm.withGeofenceId(ids[0]);
-							GeoAlarm.replace(activity, alarm, addedAlarm);
-							activity.onAddGeoAlarmFragmentClose(GeoAlarmFragment.this);
+			locationService.addGeofence(newAlarm, () -> {
+				activity.onAddGeoAlarmFragmentClose(GeoAlarmFragment.this);
+				GeoAlarm.add(this.getActivity(), newAlarm);
 
-							dialog.dismiss();
-						}
-						locationClient.disconnect();
-					});
+				dialog.dismiss();
+			});
 		});
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		final View dialogView = inflater.inflate(R.layout.fragment_add_geo_alarm_dialog, container, false);
-
-		final ToastLocationClientHandler handler = new ToastLocationClientHandler(getActivity());
-		locationClient = new LocationClient(getActivity(), handler, handler);
 		ButterKnife.inject(this, dialogView);
-
 		return dialogView;
 	}
 
@@ -221,10 +201,12 @@ public class GeoAlarmFragment extends DialogFragment {
 	@Override
 	public void onStart() {
 		super.onStart();
-		locationClient.connect();
-
 		mapFragment = SupportMapFragment.newInstance();
 		getChildFragmentManager().beginTransaction().replace(R.id.add_geo_alarm_map_container, mapFragment).commit();
+	}
+
+	public void setLocationService(LocationService ls) {
+	  this.locationService = ls;
 	}
 
 	private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit, final LatLng initalPoint) {

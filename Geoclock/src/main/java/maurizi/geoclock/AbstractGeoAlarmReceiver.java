@@ -6,17 +6,14 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
-import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.GeofenceStatusCodes;
+import com.google.android.gms.location.GeofencingEvent;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
-import com.google.gson.Gson;
 
 import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.ZonedDateTime;
@@ -25,11 +22,10 @@ import org.threeten.bp.format.FormatStyle;
 
 import java.util.Set;
 
-public abstract class AbstractGeoAlarmReceiver extends BroadcastReceiver
-		implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener {
+public abstract class AbstractGeoAlarmReceiver extends BroadcastReceiver {
 
+	private static final String TAG = AbstractGeoAlarmReceiver.class.getSimpleName();
 	protected Context context;
-	protected LocationClient client;
 	protected Intent intent;
 	protected interface SetOp<T> {
 		Set<T> apply(Set<T> a, Set<T> b);
@@ -39,23 +35,14 @@ public abstract class AbstractGeoAlarmReceiver extends BroadcastReceiver
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		if (!LocationClient.hasError(intent)) {
-			this.context = context;
-			this.client = new LocationClient(context, this, this);
+		GeofencingEvent event = GeofencingEvent.fromIntent(intent);
+		if (event.hasError()) {
+			String errorMessage = GeofenceStatusCodes.getStatusCodeString(event.getErrorCode());
+			Log.e(TAG, errorMessage);
+			return;
 		}
-	}
 
-	@Override
-	public abstract void onConnected(Bundle bundle);
-
-	@Override
-	public void onDisconnected() {
-		Log.i("AbstractGeoAlarmReceiver", "LocationClient disconnected");
-	}
-
-	@Override
-	public void onConnectionFailed(ConnectionResult connectionResult) {
-		Log.i("AbstractGeoAlarmReceiver", "LocationClient connect failed" + connectionResult.toString());
+		// TODO: Do something with the event
 	}
 
 	protected void setNotification(final ImmutableSet<GeoAlarm> activeAlarms) {

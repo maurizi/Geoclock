@@ -3,12 +3,12 @@ apply plugin: 'com.android.application'
 apply plugin: 'retrolambda'
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion "21.1.1"
+    compileSdkVersion 22
+    buildToolsVersion "22.0.1"
 
     defaultConfig {
         minSdkVersion 10
-        targetSdkVersion 21
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
         applicationId "maurizi.geoclock"
@@ -27,7 +27,6 @@ android {
             keyPassword 'android'
         }
     }
-
 
     buildTypes {
         debug {
@@ -49,32 +48,21 @@ android {
     }
 }
 
-apply plugin: 'android-unit-test'
-
 dependencies {
-    // Robolectric must come before the support libraries in order for it to work
-    testCompile 'org.robolectric:robolectric:2.4'
+    testCompile "org.robolectric:robolectric:3.0-rc3"
     testCompile 'junit:junit:4.12'
-    testCompile 'com.squareup.assertj:assertj-android:1.0.0'
-    testCompile 'com.squareup.assertj:assertj-android-support-v4:1.0.0'
-    testCompile 'com.squareup.assertj:assertj-android-appcompat-v7:1.0.0'
-    testCompile 'com.squareup.assertj:assertj-android-play-services:1.0.0'
     testCompile 'org.mockito:mockito-core:1.10.8'
 
-    compile 'com.android.support:support-v4:21.0.0'
-    compile 'com.android.support:appcompat-v7:21.0.0'
-    compile 'com.google.android.gms:play-services:6.1.71'
+    compile 'com.android.support:support-v4:22.2.0'
+    compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.google.android.gms:play-services-maps:7.5.0'
+    compile 'com.google.android.gms:play-services-location:7.5.0'
     compile 'com.google.code.gson:gson:2.3'
     compile 'com.google.guava:guava:18.0'
     compile 'org.projectlombok:lombok:1.14.8'
     compile 'org.threeten:threetenbp:1.0'
     compile 'com.jakewharton:butterknife:6.0.0'
     compile fileTree(dir: 'libs', include: ['*.jar'])
-}
-
-// Workaround for Google Play services + Retrolambda
-retrolambda {
-    jvmArgs '-noverify'
 }
 
 apply plugin: 'jacoco'
@@ -86,58 +74,4 @@ coveralls {
 
 jacoco {
     toolVersion = "0.7.1.201405082137"
-}
-
-// Define coverage source.
-// If you have rs/aidl etc... add them here.
-def coverageSourceDirs = [
-    'src/main/java'
-]
-
-// This differs per what flavors buildTypes etc.
-// But this example shows the 'testDebug'
-// which is standard for Robolectric
-task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
-    group = "Reporting"
-    description = "Generate Jacoco coverage reports after running tests."
-    reports {
-        xml.enabled = true
-        html.enabled = true
-    }
-    classDirectories = fileTree(
-            dir: './build/intermediates/classes/debug',
-            excludes: ['**/R.class',
-                       '**/R$*.class',
-                       '**/*$InjectAdapter.class',
-                       '**/*$ModuleAdapter.class',
-                       '**/*$ViewInjector*.class'
-            ])
-
-    additionalSourceDirs = files(coverageSourceDirs)
-    sourceDirectories = files(coverageSourceDirs)
-    executionData = files('build/jacoco/testDebug.exec')
-
-    def renamedFilesMap = [:]
-
-    // Hacky fix for issue: https://code.google.com/p/android/issues/detail?id=69174.
-    // Rename files with '$$' before generating report, and then rename back after
-    doFirst {
-        new File('Geoclock/build/intermediates/classes/debug').eachFileRecurse { file ->
-            if (file.name.contains('$$')) {
-                def oldPath = file.path
-                def newPath = oldPath.replace('$$', '$')
-                file.renameTo(newPath)
-                renamedFilesMap[newPath] = oldPath
-            }
-        }
-    }
-    doLast {
-        renamedFilesMap.each() {
-            def newPath, def oldPath ->
-                new File(newPath as String).renameTo(oldPath as String)
-        }
-
-        // Move report into location where coveralls is looking for it
-        new File('Geoclock/build/reports/jacoco/jacocoTestReport').renameTo('Geoclock/build/reports/jacoco/test')
-    }
 }

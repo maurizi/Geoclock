@@ -22,7 +22,6 @@ public class GeoAlarmTest {
 			.name("test")
 			.location(new LatLng(0,0))
 			.radius(1000)
-			.geofenceId("")
 			.build();
 
 	private void assertAlarmManager(int alarmHour, int alarmDay, LocalDateTime currentTime, LocalDateTime expectedTime, String message) {
