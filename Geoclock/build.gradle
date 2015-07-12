@@ -1,6 +1,8 @@
 apply plugin: 'android-sdk-manager'
 apply plugin: 'com.android.application'
-apply plugin: 'retrolambda'
+apply plugin: 'jacoco'
+apply plugin: 'me.tatarka.retrolambda'
+apply plugin: 'com.github.kt3k.coveralls'
 
 android {
     compileSdkVersion 22
@@ -65,13 +67,59 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 }
 
-apply plugin: 'jacoco'
-apply plugin: 'com.github.kt3k.coveralls'
-
 coveralls {
     jacocoReportPath 'build/reports/jacoco/test/jacocoTestReport.xml'
 }
 
 jacoco {
     toolVersion = "0.7.1.201405082137"
+}
+
+def coverageSourceDirs = [
+    'src/main/java'
+]
+
+task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports after running tests."
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+    classDirectories = fileTree(
+            dir: './build/intermediates/classes/debug',
+            excludes: ['**/R.class',
+                       '**/R$*.class',
+                       '**/*$InjectAdapter.class',
+                       '**/*$ModuleAdapter.class',
+                       '**/*$ViewInjector*.class'
+            ])
+
+    additionalSourceDirs = files(coverageSourceDirs)
+    sourceDirectories = files(coverageSourceDirs)
+    executionData = files('build/jacoco/testDebug.exec')
+
+    def renamedFilesMap = [:]
+
+    // Hacky fix for issue: https://code.google.com/p/android/issues/detail?id=69174.
+    // Rename files with '$$' before generating report, and then rename back after
+    doFirst {
+        new File('Geoclock/build/intermediates/classes/debug').eachFileRecurse { file ->
+            if (file.name.contains('$$')) {
+                def oldPath = file.path
+                def newPath = oldPath.replace('$$', '$')
+                file.renameTo(newPath)
+                renamedFilesMap[newPath] = oldPath
+            }
+        }
+    }
+    doLast {
+        renamedFilesMap.each() {
+            def newPath, def oldPath ->
+                new File(newPath as String).renameTo(oldPath as String)
+        }
+
+        // Move report into location where coveralls is looking for it
+        new File('Geoclock/build/reports/jacoco/jacocoTestReport').renameTo('Geoclock/build/reports/jacoco/test')
+    }
 }

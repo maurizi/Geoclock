@@ -23,6 +23,6 @@ public class RobolectricGradleTestRunner extends RobolectricTestRunner {
         String resPath = myAppPath + "../../../res/" + buildVariant;
         String assetPath = myAppPath + "../../../assets/" + buildVariant;
 
-        return createAppManifest(Fs.fileFromPath(manifestPath), Fs.fileFromPath(resPath), Fs.fileFromPath(assetPath), "maurizi.geoclock");
+        return createAppManifest(Fs.fileFromPath(manifestPath), Fs.fileFromPath(resPath), Fs.fileFromPath(assetPath));
     }
 }

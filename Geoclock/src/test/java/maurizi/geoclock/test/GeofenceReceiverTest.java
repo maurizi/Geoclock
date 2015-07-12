@@ -48,41 +48,4 @@ public class GeofenceReceiverTest {
 
 		Assert.assertTrue(receiverFound);
 	}
-
-
-	@Test
-	public void testIntentHandling() {
-		/** TEST 1
-		 ----------
-		 We defined the Broadcast receiver with a certain action, so we should check if we have
-		 receivers listening to the defined action
-		 */
-		Intent intent = new Intent("maurizi.geoclock.RECEIVE_GEOFENCE");
-
-		ShadowApplication shadowApplication = ShadowApplication.getInstance();
-		Assert.assertTrue(shadowApplication.hasReceiverForIntent(intent));
-
-		/**
-		 * TEST 2
-		 * ----------
-		 * Lets be sure that we only have a single receiver assigned for this intent
-		 */
-		List<BroadcastReceiver> receiversForIntent = shadowApplication.getReceiversForIntent(intent);
-
-		assertEquals("Expected one broadcast receiver", 1, receiversForIntent.size());
-
-		/**
-		 * TEST 3
-		 * ----------
-		 * Fetch the Broadcast receiver and cast it to the correct class.
-		 * Next call the "onReceive" method and check if the MyBroadcastIntentService was started
-		 */
-		GeofenceReceiver receiver = (GeofenceReceiver) receiversForIntent.get(0);
-		receiver.onReceive(shadowApplication.getApplicationContext(), intent);
-	}
-
-	@Test
-	public void testNotificationIsAdded() {
-		// TODO: stubbed
-	}
 }
