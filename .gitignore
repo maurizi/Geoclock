@@ -3,7 +3,6 @@
 
 
 # Android Studio file
-.idea
 .idea/compiler.xml
 .idea/encodings.xml
 .idea/gradle.xml
@@ -17,7 +16,6 @@
 .idea/.name
 .idea/run
 .idea/runConfigurations.xml
-.idea/codeStyleSettings.xml
 *.iml
 out/
 
