@@ -12,6 +12,6 @@ dependencies:
 test:
   override:
     - ./gradlew assemble -PdisablePreDex
-    - ./gradlew test -PdisalbePreDex
+    - ./gradlew test -PdisablePreDex
   post:
     - ./gradlew jacocoTestReport coveralls
