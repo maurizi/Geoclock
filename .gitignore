@@ -14,6 +14,8 @@
 .idea/copyright/*
 .idea/dictionaries/*
 .idea/.name
+.idea/run
+.idea/runConfigurations.xml
 *.iml
 out/
 

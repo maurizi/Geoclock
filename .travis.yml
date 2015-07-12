@@ -5,6 +5,7 @@ before_install:
   - export "JAVA8_HOME=/usr/lib/jvm/java-8-oracle"
 
 script:
+  - ./gradlew dependencies || ./gradlew dependencies
   - ./gradlew assemble -PdisablePreDex
   - ./gradlew test -PdisablePreDex
 

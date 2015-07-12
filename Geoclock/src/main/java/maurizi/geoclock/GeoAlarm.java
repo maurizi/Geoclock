@@ -49,7 +49,6 @@ public class GeoAlarm {
 	@Nullable public final Integer hour;
 	@Nullable public final Integer minute;
 	@Nullable public final Set<DayOfWeek> days;
-	@Nullable public final String geofenceId;
 
 	@Override
 	public String toString() {
@@ -143,16 +142,16 @@ public class GeoAlarm {
 	public static void replace(Context context, GeoAlarm oldAlarm, GeoAlarm newAlarm) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
 		Editor editor = prefs.edit();
-		if (oldAlarm != null && prefs.contains(oldAlarm.geofenceId)) {
-			editor.remove(oldAlarm.geofenceId);
+		if (oldAlarm != null && prefs.contains(oldAlarm.name)) {
+			editor.remove(oldAlarm.name);
 		}
-		editor.putString(newAlarm.geofenceId, gson.toJson(newAlarm, GeoAlarm.class))
+		editor.putString(newAlarm.name, gson.toJson(newAlarm, GeoAlarm.class))
 		      .commit();
 	}
 
 	public static void remove(Context context, GeoAlarm oldAlarm) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
-		prefs.edit().remove(oldAlarm.geofenceId).commit();
+		prefs.edit().remove(oldAlarm.name).commit();
 	}
 
 	private static GeoAlarm parse(Object json) {

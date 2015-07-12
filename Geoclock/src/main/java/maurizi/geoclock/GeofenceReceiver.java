@@ -5,13 +5,12 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
-import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.gms.location.Geofence;
-import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.GeofencingEvent;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -25,38 +24,49 @@ import java.util.Set;
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
 
 public class GeofenceReceiver extends AbstractGeoAlarmReceiver {
+
+	private static final String TAG = GeofenceReceiver.class.getSimpleName();
 	private static final Gson gson = new Gson();
 	private static final String ACTIVE_ALARM_PREFS = "active_alarm_prefs";
 
 	@Override
-	public void onConnected(Bundle bundle) {
-		final int transition = LocationClient.getGeofenceTransition(this.intent);
+	public void onReceive(Context context, Intent intent) {
+		super.onReceive(context, intent);
+		GeofencingEvent event = GeofencingEvent.fromIntent(intent);
+		if (event.hasError()) {
+			Log.e(TAG, "Geofence Error Code: " + event.getErrorCode());
+			return;
+		}
 
-		final List<Geofence> affectedGeofences = LocationClient.getTriggeringGeofences(intent);
-		final ImmutableSet<GeoAlarm> affectedAlarms = ImmutableSet.copyOf(Lists.transform(affectedGeofences,
-		                                                                                  getGeoAlarmForGeofenceFn(context)));
+		final int transition = event.getGeofenceTransition();
+		final List<Geofence> affectedGeofences = event.getTriggeringGeofences();
 
-		if ((transition == Geofence.GEOFENCE_TRANSITION_ENTER)) {
-			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::union);
+		if (affectedGeofences != null && affectedGeofences.size() > 0) {
+			final ImmutableSet<GeoAlarm> affectedAlarms = ImmutableSet.copyOf(Lists.transform(affectedGeofences,
+					getGeoAlarmForGeofenceFn(context)));
 
-			// TODO: cancel already set alarms
-			// TODO: Only setup AlarmManager for *next* alarm?
-			final AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-			for (GeoAlarm alarm : currentAlarms) {
-				final long alarmTime = alarm.getAlarmManagerTime(LocalDateTime.now()).toInstant().toEpochMilli();
-				final PendingIntent intent = AlarmManagerReceiver.getPendingIntent(context);
+			if ((transition == Geofence.GEOFENCE_TRANSITION_ENTER)) {
+				ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::union);
 
-				if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
-					manager.setExact(AlarmManager.RTC_WAKEUP, alarmTime, intent);
-				} else {
-					manager.set(AlarmManager.RTC_WAKEUP, alarmTime, intent);
+				// TODO: cancel already set alarms
+				// TODO: Only setup AlarmManager for *next* alarm?
+				final AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+				for (GeoAlarm alarm : currentAlarms) {
+					final long alarmTime = alarm.getAlarmManagerTime(LocalDateTime.now()).toInstant().toEpochMilli();
+					final PendingIntent pendingAlarmIntent = AlarmManagerReceiver.getPendingIntent(context);
+
+					if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
+						manager.setExact(AlarmManager.RTC_WAKEUP, alarmTime, pendingAlarmIntent);
+					} else {
+						manager.set(AlarmManager.RTC_WAKEUP, alarmTime, pendingAlarmIntent);
+					}
 				}
-			}
 
-		} else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-			ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::difference);
-			// TODO: Reset by iterating through geofences?? It's unclear
-			// TODO: Remove AlarmMAnager alarms for geofences we are leaving
+			} else if (transition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+				ImmutableSet<GeoAlarm> currentAlarms = changeActiveAlarms(affectedAlarms, Sets::difference);
+				// TODO: Reset by iterating through geofences?? It's unclear
+				// TODO: Remove AlarmMAnager alarms for geofences we are leaving
+			}
 		}
 	}
 
