@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
-public class AlarmManagerReceiver extends AbstractGeoAlarmReceiver {
+public class AlarmManagerReceiver {
 
 /*	@Override
 	public void onConnected(Bundle bundle) {
