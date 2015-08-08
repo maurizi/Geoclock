@@ -1,7 +1,9 @@
 package maurizi.geoclock;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -19,6 +21,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.gson.Gson;
 
 import java.util.Collection;
+import java.util.UUID;
 
 import maurizi.geoclock.services.LocationService;
 import maurizi.geoclock.services.LocationServiceGoogle;
@@ -27,7 +30,7 @@ import maurizi.geoclock.services.LocationServiceGoogle;
 public class MapActivity extends AppCompatActivity
 		implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 
-	public static final String ALARM_JSON = "ALARM_JSON";
+	private static final String ALARM_ID = "ALARM_ID";
 
 	private static final Gson gson = new Gson();
 	private static final int DEFAULT_ZOOM_LEVEL = 14;
@@ -35,7 +38,7 @@ public class MapActivity extends AppCompatActivity
 	private NavigationDrawerFragment navigationDrawerFragment;
 	private GoogleMap map = null;
 	private LocationService locationService = null;
-	private BiMap<GeoAlarm, Marker> markers = null;
+	private BiMap<UUID, Marker> markers = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -56,14 +59,17 @@ public class MapActivity extends AppCompatActivity
 				centerCamera();
 				final Intent intent = getIntent();
 
-				if (intent.hasExtra(ALARM_JSON)) {
-					showEditPopup(intent.getStringExtra(ALARM_JSON));
+				if (intent.hasExtra(ALARM_ID)) {
+					showEditPopup(UUID.fromString(intent.getStringExtra(ALARM_ID)));
 				}
 			});
 			locationService.connect();
 			map.setMyLocationEnabled(true);
 			map.setOnMapClickListener(this::showAddPopup);
-			map.setOnMarkerClickListener(this::showEditPopup);
+			map.setOnMarkerClickListener(marker -> {
+				showEditPopup(marker);
+				return true;
+			});
 			redrawGeoAlarms();
 		});
 	}
@@ -81,7 +87,6 @@ public class MapActivity extends AppCompatActivity
 	public void onNavigationDrawerItemSelected(GeoAlarm alarm) {
 		if (map != null) {
 			map.animateCamera(CameraUpdateFactory.newLatLng(alarm.location));
-			markers.get(alarm).showInfoWindow();
 		}
 	}
 
@@ -105,6 +110,13 @@ public class MapActivity extends AppCompatActivity
 		return super.onCreateOptionsMenu(menu);
 	}
 
+	@NonNull
+	public static Intent getIntent(final @NonNull Context context, final @NonNull GeoAlarm nextAlarm) {
+		Intent showAlarmIntent = new Intent(context, MapActivity.class);
+		showAlarmIntent.putExtra(MapActivity.ALARM_ID, nextAlarm.id.toString());
+		return showAlarmIntent;
+	}
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int id = item.getItemId();
@@ -122,7 +134,7 @@ public class MapActivity extends AppCompatActivity
 		if (map != null) {
 			map.clear();
 			for (final GeoAlarm alarm : alarms) {
-				markers.put(alarm, map.addMarker(alarm.getMarkerOptions()));
+				markers.put(alarm.id, map.addMarker(alarm.getMarkerOptions()));
 				map.addCircle(alarm.getCircleOptions());
 			}
 		}
@@ -134,32 +146,34 @@ public class MapActivity extends AppCompatActivity
 		}
 	}
 
-	boolean showAddPopup(LatLng latLng) {
+	void showAddPopup(LatLng latLng) {
 		Bundle args = new Bundle();
 		args.putParcelable(GeoAlarmFragment.INITIAL_LATLNG, latLng);
 		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
 
-		return showPopup(args);
+		showPopup(args);
 	}
 
-	boolean showEditPopup(Marker marker) {
-		final GeoAlarm alarm = markers.inverse().get(marker);
-		return showEditPopup(gson.toJson(alarm, GeoAlarm.class));
+	void showEditPopup(Marker marker) {
+		showEditPopup(markers.inverse().get(marker));
 	}
 
-	boolean showEditPopup(String alarmJson) {
-		Bundle args = new Bundle();
-		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
-		args.putString(GeoAlarmFragment.EXISTING_ALARM, alarmJson);
+	void showEditPopup(UUID id) {
+		GeoAlarm alarm = GeoAlarm.getGeoAlarm(this, id);
+		if (alarm != null) {
+			Bundle args = new Bundle();
+			String alarmJson = gson.toJson(alarm, GeoAlarm.class);
+			args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+			args.putString(GeoAlarmFragment.EXISTING_ALARM, alarmJson);
 
-		return showPopup(args);
+			showPopup(args);
+		}
 	}
 
-	boolean showPopup(Bundle args) {
+	void showPopup(Bundle args) {
 		GeoAlarmFragment popup = new GeoAlarmFragment();
 		popup.setArguments(args);
 		popup.show(getSupportFragmentManager(), "AddGeoAlarmFragment");
 		popup.setLocationService(locationService);
-		return true;
 	}
 }

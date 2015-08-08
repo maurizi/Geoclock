@@ -10,6 +10,8 @@ import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.ZoneId;
 import org.threeten.bp.ZonedDateTime;
 
+import java.util.UUID;
+
 import maurizi.geoclock.GeoAlarm;
 
 import static org.junit.Assert.assertEquals;
@@ -20,8 +22,9 @@ public class GeoAlarmTest {
 
 	static final GeoAlarm testAlarm = GeoAlarm.builder()
 			.name("test")
-			.location(new LatLng(0,0))
+			.location(new LatLng(0, 0))
 			.radius(1000)
+			.id(UUID.randomUUID())
 			.build();
 
 	private void assertAlarmManager(int alarmHour, int alarmDay, LocalDateTime currentTime, LocalDateTime expectedTime, String message) {

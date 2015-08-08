@@ -24,6 +24,7 @@ import org.threeten.bp.ZonedDateTime;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.UUID;
 
 import lombok.NonNull;
 import lombok.Value;
@@ -42,9 +43,11 @@ public class GeoAlarm {
 	private static final Gson gson = new Gson();
 	private static final String ALARM_PREFS = "alarms";
 
+	@NonNull public final UUID id;
 	@NonNull public final String name;
 	public final float radius;
 	@NonNull public final LatLng location;
+	public final boolean enabled;
 
 	@Nullable public final Integer hour;
 	@Nullable public final Integer minute;
@@ -80,7 +83,8 @@ public class GeoAlarm {
 	}
 
 	private boolean isAlarmForToday(LocalDateTime now) {
-		return getAlarmTime().isAfter(now.toLocalTime());
+		LocalTime time = getAlarmTime();
+		return now != null && time != null && time.isAfter(now.toLocalTime());
 	}
 
 	/**
@@ -88,6 +92,10 @@ public class GeoAlarm {
 	 */
 	public ZonedDateTime getAlarmManagerTime(LocalDateTime now) {
 		final LocalTime alarmTime = getAlarmTime();
+
+		if (now == null || alarmTime == null) {
+			return null;
+		}
 
 		final LocalDateTime alarmDateTime = days == null || days.isEmpty()
 		                                    ? alarmTime.atDate(isAlarmForToday(now)
@@ -111,8 +119,8 @@ public class GeoAlarm {
 
 		final Collection<DayOfWeek> daysAfterToday = filter(days, weekday -> weekday.getValue() > currentDayOfWeek.getValue());
 
-		final Collection<DayOfWeek> daysTodayAndBefore = filter(days, weekday -> weekday.getValue() <=
-		                                                                         currentDayOfWeek.getValue());
+		final Collection<DayOfWeek> daysTodayAndBefore = filter(
+				days, weekday -> weekday.getValue() <= currentDayOfWeek.getValue());
 
 		final ImmutableList<DayOfWeek> allDays = ImmutableList.<DayOfWeek>builder()
 		                                                      .addAll(daysAfterToday)
@@ -120,6 +128,16 @@ public class GeoAlarm {
 
 		final DayOfWeek nextDayForAlarm = allDays.get(0);
 		return now.toLocalDate().with(next(nextDayForAlarm));
+	}
+
+	@Nullable
+	public static GeoAlarm getGeoAlarm(Context context, UUID id) {
+		SharedPreferences prefs = getSharedAlarmPreferences(context);
+		String json = prefs.getString(id.toString(), null);
+		if (json != null) {
+			return parse(json);
+		}
+		return null;
 	}
 
 	public static Collection<GeoAlarm> getGeoAlarms(Context context) {
@@ -136,22 +154,15 @@ public class GeoAlarm {
 	}
 
 	public static void add(Context context, GeoAlarm newAlarm) {
-		replace(context, null, newAlarm);
-	}
-
-	public static void replace(Context context, GeoAlarm oldAlarm, GeoAlarm newAlarm) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
 		Editor editor = prefs.edit();
-		if (oldAlarm != null && prefs.contains(oldAlarm.name)) {
-			editor.remove(oldAlarm.name);
-		}
-		editor.putString(newAlarm.name, gson.toJson(newAlarm, GeoAlarm.class))
+		editor.putString(newAlarm.id.toString(), gson.toJson(newAlarm, GeoAlarm.class))
 		      .commit();
 	}
 
 	public static void remove(Context context, GeoAlarm oldAlarm) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
-		prefs.edit().remove(oldAlarm.name).commit();
+		prefs.edit().remove(oldAlarm.id.toString()).commit();
 	}
 
 	private static GeoAlarm parse(Object json) {
