@@ -15,7 +15,8 @@ abstract public class LocationService {
 	public abstract void startMonitoring();
 	public abstract void connect();
 	public abstract void disconnect();
-	public abstract void addGeofence(GeoAlarm location, LocationResultListener listener);
+	public abstract void addGeofence(GeoAlarm alarm, LocationResultListener listener);
+	public abstract void removeGeofence(GeoAlarm alarm);
 	public abstract LatLng getLastLocation();
 
 }

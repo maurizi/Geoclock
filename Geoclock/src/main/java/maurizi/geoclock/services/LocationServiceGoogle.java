@@ -11,10 +11,13 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.common.collect.Lists;
 
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.GeofenceReceiver;
@@ -73,10 +76,10 @@ public class LocationServiceGoogle extends LocationService
 	}
 
 	@Override
-	public void addGeofence(GeoAlarm location, LocationResultListener listener) {
+	public void addGeofence(@NonNull GeoAlarm alarm, LocationResultListener listener) {
 		GeofencingRequest.Builder geofenceRequestBuilder = new GeofencingRequest.Builder();
 		geofenceRequestBuilder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
-		geofenceRequestBuilder.addGeofence(getGeofence(location));
+		geofenceRequestBuilder.addGeofence(getGeofence(alarm));
 
 		LocationServices.GeofencingApi
 				.addGeofences(apiClient, geofenceRequestBuilder.build(), pendingIntent)
@@ -88,15 +91,21 @@ public class LocationServiceGoogle extends LocationService
 	}
 
 	@Override
+	public void removeGeofence(@NonNull GeoAlarm alarm) {
+		LocationServices.GeofencingApi
+				.removeGeofences(apiClient, Lists.<String>newArrayList(alarm.id.toString()));
+	}
+
+	@Override
 	public LatLng getLastLocation() {
 		android.location.Location loc = LocationServices.FusedLocationApi.getLastLocation(apiClient);
 		return new LatLng(loc.getLatitude(), loc.getLongitude());
 	}
 
-	private Geofence getGeofence(GeoAlarm location) {
+	private Geofence getGeofence(GeoAlarm alarm) {
 		return new Geofence.Builder()
-				       .setRequestId(location.getName())
-				       .setCircularRegion(location.getLocation().latitude, location.getLocation().longitude, location.getRadius())
+				       .setRequestId(alarm.id.toString())
+				       .setCircularRegion(alarm.location.latitude, alarm.location.longitude, alarm.radius)
 				       .setExpirationDuration(Geofence.NEVER_EXPIRE)
 				       .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
 				       .build();

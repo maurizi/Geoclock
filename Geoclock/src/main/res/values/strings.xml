@@ -4,7 +4,6 @@
     <string name="app_name">Geoclock</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="action_example">Example action</string>
     <string name="action_settings">Settings</string>
     <string name="add_geo_alarm_title">Add alarm area</string>
     <string name="add_geo_alarm_name_label">Name</string>
@@ -22,11 +21,12 @@
     <string name="monday">M</string>
     <string name="sunday">S</string>
     <string name="add_geo_alarm_time_label">Time</string>
-    <string name="add_geo_alarm_validation">That name is blank or already taken</string>
+    <string name="add_geo_alarm_validation">That name is blank</string>
     <string name="add_geo_alarm_delete">Delete</string>
     <string name="lost_location">Lost location</string>
     <string name="fail_location">Failed to get location</string>
     <string name="fail_map">Failed to load map</string>
     <string name="add_geo_alarm_name_hint">alarm name</string>
+    <string name="add_geo_alarm_enabled_label">Enabled</string>
 
 </resources>

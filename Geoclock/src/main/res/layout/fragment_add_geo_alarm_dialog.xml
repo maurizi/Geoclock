@@ -155,6 +155,11 @@
                 style="@style/add_geo_alarm_item"
                 android:id="@+id/add_geo_alarm_time"/>
 
+            <android.support.v7.widget.SwitchCompat
+                style="@style/add_geo_alarm_item"
+                android:id="@+id/add_geo_alarm_enabled"
+                android:text="@string/add_geo_alarm_enabled_label"/>
+
         </LinearLayout>
     </maurizi.geoclock.LockableScrollView>
 

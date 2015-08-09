@@ -31,7 +31,7 @@ public class GeofenceReceiverTest {
 
 	@Before
 	public void setUp() {
-		when(mockGeofence.getRequestId()).thenReturn(GeoAlarmTest.testAlarm.name);
+		when(mockGeofence.getRequestId()).thenReturn(GeoAlarmTest.testAlarm.id.toString());
 	}
 
 	@Test
