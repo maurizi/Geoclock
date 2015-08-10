@@ -1,10 +1,9 @@
-package maurizi.geoclock;
+package maurizi.geoclock.background;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.provider.AlarmClock;
 import android.util.Log;
 
@@ -14,10 +13,11 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.UUID;
 
+import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.services.ActiveAlarmManager;
 
 public class AlarmManagerReceiver extends BroadcastReceiver {
-	private static String ALARM_ID = "alarm_id";
+	private static final String ALARM_ID = "alarm_id";
 	private static final String TAG = GeofenceReceiver.class.getSimpleName();
 
 	public static PendingIntent getPendingIntent(Context context, GeoAlarm alarm) {

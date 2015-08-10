@@ -1,4 +1,4 @@
-package maurizi.geoclock;
+package maurizi.geoclock.background;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,6 +13,7 @@ import com.google.common.collect.Lists;
 
 import java.util.List;
 
+import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.services.ActiveAlarmManager;
 
 import static com.google.common.collect.Iterables.filter;

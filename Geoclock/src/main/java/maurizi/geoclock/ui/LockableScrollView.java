@@ -1,4 +1,4 @@
-package maurizi.geoclock;
+package maurizi.geoclock.ui;
 
 import android.content.Context;
 import android.util.AttributeSet;

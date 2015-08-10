@@ -26,12 +26,11 @@ import org.threeten.bp.ZonedDateTime;
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.FormatStyle;
 
-import java.util.Map;
 import java.util.Set;
 
-import maurizi.geoclock.AlarmManagerReceiver;
+import maurizi.geoclock.background.AlarmManagerReceiver;
 import maurizi.geoclock.GeoAlarm;
-import maurizi.geoclock.MapActivity;
+import maurizi.geoclock.ui.MapActivity;
 import maurizi.geoclock.R;
 
 public class ActiveAlarmManager {
@@ -39,10 +38,10 @@ public class ActiveAlarmManager {
 	private static final String ACTIVE_ALARM_PREFS = "active_alarm_prefs";
 	private static final int NOTIFICATION_ID = 42;
 
-	private SharedPreferences activeAlarmsPrefs;
-	private Context context;
-	private NotificationManager notificationManager;
-	private AlarmManager alarmManager;
+	private final SharedPreferences activeAlarmsPrefs;
+	private final Context context;
+	private final NotificationManager notificationManager;
+	private final AlarmManager alarmManager;
 
 	public ActiveAlarmManager(Context context) {
 		this.context = context;
@@ -75,8 +74,11 @@ public class ActiveAlarmManager {
 		changeActiveAlarms(currentAlarms);
 	}
 
-	private void changeActiveAlarms(Set<GeoAlarm> currentAlarms) {
+	public void clearActiveAlarms() {
+		changeActiveAlarms(ImmutableSet.of());
+	}
 
+	private void changeActiveAlarms(Set<GeoAlarm> currentAlarms) {
 		activeAlarmsPrefs.edit().putString(ACTIVE_ALARM_PREFS, gson.toJson(currentAlarms.toArray())).apply();
 
 		notificationManager.cancelAll();
