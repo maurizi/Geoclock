@@ -120,8 +120,8 @@ public class ActiveAlarmManager {
 		Notification notification = new NotificationCompat.Builder(context)
 				                            .setSmallIcon(R.drawable.ic_alarm_black_24dp)
 				                            .setLargeIcon(icon)
-				                            .setContentTitle(String.format("Alarm %s", nextAlarm.name))
-				                            .setContentText(alarmFormattedTime)
+				                            .setContentTitle(String.format("Upcoming Alarm at %s", alarmFormattedTime))
+				                            .setContentText(nextAlarm.name)
 				                            .setContentIntent(notificationPendingIntent)
 				                            .build();
 
