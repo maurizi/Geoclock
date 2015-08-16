@@ -89,10 +89,10 @@ public class GeoAlarmFragment extends DialogFragment {
 
 		final Map<DayOfWeek, CheckBox> checkboxes = getWeekdaysCheckBoxMap(dialogView);
 
-		map.moveCamera(CameraUpdateFactory.newLatLngZoom(alarm.location, initalZoom));
-		radiusBar.setProgress((int) alarm.radius);
 		radiusBar.setMax(MAX_RADIUS);
+		radiusBar.setProgress(alarm.radius);
 
+		map.moveCamera(CameraUpdateFactory.newLatLngZoom(alarm.location, initalZoom));
 		final Marker marker = map.addMarker(new MarkerOptions().position(alarm.location).draggable(true));
 
 		final Circle circle = map.addCircle(new CircleOptions().center(alarm.location)

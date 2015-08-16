@@ -45,7 +45,7 @@ public class GeoAlarm {
 
 	@NonNull public final UUID id;
 	@NonNull public final String name;
-	public final float radius;
+	public final int radius;
 	@NonNull public final LatLng location;
 	public final boolean enabled;
 
