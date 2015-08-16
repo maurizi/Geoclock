@@ -49,6 +49,7 @@ public class GeoAlarm {
 	@NonNull public final LatLng location;
 	public final boolean enabled;
 
+	@Nullable public final ZonedDateTime time;
 	@Nullable public final Integer hour;
 	@Nullable public final Integer minute;
 	@Nullable public final Set<DayOfWeek> days;
@@ -90,14 +91,14 @@ public class GeoAlarm {
 	/**
 	 * @return A Date object for just before the alarm is due to go off
 	 */
-	public ZonedDateTime getAlarmManagerTime(LocalDateTime now) {
+	public ZonedDateTime calculateAlarmTime(LocalDateTime now) {
 		final LocalTime alarmTime = getAlarmTime();
 
 		if (now == null || alarmTime == null) {
 			return null;
 		}
 
-		final LocalDateTime alarmDateTime = days == null || days.isEmpty()
+		final LocalDateTime alarmDateTime = isNonRepeating()
 		                                    ? alarmTime.atDate(isAlarmForToday(now)
 		                                                       ? now.toLocalDate()
 		                                                       : now.toLocalDate().plusDays(1))
@@ -106,8 +107,13 @@ public class GeoAlarm {
 		return alarmDateTime.atZone(ZoneId.systemDefault());
 	}
 
+	public boolean isNonRepeating() {
+		return days == null || days.isEmpty();
+	}
+
 	private LocalDate getSoonestDayForRepeatingAlarm(LocalDateTime now) {
-		if (days == null || days.isEmpty()) {
+		assert days != null;
+		if (isNonRepeating()) {
 			throw new AssertionError();
 		}
 
@@ -153,7 +159,7 @@ public class GeoAlarm {
 		return geofence -> parse(prefs.getString(geofence.getRequestId(), null));
 	}
 
-	public static void add(Context context, GeoAlarm newAlarm) {
+	public static void save(Context context, GeoAlarm newAlarm) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
 		Editor editor = prefs.edit();
 		editor.putString(newAlarm.id.toString(), gson.toJson(newAlarm, GeoAlarm.class))

@@ -211,7 +211,7 @@ public class GeoAlarmFragment extends DialogFragment {
 	}
 
 	private void finish(MapActivity activity, Dialog dialog, GeoAlarm newAlarm) {
-		GeoAlarm.add(activity, newAlarm);
+		GeoAlarm.save(activity, newAlarm);
 		activity.onAddGeoAlarmFragmentClose();
 
 		dialog.dismiss();
@@ -238,7 +238,7 @@ public class GeoAlarmFragment extends DialogFragment {
 	}
 
 	public void setLocationService(LocationServiceGoogle ls) {
-	  this.locationService = ls;
+		this.locationService = ls;
 	}
 
 	private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit, final LatLng initalPoint) {

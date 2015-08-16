@@ -52,7 +52,7 @@ public class ActiveAlarmManager {
 
 	private GeoAlarm getNextAlarm(final Set<GeoAlarm> activeAlarms, final LocalDateTime now) {
 		return Ordering.from(ZonedDateTime.timeLineOrder())
-		               .onResultOf((GeoAlarm alarm) -> alarm.getAlarmManagerTime(now))
+		               .onResultOf((GeoAlarm alarm) -> alarm.calculateAlarmTime(now))
 		               .min(activeAlarms);
 	}
 
@@ -87,9 +87,13 @@ public class ActiveAlarmManager {
 		if (!currentAlarms.isEmpty()) {
 			final LocalDateTime now = LocalDateTime.now();
 			final GeoAlarm nextAlarm = getNextAlarm(currentAlarms, now);
+			final ZonedDateTime alarmTime = nextAlarm.calculateAlarmTime(now);
 
-			setNotification(nextAlarm, now);
-			setAlarm(nextAlarm, now);
+			// We will check the time in a boot receiver so that we know if we missed any alarms
+			GeoAlarm.save(context, nextAlarm.withTime(alarmTime));
+
+			setNotification(nextAlarm, alarmTime);
+			setAlarm(nextAlarm, alarmTime);
 		}
 	}
 
@@ -99,10 +103,8 @@ public class ActiveAlarmManager {
 		return ImmutableSet.copyOf(gson.fromJson(savedActiveAlarmsJson, GeoAlarm[].class));
 	}
 
-	private void setNotification(@NonNull final GeoAlarm nextAlarm, final LocalDateTime now) {
-
-		final ZonedDateTime nextAlarmTime = nextAlarm.getAlarmManagerTime(now);
-		final String alarmFormattedTime = nextAlarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT));
+	private void setNotification(@NonNull final GeoAlarm nextAlarm, final ZonedDateTime alarmTime) {
+		final String alarmFormattedTime = alarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT));
 		final String title = String.format(context.getString(R.string.alarm_notification_text), alarmFormattedTime);
 
 		Intent showAlarmIntent = MapActivity.getIntent(context, nextAlarm);
@@ -118,19 +120,18 @@ public class ActiveAlarmManager {
 		// TODO: Add a dismiss button
 		Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
 		Notification notification = new NotificationCompat.Builder(context)
-				                            .setSmallIcon(R.drawable.ic_alarm_black_24dp)
-				                            .setLargeIcon(icon)
-				                            .setContentTitle(title)
-				                            .setContentText(nextAlarm.name)
-				                            .setContentIntent(notificationPendingIntent)
-				                            .build();
+		                                                  .setSmallIcon(R.drawable.ic_alarm_black_24dp)
+		                                                  .setLargeIcon(icon)
+		                                                  .setContentTitle(title)
+		                                                  .setContentText(nextAlarm.name)
+		                                                  .setContentIntent(notificationPendingIntent)
+		                                                  .build();
 
 		// Issue the notification
 		notificationManager.notify(NOTIFICATION_ID, notification);
 	}
 
-	private void setAlarm(GeoAlarm alarm, LocalDateTime now) {
-		final ZonedDateTime alarmTime = alarm.getAlarmManagerTime(now);
+	private void setAlarm(GeoAlarm alarm, final ZonedDateTime alarmTime) {
 		// We set up our (internal) alarm manager to go off slightly before the actual alarm clock time,
 		// so that we can give the exact time to the AlarmClock intent
 		final ZonedDateTime justBeforeAlarm = alarmTime.minusMinutes(1);
