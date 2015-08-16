@@ -1,20 +1,15 @@
-package maurizi.geoclock.services;
+package maurizi.geoclock.utils;
 
 
 import android.app.AlarmManager;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.support.annotation.NonNull;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.TaskStackBuilder;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
@@ -23,20 +18,16 @@ import com.google.gson.Gson;
 
 import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.ZonedDateTime;
-import org.threeten.bp.format.DateTimeFormatter;
-import org.threeten.bp.format.FormatStyle;
 
 import java.util.Set;
 
-import maurizi.geoclock.background.AlarmManagerReceiver;
 import maurizi.geoclock.GeoAlarm;
-import maurizi.geoclock.ui.MapActivity;
-import maurizi.geoclock.R;
+import maurizi.geoclock.background.AlarmClockReceiver;
+import maurizi.geoclock.background.NotificationReceiver;
 
 public class ActiveAlarmManager {
-	private static final Gson gson = new Gson();
 	private static final String ACTIVE_ALARM_PREFS = "active_alarm_prefs";
-	private static final int NOTIFICATION_ID = 42;
+	private static final Gson gson = new Gson();
 
 	private final SharedPreferences activeAlarmsPrefs;
 	private final Context context;
@@ -82,7 +73,8 @@ public class ActiveAlarmManager {
 		activeAlarmsPrefs.edit().putString(ACTIVE_ALARM_PREFS, gson.toJson(currentAlarms.toArray())).apply();
 
 		notificationManager.cancelAll();
-		alarmManager.cancel(AlarmManagerReceiver.getPendingIntent(context));
+		alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
+		alarmManager.cancel(NotificationReceiver.getPendingIntent(context));
 
 		if (!currentAlarms.isEmpty()) {
 			final LocalDateTime now = LocalDateTime.now();
@@ -100,32 +92,18 @@ public class ActiveAlarmManager {
 		return ImmutableSet.copyOf(gson.fromJson(savedActiveAlarmsJson, GeoAlarm[].class));
 	}
 
-	private void setNotification(@NonNull final GeoAlarm nextAlarm, final ZonedDateTime alarmTime) {
-		final String alarmFormattedTime = alarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT));
-		final String title = String.format(context.getString(R.string.alarm_notification_text), alarmFormattedTime);
+	private void setNotification(@NonNull final GeoAlarm alarm, final ZonedDateTime alarmTime) {
+		final ZonedDateTime now = ZonedDateTime.now();
+		final ZonedDateTime notificationTime = alarmTime.minusDays(1);
 
-		Intent showAlarmIntent = MapActivity.getIntent(context, nextAlarm);
-
-		// Create an content intent that comes with a back stack
-		// This makes hitting back from the activity go to the home screen
-		TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
-		stackBuilder.addParentStack(MapActivity.class);
-		stackBuilder.addNextIntent(showAlarmIntent);
-
-		PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
-
-		// TODO: Add a dismiss button
-		Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
-		Notification notification = new NotificationCompat.Builder(context)
-		                                                  .setSmallIcon(R.drawable.ic_alarm_black_24dp)
-		                                                  .setLargeIcon(icon)
-		                                                  .setContentTitle(title)
-		                                                  .setContentText(nextAlarm.name)
-		                                                  .setContentIntent(notificationPendingIntent)
-		                                                  .build();
-
-		// Issue the notification
-		notificationManager.notify(NOTIFICATION_ID, notification);
+		if (notificationTime.isBefore(now)) {
+			Intent intent = NotificationReceiver.getIntent(context, alarm);
+			context.sendBroadcast(intent);
+		} else {
+			final long millis = notificationTime.toInstant().toEpochMilli();
+			final PendingIntent pendingNotificationIntent = NotificationReceiver.getPendingIntent(context, alarm);
+			alarmManager.set(AlarmManager.RTC_WAKEUP, millis, pendingNotificationIntent);
+		}
 	}
 
 	private void setAlarm(GeoAlarm alarm, final ZonedDateTime alarmTime) {
@@ -134,7 +112,7 @@ public class ActiveAlarmManager {
 		final ZonedDateTime justBeforeAlarm = alarmTime.minusMinutes(1);
 		final long millis = justBeforeAlarm.toInstant().toEpochMilli();
 
-		final PendingIntent pendingAlarmIntent = AlarmManagerReceiver.getPendingIntent(context, alarm);
+		final PendingIntent pendingAlarmIntent = AlarmClockReceiver.getPendingIntent(context, alarm);
 
 		if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
 			alarmManager.setExact(AlarmManager.RTC_WAKEUP, millis, pendingAlarmIntent);

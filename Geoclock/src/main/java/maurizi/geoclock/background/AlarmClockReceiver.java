@@ -14,20 +14,20 @@ import java.util.GregorianCalendar;
 import java.util.UUID;
 
 import maurizi.geoclock.GeoAlarm;
-import maurizi.geoclock.services.ActiveAlarmManager;
+import maurizi.geoclock.utils.ActiveAlarmManager;
 
-public class AlarmManagerReceiver extends BroadcastReceiver {
+public class AlarmClockReceiver extends BroadcastReceiver {
 	private static final String ALARM_ID = "alarm_id";
 	private static final String TAG = GeofenceReceiver.class.getSimpleName();
 
 	public static PendingIntent getPendingIntent(Context context, GeoAlarm alarm) {
-		Intent intent = new Intent(context, AlarmManagerReceiver.class);
+		Intent intent = new Intent(context, AlarmClockReceiver.class);
 		intent.putExtra(ALARM_ID, alarm.id.toString());
 		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
 	public static PendingIntent getPendingIntent(Context context) {
-		Intent intent = new Intent(context, AlarmManagerReceiver.class);
+		Intent intent = new Intent(context, AlarmClockReceiver.class);
 		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 

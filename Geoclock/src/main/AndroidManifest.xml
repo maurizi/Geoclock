@@ -45,7 +45,12 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".background.AlarmManagerReceiver"
+            android:name=".background.AlarmClockReceiver"
+            android:enabled="true"
+            android:exported="false">
+        </receiver>
+        <receiver
+            android:name=".background.NotificationReceiver"
             android:enabled="true"
             android:exported="false">
         </receiver>

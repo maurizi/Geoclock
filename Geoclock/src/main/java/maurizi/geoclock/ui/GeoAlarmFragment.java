@@ -25,12 +25,12 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 
 import org.threeten.bp.DayOfWeek;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import butterknife.ButterKnife;
@@ -38,8 +38,11 @@ import butterknife.InjectView;
 import lombok.Getter;
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
-import maurizi.geoclock.services.ActiveAlarmManager;
-import maurizi.geoclock.services.LocationServiceGoogle;
+import maurizi.geoclock.utils.ActiveAlarmManager;
+import maurizi.geoclock.utils.LocationServiceGoogle;
+
+import static com.google.common.collect.ImmutableSet.copyOf;
+import static com.google.common.collect.Maps.filterValues;
 
 @Getter
 public class GeoAlarmFragment extends DialogFragment {
@@ -177,13 +180,12 @@ public class GeoAlarmFragment extends DialogFragment {
 				return;
 			}
 
+			final Set<DayOfWeek> days = copyOf(filterValues(checkboxes, CompoundButton::isChecked).keySet());
 			final GeoAlarm newAlarm = GeoAlarm.builder()
 			                                  .location(marker.getPosition())
 			                                  .name(name)
 			                                  .radius(radiusBar.getProgress())
-			                                  .days(ImmutableSet.copyOf(Maps.filterValues(checkboxes,
-			                                                                              CompoundButton::isChecked)
-			                                                                .keySet()))
+			                                  .days(days)
 			                                  .hour(timePicker.getCurrentHour())
 			                                  .minute(timePicker.getCurrentMinute())
 			                                  .enabled(enabledSwitch.isChecked())

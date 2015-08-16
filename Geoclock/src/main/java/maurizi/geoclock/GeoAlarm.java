@@ -49,7 +49,7 @@ public class GeoAlarm {
 	@NonNull public final LatLng location;
 	public final boolean enabled;
 
-	@Nullable public final ZonedDateTime time;
+	@Nullable public final Long time;
 	@Nullable public final Integer hour;
 	@Nullable public final Integer minute;
 	@Nullable public final Set<DayOfWeek> days;
@@ -148,9 +148,9 @@ public class GeoAlarm {
 
 	public static Collection<GeoAlarm> getGeoAlarms(Context context) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
+		Collection<?> json = prefs.getAll().values();
 		return ImmutableList.<GeoAlarm>builder()
-		                    .addAll(filter(transform(prefs.getAll().values(), GeoAlarm::parse),
-		                                   (GeoAlarm geoAlarm) -> geoAlarm != null))
+		                    .addAll(filter(transform(json, GeoAlarm::parse), (GeoAlarm geoAlarm) -> geoAlarm != null))
 		                    .build();
 	}
 

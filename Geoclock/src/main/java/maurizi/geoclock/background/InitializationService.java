@@ -1,18 +1,15 @@
 package maurizi.geoclock.background;
 
 import android.app.IntentService;
-import android.content.Context;
 import android.content.Intent;
 
-import org.threeten.bp.LocalDateTime;
-import org.threeten.bp.ZonedDateTime;
+import org.threeten.bp.Instant;
 
 import java.util.Collection;
-import java.util.Collections;
 
 import maurizi.geoclock.GeoAlarm;
-import maurizi.geoclock.services.ActiveAlarmManager;
-import maurizi.geoclock.services.LocationServiceGoogle;
+import maurizi.geoclock.utils.ActiveAlarmManager;
+import maurizi.geoclock.utils.LocationServiceGoogle;
 
 import static com.google.common.collect.Collections2.filter;
 
@@ -38,9 +35,9 @@ public class InitializationService extends IntentService {
 	public void disableExpiredAlarms(Collection<GeoAlarm> alarms) {
 		// When we set alarms, we store the time they will go off at.
 		// If the alarm does not repeat, and we missed it, we need to disable it.
-		ZonedDateTime now = ZonedDateTime.now();
+		Instant now = Instant.now();
 		Collection<GeoAlarm> disabledAlarms = filter(alarms, alarm ->
-			alarm.isNonRepeating() && alarm.time != null && now.isAfter(alarm.time)
+			alarm.isNonRepeating() && alarm.time != null && now.isAfter(Instant.ofEpochMilli(alarm.time))
 		);
 		for (GeoAlarm alarm : disabledAlarms) {
 			GeoAlarm.save(this, alarm);

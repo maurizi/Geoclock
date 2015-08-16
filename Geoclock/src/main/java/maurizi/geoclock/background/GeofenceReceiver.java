@@ -14,7 +14,7 @@ import com.google.common.collect.Lists;
 import java.util.List;
 
 import maurizi.geoclock.GeoAlarm;
-import maurizi.geoclock.services.ActiveAlarmManager;
+import maurizi.geoclock.utils.ActiveAlarmManager;
 
 import static com.google.common.collect.Iterables.filter;
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
