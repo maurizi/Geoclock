@@ -1,4 +1,4 @@
-package maurizi.geoclock;
+package maurizi.geoclock.ui;
 
 
 import android.app.Activity;
@@ -23,6 +23,9 @@ import android.widget.Toast;
 import com.google.common.collect.Lists;
 
 import java.util.Collection;
+
+import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.R;
 
 /**
  * Fragment used for managing interactions for and presentation of a navigation drawer. See the <a

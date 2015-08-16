@@ -4,7 +4,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-    <maurizi.geoclock.LockableScrollView
+    <maurizi.geoclock.ui.LockableScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -161,7 +161,7 @@
                 android:text="@string/add_geo_alarm_enabled_label"/>
 
         </LinearLayout>
-    </maurizi.geoclock.LockableScrollView>
+    </maurizi.geoclock.ui.LockableScrollView>
 
     <LinearLayout
         android:id="@+id/button_container"

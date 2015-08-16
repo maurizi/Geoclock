@@ -1,4 +1,4 @@
-package maurizi.geoclock;
+package maurizi.geoclock.ui;
 
 import android.app.Dialog;
 import android.os.Bundle;
@@ -30,23 +30,22 @@ import com.google.gson.Gson;
 
 import org.threeten.bp.DayOfWeek;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import lombok.Getter;
+import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.R;
 import maurizi.geoclock.services.ActiveAlarmManager;
-import maurizi.geoclock.services.LocationService;
-
-import static com.google.common.collect.Collections2.transform;
+import maurizi.geoclock.services.LocationServiceGoogle;
 
 @Getter
 public class GeoAlarmFragment extends DialogFragment {
 
 	private SupportMapFragment mapFragment;
-	private LocationService locationService;
+	private LocationServiceGoogle locationService;
 
 	private static final Gson gson = new Gson();
 
@@ -101,10 +100,14 @@ public class GeoAlarmFragment extends DialogFragment {
 
 		enabledSwitch.setChecked(true);
 		if (isEdit) {
-			timePicker.setCurrentHour(alarm.hour);
-			timePicker.setCurrentMinute(alarm.minute);
 			nameTextBox.setText(alarm.name);
 			enabledSwitch.setChecked(alarm.enabled);
+			if (alarm.hour != null) {
+				timePicker.setCurrentHour(alarm.hour);
+			}
+			if (alarm.minute != null) {
+				timePicker.setCurrentMinute(alarm.minute);
+			}
 			if (alarm.days != null) {
 				for (DayOfWeek day : alarm.days) {
 					checkboxes.get(day).setChecked(true);
@@ -158,7 +161,7 @@ public class GeoAlarmFragment extends DialogFragment {
 				alarmManager.removeActiveAlarms(ImmutableSet.of(alarm));
 
 				locationService.removeGeofence(alarm);
-				activity.onAddGeoAlarmFragmentClose(GeoAlarmFragment.this);
+				activity.onAddGeoAlarmFragmentClose();
 				dialog.dismiss();
 			});
 		} else {
@@ -182,8 +185,8 @@ public class GeoAlarmFragment extends DialogFragment {
 			                                                                .keySet()))
 			                                  .hour(timePicker.getCurrentHour())
 			                                  .minute(timePicker.getCurrentMinute())
-											  .enabled(enabledSwitch.isChecked())
-											  .id(alarm.id)
+			                                  .enabled(enabledSwitch.isChecked())
+			                                  .id(alarm.id)
 			                                  .build();
 
 			if (isEdit) {
@@ -193,20 +196,24 @@ public class GeoAlarmFragment extends DialogFragment {
 				}
 			}
 			if (newAlarm.enabled) {
-				// TODO: Refactor out this duplication
-				locationService.addGeofence(newAlarm, () -> {
-					GeoAlarm.add(this.getActivity(), newAlarm);
-					activity.onAddGeoAlarmFragmentClose(GeoAlarmFragment.this);
-
-					dialog.dismiss();
+				locationService.addGeofence(newAlarm).setResultCallback(status -> {
+					if (status.isSuccess()) {
+						finish(activity, dialog, newAlarm);
+					} else {
+						// TODO: toast
+					}
 				});
 			} else {
-				GeoAlarm.add(this.getActivity(), newAlarm);
-				activity.onAddGeoAlarmFragmentClose(GeoAlarmFragment.this);
-
-				dialog.dismiss();
+				finish(activity, dialog, newAlarm);
 			}
 		});
+	}
+
+	private void finish(MapActivity activity, Dialog dialog, GeoAlarm newAlarm) {
+		GeoAlarm.add(activity, newAlarm);
+		activity.onAddGeoAlarmFragmentClose();
+
+		dialog.dismiss();
 	}
 
 	@Override
@@ -229,7 +236,7 @@ public class GeoAlarmFragment extends DialogFragment {
 		getChildFragmentManager().beginTransaction().replace(R.id.add_geo_alarm_map_container, mapFragment).commit();
 	}
 
-	public void setLocationService(LocationService ls) {
+	public void setLocationService(LocationServiceGoogle ls) {
 	  this.locationService = ls;
 	}
 

@@ -1,8 +1,5 @@
 package maurizi.geoclock.test;
 
-import android.content.BroadcastReceiver;
-import android.content.Intent;
-
 import com.google.android.gms.location.Geofence;
 
 import org.junit.Assert;
@@ -16,7 +13,7 @@ import org.robolectric.shadows.ShadowApplication.Wrapper;
 import java.util.List;
 
 import maurizi.geoclock.BuildConfig;
-import maurizi.geoclock.GeofenceReceiver;
+import maurizi.geoclock.background.GeofenceReceiver;
 import maurizi.geoclock.test.support.RobolectricGradleTestRunner;
 
 import static org.junit.Assert.assertEquals;

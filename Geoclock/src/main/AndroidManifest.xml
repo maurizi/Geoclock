@@ -28,7 +28,7 @@
             android:value="@string/google_maps_api_key"/>
 
         <activity
-            android:name=".MapActivity"
+            android:name=".ui.MapActivity"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -37,7 +37,7 @@
         </activity>
 
         <receiver
-            android:name=".GeofenceReceiver"
+            android:name=".background.GeofenceReceiver"
             android:enabled="true"
             android:exported="false">
             <intent-filter>
@@ -45,10 +45,20 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".AlarmManagerReceiver"
+            android:name=".background.AlarmManagerReceiver"
             android:enabled="true"
             android:exported="false">
         </receiver>
+        <receiver
+            android:name=".background.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".background.BootupService" />
     </application>
 
 </manifest>
