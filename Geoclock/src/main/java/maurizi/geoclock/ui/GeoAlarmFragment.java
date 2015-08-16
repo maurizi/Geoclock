@@ -91,6 +91,7 @@ public class GeoAlarmFragment extends DialogFragment {
 
 		radiusBar.setMax(MAX_RADIUS);
 		radiusBar.setProgress(alarm.radius);
+		enabledSwitch.setChecked(alarm.enabled);
 
 		map.moveCamera(CameraUpdateFactory.newLatLngZoom(alarm.location, initalZoom));
 		final Marker marker = map.addMarker(new MarkerOptions().position(alarm.location).draggable(true));
@@ -99,10 +100,8 @@ public class GeoAlarmFragment extends DialogFragment {
 		                                                       .radius(alarm.radius)
 		                                                       .fillColor(R.color.geofence_fill_color));
 
-		enabledSwitch.setChecked(true);
 		if (isEdit) {
 			nameTextBox.setText(alarm.name);
-			enabledSwitch.setChecked(alarm.enabled);
 			if (alarm.hour != null) {
 				timePicker.setCurrentHour(alarm.hour);
 			}
@@ -250,6 +249,7 @@ public class GeoAlarmFragment extends DialogFragment {
 		                 .radius(INITIAL_RADIUS)
 		                 .name("")
 		                 .id(UUID.randomUUID())
+		                 .enabled(true)
 		                 .build();
 	}
 
