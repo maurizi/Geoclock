@@ -29,5 +29,6 @@
     <string name="add_geo_alarm_name_hint">alarm name</string>
     <string name="add_geo_alarm_enabled_label">Enabled</string>
     <string name="alarm_notification_text">Upcoming alarm at %s</string>
+    <string name="edit_title">Edit alarm area</string>
 
 </resources>

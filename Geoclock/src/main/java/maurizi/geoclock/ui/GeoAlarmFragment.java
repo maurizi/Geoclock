@@ -85,6 +85,7 @@ public class GeoAlarmFragment extends DialogFragment {
 		final LatLng initalPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG);
 		final float initalZoom = args.getFloat(GeoAlarmFragment.INITIAL_ZOOM);
 		final GeoAlarm alarm = getEffectiveGeoAlarm(args, isEdit, initalPoint);
+		final Dialog dialog = getDialog();
 
 		final Map<DayOfWeek, CheckBox> checkboxes = getWeekdaysCheckBoxMap(dialogView);
 
@@ -151,10 +152,11 @@ public class GeoAlarmFragment extends DialogFragment {
 			}
 		});
 
-		final Dialog dialog = getDialog();
 		cancelButton.setOnClickListener(view -> dialog.cancel());
 
+		dialog.setTitle(R.string.add_geo_alarm_title);
 		if (isEdit) {
+			dialog.setTitle(R.string.edit_title);
 			deleteButton.setOnClickListener(view -> {
 				GeoAlarm.remove(activity, alarm);
 				ActiveAlarmManager alarmManager = new ActiveAlarmManager(activity);
