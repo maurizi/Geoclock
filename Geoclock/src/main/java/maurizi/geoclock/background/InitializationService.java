@@ -9,9 +9,9 @@ import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.services.ActiveAlarmManager;
 import maurizi.geoclock.services.LocationServiceGoogle;
 
-public class BootupService extends IntentService {
-	public BootupService() {
-		super(BootupService.class.getName());
+public class InitializationService extends IntentService {
+	public InitializationService() {
+		super(InitializationService.class.getName());
 	}
 
 	@Override
