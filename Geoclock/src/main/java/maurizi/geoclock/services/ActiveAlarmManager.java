@@ -103,6 +103,7 @@ public class ActiveAlarmManager {
 
 		final ZonedDateTime nextAlarmTime = nextAlarm.getAlarmManagerTime(now);
 		final String alarmFormattedTime = nextAlarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT));
+		final String title = String.format(context.getString(R.string.alarm_notification_text), alarmFormattedTime);
 
 		Intent showAlarmIntent = MapActivity.getIntent(context, nextAlarm);
 
@@ -114,13 +115,12 @@ public class ActiveAlarmManager {
 
 		PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-		// TODO: Add a cancel button
-		// TODO: Extract text
+		// TODO: Add a dismiss button
 		Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
 		Notification notification = new NotificationCompat.Builder(context)
 				                            .setSmallIcon(R.drawable.ic_alarm_black_24dp)
 				                            .setLargeIcon(icon)
-				                            .setContentTitle(String.format("Upcoming Alarm at %s", alarmFormattedTime))
+				                            .setContentTitle(title)
 				                            .setContentText(nextAlarm.name)
 				                            .setContentIntent(notificationPendingIntent)
 				                            .build();
