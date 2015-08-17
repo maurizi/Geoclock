@@ -162,7 +162,7 @@ public class GeoAlarmFragment extends DialogFragment {
 			deleteButton.setOnClickListener(view -> {
 				GeoAlarm.remove(activity, alarm);
 				ActiveAlarmManager alarmManager = new ActiveAlarmManager(activity);
-				alarmManager.removeActiveAlarms(ImmutableSet.of(alarm));
+				alarmManager.removeActiveAlarms(ImmutableSet.of(alarm.id));
 
 				locationService.removeGeofence(alarm);
 				activity.onAddGeoAlarmFragmentClose();

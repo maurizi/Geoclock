@@ -20,13 +20,18 @@ import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.ZonedDateTime;
 
 import java.util.Set;
+import java.util.UUID;
 
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.background.AlarmClockReceiver;
 import maurizi.geoclock.background.NotificationReceiver;
 
+import static com.google.common.collect.Sets.filter;
+import static com.google.common.collect.Sets.newHashSet;
+
+
 public class ActiveAlarmManager {
-	private static final String ACTIVE_ALARM_PREFS = "active_alarm_prefs";
+	private static final String ACTIVE_ALARM_IDS = "active_alarm_prefs";
 	private static final Gson gson = new Gson();
 
 	private final SharedPreferences activeAlarmsPrefs;
@@ -38,7 +43,7 @@ public class ActiveAlarmManager {
 		this.context = context;
 		this.notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 		this.alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-		this.activeAlarmsPrefs = context.getSharedPreferences(ACTIVE_ALARM_PREFS, Context.MODE_PRIVATE);
+		this.activeAlarmsPrefs = context.getSharedPreferences(ACTIVE_ALARM_IDS, Context.MODE_PRIVATE);
 	}
 
 	private GeoAlarm getNextAlarm(final Set<GeoAlarm> activeAlarms, final LocalDateTime now) {
@@ -51,17 +56,17 @@ public class ActiveAlarmManager {
 		changeActiveAlarms(getSavedAlarms());
 	}
 
-	public void addActiveAlarms(ImmutableSet<GeoAlarm> triggerAlarms) {
-		final Set<GeoAlarm> savedAlarms = getSavedAlarms();
+	public void addActiveAlarms(ImmutableSet<UUID> triggerAlarmIds) {
+		final Set<UUID> savedAlarmIds = getSavedAlarms();
 
-		final ImmutableSet<GeoAlarm> currentAlarms = ImmutableSet.copyOf(Sets.union(savedAlarms, triggerAlarms));
+		final ImmutableSet<UUID> currentAlarms = ImmutableSet.copyOf(Sets.union(savedAlarmIds, triggerAlarmIds));
 		changeActiveAlarms(currentAlarms);
 	}
 
-	public void removeActiveAlarms(ImmutableSet<GeoAlarm> triggerAlarms) {
-		final Set<GeoAlarm> savedAlarms = getSavedAlarms();
+	public void removeActiveAlarms(Set<UUID> triggerAlarmIds) {
+		final Set<UUID> savedAlarmIds = getSavedAlarms();
 
-		final ImmutableSet<GeoAlarm> currentAlarms = ImmutableSet.copyOf(Sets.difference(savedAlarms, triggerAlarms));
+		final ImmutableSet<UUID> currentAlarms = ImmutableSet.copyOf(Sets.difference(savedAlarmIds, triggerAlarmIds));
 		changeActiveAlarms(currentAlarms);
 	}
 
@@ -69,8 +74,9 @@ public class ActiveAlarmManager {
 		changeActiveAlarms(ImmutableSet.of());
 	}
 
-	private void changeActiveAlarms(Set<GeoAlarm> currentAlarms) {
-		activeAlarmsPrefs.edit().putString(ACTIVE_ALARM_PREFS, gson.toJson(currentAlarms.toArray())).apply();
+	private void changeActiveAlarms(Set<UUID> currentAlarmIds) {
+		activeAlarmsPrefs.edit().putString(ACTIVE_ALARM_IDS, gson.toJson(currentAlarmIds.toArray(), UUID[].class)).apply();
+		Set<GeoAlarm> currentAlarms = filter(newHashSet(GeoAlarm.getGeoAlarms(context)), alarm -> currentAlarmIds.contains(alarm.id));
 
 		notificationManager.cancelAll();
 		alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
@@ -86,10 +92,9 @@ public class ActiveAlarmManager {
 		}
 	}
 
-	private Set<GeoAlarm> getSavedAlarms() {
-		final String savedActiveAlarmsJson = activeAlarmsPrefs.getString(ACTIVE_ALARM_PREFS,
-		                                                                 gson.toJson(new GeoAlarm[]{}));
-		return ImmutableSet.copyOf(gson.fromJson(savedActiveAlarmsJson, GeoAlarm[].class));
+	private Set<UUID> getSavedAlarms() {
+		final String savedActiveAlarmsJson = activeAlarmsPrefs.getString(ACTIVE_ALARM_IDS, gson.toJson(new UUID[]{}));
+		return ImmutableSet.copyOf(gson.fromJson(savedActiveAlarmsJson, UUID[].class));
 	}
 
 	private void setNotification(@NonNull final GeoAlarm alarm, final ZonedDateTime alarmTime) {

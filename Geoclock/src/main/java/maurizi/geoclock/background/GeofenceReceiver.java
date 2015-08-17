@@ -11,12 +11,15 @@ import com.google.android.gms.location.GeofencingEvent;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.utils.ActiveAlarmManager;
 
-import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Collections2.filter;
+import static com.google.common.collect.Collections2.transform;
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
 
 public class GeofenceReceiver extends BroadcastReceiver {
@@ -37,12 +40,13 @@ public class GeofenceReceiver extends BroadcastReceiver {
 		final List<Geofence> affectedGeofences = event.getTriggeringGeofences();
 
 		if (null != affectedGeofences && !affectedGeofences.isEmpty()) {
-			final ImmutableSet<GeoAlarm> affectedAlarms = ImmutableSet.copyOf(filter(
-					Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context)), a -> a != null));
+			final Collection<GeoAlarm> affectedAlarms = filter(
+					Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context)), a -> a != null);
+			ImmutableSet<UUID> affectedAlarmIds = ImmutableSet.copyOf(transform(affectedAlarms, alarm -> alarm.id));
 			if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-				activeAlarmManager.addActiveAlarms(affectedAlarms);
+				activeAlarmManager.addActiveAlarms(affectedAlarmIds);
 			} else {
-				activeAlarmManager.removeActiveAlarms(affectedAlarms);
+				activeAlarmManager.removeActiveAlarms(affectedAlarmIds);
 			}
 		}
 	}

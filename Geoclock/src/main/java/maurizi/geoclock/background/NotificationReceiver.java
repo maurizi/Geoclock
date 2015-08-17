@@ -35,16 +35,16 @@ public class NotificationReceiver extends BroadcastReceiver {
 		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
+	public static PendingIntent getPendingIntent(Context context) {
+		Intent intent = new Intent(context, NotificationReceiver.class);
+		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+	}
+
 	@NonNull
 	public static Intent getIntent(final Context context, final GeoAlarm alarm) {
 		Intent intent = new Intent(context, NotificationReceiver.class);
 		intent.putExtra(ALARM_ID, alarm.id.toString());
 		return intent;
-	}
-
-	public static PendingIntent getPendingIntent(Context context) {
-		Intent intent = new Intent(context, AlarmClockReceiver.class);
-		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
 	@Override

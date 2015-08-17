@@ -54,7 +54,7 @@ public class AlarmClockReceiver extends BroadcastReceiver {
 				if (alarm.days == null || alarm.days.isEmpty())  {
 					GeoAlarm.remove(context, alarm);
 					GeoAlarm.save(context, alarm.withEnabled(false));
-					activeAlarmManager.removeActiveAlarms(ImmutableSet.of(alarm));
+					activeAlarmManager.removeActiveAlarms(ImmutableSet.of(alarm.id));
 				} else {
 					activeAlarmManager.resetActiveAlarms();
 				}
