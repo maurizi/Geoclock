@@ -160,6 +160,12 @@ public class GeoAlarm {
 	}
 
 	public static void save(Context context, GeoAlarm newAlarm) {
+		if (newAlarm.enabled) {
+			final ZonedDateTime alarmTime = newAlarm.calculateAlarmTime(LocalDateTime.now());
+
+			// We will check the time in a boot receiver so that we know if we missed any alarms
+			newAlarm = newAlarm.withTime(alarmTime.toInstant().toEpochMilli());
+		}
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
 		Editor editor = prefs.edit();
 		editor.putString(newAlarm.id.toString(), gson.toJson(newAlarm, GeoAlarm.class))

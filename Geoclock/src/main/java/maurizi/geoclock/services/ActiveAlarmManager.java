@@ -89,9 +89,6 @@ public class ActiveAlarmManager {
 			final GeoAlarm nextAlarm = getNextAlarm(currentAlarms, now);
 			final ZonedDateTime alarmTime = nextAlarm.calculateAlarmTime(now);
 
-			// We will check the time in a boot receiver so that we know if we missed any alarms
-			GeoAlarm.save(context, nextAlarm.withTime(alarmTime));
-
 			setNotification(nextAlarm, alarmTime);
 			setAlarm(nextAlarm, alarmTime);
 		}
