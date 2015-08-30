@@ -35,6 +35,7 @@
             <EditText
                 style="@style/add_geo_alarm_item"
                 android:hint="@string/add_geo_alarm_name_hint"
+                android:maxLines="1"
                 android:id="@+id/add_geo_alarm_name"/>
 
             <TextView
