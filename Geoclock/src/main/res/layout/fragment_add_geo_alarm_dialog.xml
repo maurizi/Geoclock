@@ -23,6 +23,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="250dp"/>
 
+            <android.support.v7.widget.SwitchCompat
+                style="@style/add_geo_alarm_item"
+                android:id="@+id/add_geo_alarm_enabled"
+                android:text="@string/add_geo_alarm_enabled_label"/>
+
             <TextView
                 style="@style/add_geo_alarm_label"
                 android:text="@string/add_geo_alarm_name_label"/>
@@ -30,6 +35,7 @@
             <EditText
                 style="@style/add_geo_alarm_item"
                 android:hint="@string/add_geo_alarm_name_hint"
+                android:maxLines="1"
                 android:id="@+id/add_geo_alarm_name"/>
 
             <TextView
@@ -154,11 +160,6 @@
             <TimePicker
                 style="@style/add_geo_alarm_item"
                 android:id="@+id/add_geo_alarm_time"/>
-
-            <android.support.v7.widget.SwitchCompat
-                style="@style/add_geo_alarm_item"
-                android:id="@+id/add_geo_alarm_enabled"
-                android:text="@string/add_geo_alarm_enabled_label"/>
 
         </LinearLayout>
     </maurizi.geoclock.ui.LockableScrollView>

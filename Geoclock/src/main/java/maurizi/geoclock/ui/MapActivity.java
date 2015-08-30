@@ -24,7 +24,7 @@ import java.util.UUID;
 
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
-import maurizi.geoclock.services.LocationServiceGoogle;
+import maurizi.geoclock.utils.LocationServiceGoogle;
 
 
 public class MapActivity extends AppCompatActivity
@@ -142,7 +142,10 @@ public class MapActivity extends AppCompatActivity
 
 	private void centerCamera() {
 		if (map != null) {
-			map.moveCamera(CameraUpdateFactory.newLatLngZoom(locationService.getLastLocation(), DEFAULT_ZOOM_LEVEL));
+			LatLng loc = locationService.getLastLocation();
+			if (loc != null) {
+				map.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, DEFAULT_ZOOM_LEVEL));
+			}
 		}
 	}
 

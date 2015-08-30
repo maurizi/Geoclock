@@ -38,7 +38,7 @@ public class GeoAlarmTest {
 
 		final ZonedDateTime expectedTime = expectedLocalTime.atZone(ZoneId.systemDefault());
 
-		final ZonedDateTime actualTime = timedTestAlarm.getAlarmManagerTime(currentTime);
+		final ZonedDateTime actualTime = timedTestAlarm.calculateAlarmTime(currentTime);
 
 		assertEquals(message, expectedTime, actualTime);
 	}

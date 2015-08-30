@@ -25,12 +25,12 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 
 import org.threeten.bp.DayOfWeek;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import butterknife.ButterKnife;
@@ -38,8 +38,11 @@ import butterknife.InjectView;
 import lombok.Getter;
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
-import maurizi.geoclock.services.ActiveAlarmManager;
-import maurizi.geoclock.services.LocationServiceGoogle;
+import maurizi.geoclock.utils.ActiveAlarmManager;
+import maurizi.geoclock.utils.LocationServiceGoogle;
+
+import static com.google.common.collect.ImmutableSet.copyOf;
+import static com.google.common.collect.Maps.filterValues;
 
 @Getter
 public class GeoAlarmFragment extends DialogFragment {
@@ -85,23 +88,23 @@ public class GeoAlarmFragment extends DialogFragment {
 		final LatLng initalPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG);
 		final float initalZoom = args.getFloat(GeoAlarmFragment.INITIAL_ZOOM);
 		final GeoAlarm alarm = getEffectiveGeoAlarm(args, isEdit, initalPoint);
+		final Dialog dialog = getDialog();
 
 		final Map<DayOfWeek, CheckBox> checkboxes = getWeekdaysCheckBoxMap(dialogView);
 
-		map.moveCamera(CameraUpdateFactory.newLatLngZoom(alarm.location, initalZoom));
-		radiusBar.setProgress((int) alarm.radius);
 		radiusBar.setMax(MAX_RADIUS);
+		radiusBar.setProgress(alarm.radius);
+		enabledSwitch.setChecked(alarm.enabled);
 
+		map.moveCamera(CameraUpdateFactory.newLatLngZoom(alarm.location, initalZoom));
 		final Marker marker = map.addMarker(new MarkerOptions().position(alarm.location).draggable(true));
 
 		final Circle circle = map.addCircle(new CircleOptions().center(alarm.location)
 		                                                       .radius(alarm.radius)
 		                                                       .fillColor(R.color.geofence_fill_color));
 
-		enabledSwitch.setChecked(true);
 		if (isEdit) {
 			nameTextBox.setText(alarm.name);
-			enabledSwitch.setChecked(alarm.enabled);
 			if (alarm.hour != null) {
 				timePicker.setCurrentHour(alarm.hour);
 			}
@@ -151,14 +154,15 @@ public class GeoAlarmFragment extends DialogFragment {
 			}
 		});
 
-		final Dialog dialog = getDialog();
 		cancelButton.setOnClickListener(view -> dialog.cancel());
 
+		dialog.setTitle(R.string.add_geo_alarm_title);
 		if (isEdit) {
+			dialog.setTitle(R.string.edit_title);
 			deleteButton.setOnClickListener(view -> {
 				GeoAlarm.remove(activity, alarm);
 				ActiveAlarmManager alarmManager = new ActiveAlarmManager(activity);
-				alarmManager.removeActiveAlarms(ImmutableSet.of(alarm));
+				alarmManager.removeActiveAlarms(ImmutableSet.of(alarm.id));
 
 				locationService.removeGeofence(alarm);
 				activity.onAddGeoAlarmFragmentClose();
@@ -176,13 +180,12 @@ public class GeoAlarmFragment extends DialogFragment {
 				return;
 			}
 
+			final Set<DayOfWeek> days = copyOf(filterValues(checkboxes, CompoundButton::isChecked).keySet());
 			final GeoAlarm newAlarm = GeoAlarm.builder()
 			                                  .location(marker.getPosition())
 			                                  .name(name)
 			                                  .radius(radiusBar.getProgress())
-			                                  .days(ImmutableSet.copyOf(Maps.filterValues(checkboxes,
-			                                                                              CompoundButton::isChecked)
-			                                                                .keySet()))
+			                                  .days(days)
 			                                  .hour(timePicker.getCurrentHour())
 			                                  .minute(timePicker.getCurrentMinute())
 			                                  .enabled(enabledSwitch.isChecked())
@@ -210,7 +213,7 @@ public class GeoAlarmFragment extends DialogFragment {
 	}
 
 	private void finish(MapActivity activity, Dialog dialog, GeoAlarm newAlarm) {
-		GeoAlarm.add(activity, newAlarm);
+		GeoAlarm.save(activity, newAlarm);
 		activity.onAddGeoAlarmFragmentClose();
 
 		dialog.dismiss();
@@ -237,7 +240,7 @@ public class GeoAlarmFragment extends DialogFragment {
 	}
 
 	public void setLocationService(LocationServiceGoogle ls) {
-	  this.locationService = ls;
+		this.locationService = ls;
 	}
 
 	private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit, final LatLng initalPoint) {
@@ -248,6 +251,7 @@ public class GeoAlarmFragment extends DialogFragment {
 		                 .radius(INITIAL_RADIUS)
 		                 .name("")
 		                 .id(UUID.randomUUID())
+		                 .enabled(true)
 		                 .build();
 	}
 

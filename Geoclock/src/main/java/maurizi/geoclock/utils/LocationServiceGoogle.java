@@ -1,11 +1,11 @@
-package maurizi.geoclock.services;
+package maurizi.geoclock.utils;
 
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.service.carrier.CarrierMessagingService.ResultCallback;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -23,8 +23,8 @@ import com.google.common.collect.Lists;
 import java.util.Collection;
 
 import maurizi.geoclock.GeoAlarm;
-import maurizi.geoclock.background.GeofenceReceiver;
 import maurizi.geoclock.R;
+import maurizi.geoclock.background.GeofenceReceiver;
 
 import static java.util.Collections.singletonList;
 
@@ -91,9 +91,12 @@ public class LocationServiceGoogle
 				.removeGeofences(apiClient, Lists.<String>newArrayList(alarm.id.toString()));
 	}
 
-	public LatLng getLastLocation() {
+	public @Nullable LatLng getLastLocation() {
 		android.location.Location loc = LocationServices.FusedLocationApi.getLastLocation(apiClient);
-		return new LatLng(loc.getLatitude(), loc.getLongitude());
+		if (loc != null) {
+			return new LatLng(loc.getLatitude(), loc.getLongitude());
+		}
+		return null;
 	}
 
 	private Geofence getGeofence(GeoAlarm alarm) {
