@@ -78,7 +78,6 @@ public class ActiveAlarmManager {
 		activeAlarmsPrefs.edit().putString(ACTIVE_ALARM_IDS, gson.toJson(currentAlarmIds.toArray(), UUID[].class)).apply();
 		Set<GeoAlarm> currentAlarms = filter(newHashSet(GeoAlarm.getGeoAlarms(context)), alarm -> currentAlarmIds.contains(alarm.id));
 
-		notificationManager.cancelAll();
 		alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
 		alarmManager.cancel(NotificationReceiver.getPendingIntent(context));
 
@@ -89,6 +88,8 @@ public class ActiveAlarmManager {
 
 			setNotification(nextAlarm, alarmTime);
 			setAlarm(nextAlarm, alarmTime);
+		} else {
+			notificationManager.cancelAll();
 		}
 	}
 
