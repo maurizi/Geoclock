@@ -23,7 +23,8 @@ import com.google.common.collect.Lists;
 
 import java.util.Collection;
 
-import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.Location;
+import maurizi.geoclock.utils.Locations;
 import maurizi.geoclock.R;
 
 /**
@@ -50,7 +51,7 @@ public class NavigationDrawerFragment extends Fragment {
 
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerListView;
-	private ArrayAdapter<GeoAlarm> geoAlarmAdapter;
+	private ArrayAdapter<Location> geoAlarmAdapter;
 	private View mFragmentContainerView;
 
 	private int mCurrentSelectedPosition = 0;
@@ -59,9 +60,9 @@ public class NavigationDrawerFragment extends Fragment {
 	}
 
 
-	public void setGeoAlarms(Collection<GeoAlarm> alarms) {
+	public void setGeoAlarms(Collection<Location> alarms) {
 		geoAlarmAdapter.clear();
-		for (GeoAlarm alarm : alarms) {
+		for (Location alarm : alarms) {
 			geoAlarmAdapter.add(alarm);
 		}
 	}
@@ -93,7 +94,7 @@ public class NavigationDrawerFragment extends Fragment {
 		geoAlarmAdapter = new ArrayAdapter<>(
 				getActionBar().getThemedContext(),
 				android.R.layout.simple_list_item_activated_1,
-				Lists.newArrayList(GeoAlarm.getGeoAlarms(getActivity()))
+				Lists.newArrayList(Locations.get(getActivity()))
 		);
 		mDrawerListView.setAdapter(geoAlarmAdapter);
 		mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
@@ -225,6 +226,6 @@ public class NavigationDrawerFragment extends Fragment {
 		/**
 		 * Called when an item in the navigation drawer is selected.
 		 */
-		void onNavigationDrawerItemSelected(GeoAlarm alarm);
+		void onNavigationDrawerItemSelected(Location alarm);
 	}
 }

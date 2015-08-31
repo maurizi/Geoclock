@@ -13,14 +13,15 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.UUID;
 
-import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.Alarm;
+import maurizi.geoclock.utils.Alarms;
 import maurizi.geoclock.utils.ActiveAlarmManager;
 
 public class AlarmClockReceiver extends BroadcastReceiver {
 	private static final String ALARM_ID = "alarm_id";
 	private static final String TAG = GeofenceReceiver.class.getSimpleName();
 
-	public static PendingIntent getPendingIntent(Context context, GeoAlarm alarm) {
+	public static PendingIntent getPendingIntent(Context context, Alarm alarm) {
 		Intent intent = new Intent(context, AlarmClockReceiver.class);
 		intent.putExtra(ALARM_ID, alarm.id.toString());
 		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -34,8 +35,8 @@ public class AlarmClockReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(final Context context, final Intent intent) {
 		if (intent.hasExtra(ALARM_ID)) {
-			GeoAlarm alarm = GeoAlarm.getGeoAlarm(context, UUID.fromString(intent.getStringExtra(ALARM_ID)));
-			if (alarm != null && alarm.enabled) {
+			Alarm alarm = Alarms.get(context, UUID.fromString(intent.getStringExtra(ALARM_ID)));
+			if (alarm != null && alarm.isEnabled()) {
 				ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(context);
 
 				Intent alarmClockIntent = new Intent(AlarmClock.ACTION_SET_ALARM);
@@ -52,8 +53,8 @@ public class AlarmClockReceiver extends BroadcastReceiver {
 				}
 
 				if (alarm.days == null || alarm.days.isEmpty())  {
-					GeoAlarm.remove(context, alarm);
-					GeoAlarm.save(context, alarm.withEnabled(false));
+					Alarms.remove(context, alarm);
+					Alarms.save(context, alarm.withEnabled(false));
 					activeAlarmManager.removeActiveAlarms(ImmutableSet.of(alarm.id));
 				} else {
 					activeAlarmManager.resetActiveAlarms();

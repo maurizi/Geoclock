@@ -22,7 +22,7 @@ import org.threeten.bp.ZonedDateTime;
 import java.util.Set;
 import java.util.UUID;
 
-import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.Alarm;
 import maurizi.geoclock.background.AlarmClockReceiver;
 import maurizi.geoclock.background.NotificationReceiver;
 
@@ -46,9 +46,9 @@ public class ActiveAlarmManager {
 		this.activeAlarmsPrefs = context.getSharedPreferences(ACTIVE_ALARM_IDS, Context.MODE_PRIVATE);
 	}
 
-	private GeoAlarm getNextAlarm(final Set<GeoAlarm> activeAlarms, final LocalDateTime now) {
+	private Alarm getNextAlarm(final Set<Alarm> activeAlarms, final LocalDateTime now) {
 		return Ordering.from(ZonedDateTime.timeLineOrder())
-		               .onResultOf((GeoAlarm alarm) -> alarm.calculateAlarmTime(now))
+		               .onResultOf((Alarm alarm) -> alarm.calculateAlarmTime(now))
 		               .min(activeAlarms);
 	}
 
@@ -76,14 +76,14 @@ public class ActiveAlarmManager {
 
 	private void changeActiveAlarms(Set<UUID> currentAlarmIds) {
 		activeAlarmsPrefs.edit().putString(ACTIVE_ALARM_IDS, gson.toJson(currentAlarmIds.toArray(), UUID[].class)).apply();
-		Set<GeoAlarm> currentAlarms = filter(newHashSet(GeoAlarm.getGeoAlarms(context)), alarm -> currentAlarmIds.contains(alarm.id));
+		Set<Alarm> currentAlarms = filter(newHashSet(Alarms.get(context)), alarm -> currentAlarmIds.contains(alarm.id));
 
 		alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
 		alarmManager.cancel(NotificationReceiver.getPendingIntent(context));
 
 		if (!currentAlarms.isEmpty()) {
 			final LocalDateTime now = LocalDateTime.now();
-			final GeoAlarm nextAlarm = getNextAlarm(currentAlarms, now);
+			final Alarm nextAlarm = getNextAlarm(currentAlarms, now);
 			final ZonedDateTime alarmTime = nextAlarm.calculateAlarmTime(now);
 
 			setNotification(nextAlarm, alarmTime);
@@ -98,7 +98,7 @@ public class ActiveAlarmManager {
 		return ImmutableSet.copyOf(gson.fromJson(savedActiveAlarmsJson, UUID[].class));
 	}
 
-	private void setNotification(@NonNull final GeoAlarm alarm, final ZonedDateTime alarmTime) {
+	private void setNotification(@NonNull final Alarm alarm, final ZonedDateTime alarmTime) {
 		final ZonedDateTime now = ZonedDateTime.now();
 		final ZonedDateTime notificationTime = alarmTime.minusDays(1);
 
@@ -112,7 +112,7 @@ public class ActiveAlarmManager {
 		}
 	}
 
-	private void setAlarm(GeoAlarm alarm, final ZonedDateTime alarmTime) {
+	private void setAlarm(Alarm alarm, final ZonedDateTime alarmTime) {
 		// We set up our (internal) alarm manager to go off slightly before the actual alarm clock time,
 		// so that we can give the exact time to the AlarmClock intent
 		final ZonedDateTime justBeforeAlarm = alarmTime.minusMinutes(1);

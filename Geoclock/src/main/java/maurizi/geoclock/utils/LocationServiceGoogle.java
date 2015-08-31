@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 
 import java.util.Collection;
 
-import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.Location;
 import maurizi.geoclock.R;
 import maurizi.geoclock.background.GeofenceReceiver;
 
@@ -72,21 +72,21 @@ public class LocationServiceGoogle
 		apiClient.disconnect();
 	}
 
-	public PendingResult<Status> addGeofence(@NonNull GeoAlarm alarm) {
+	public PendingResult<Status> addGeofence(@NonNull Location alarm) {
 		return addGeofences(singletonList(alarm));
 	}
 
-	public PendingResult<Status> addGeofences(@NonNull Collection<GeoAlarm> alarms) {
+	public PendingResult<Status> addGeofences(@NonNull Collection<Location> alarms) {
 		GeofencingRequest.Builder geofenceRequestBuilder = new GeofencingRequest.Builder();
 		geofenceRequestBuilder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
-		for (GeoAlarm alarm : alarms) {
+		for (Location alarm : alarms) {
 			geofenceRequestBuilder.addGeofence(getGeofence(alarm));
 		}
 
 		return LocationServices.GeofencingApi.addGeofences(apiClient, geofenceRequestBuilder.build(), pendingIntent);
 	}
 
-	public PendingResult<Status> removeGeofence(@NonNull GeoAlarm alarm) {
+	public PendingResult<Status> removeGeofence(@NonNull Location alarm) {
 		return LocationServices.GeofencingApi
 				.removeGeofences(apiClient, Lists.<String>newArrayList(alarm.id.toString()));
 	}
@@ -99,7 +99,7 @@ public class LocationServiceGoogle
 		return null;
 	}
 
-	private Geofence getGeofence(GeoAlarm alarm) {
+	private Geofence getGeofence(Location alarm) {
 		return new Geofence.Builder()
 		                   .setRequestId(alarm.id.toString())
 		                   .setCircularRegion(alarm.location.latitude, alarm.location.longitude, alarm.radius)

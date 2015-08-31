@@ -19,7 +19,10 @@ import org.threeten.bp.format.FormatStyle;
 
 import java.util.UUID;
 
-import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.Alarm;
+import maurizi.geoclock.utils.Alarms;
+import maurizi.geoclock.Location;
+import maurizi.geoclock.utils.Locations;
 import maurizi.geoclock.R;
 import maurizi.geoclock.ui.MapActivity;
 
@@ -30,7 +33,7 @@ public class NotificationReceiver extends BroadcastReceiver {
 	private NotificationManager notificationManager;
 	private Context context;
 
-	public static PendingIntent getPendingIntent(Context context, GeoAlarm alarm) {
+	public static PendingIntent getPendingIntent(Context context, Alarm alarm) {
 		Intent intent = getIntent(context, alarm);
 		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
@@ -41,7 +44,7 @@ public class NotificationReceiver extends BroadcastReceiver {
 	}
 
 	@NonNull
-	public static Intent getIntent(final Context context, final GeoAlarm alarm) {
+	public static Intent getIntent(final Context context, final Alarm alarm) {
 		Intent intent = new Intent(context, NotificationReceiver.class);
 		intent.putExtra(ALARM_ID, alarm.id.toString());
 		return intent;
@@ -52,19 +55,20 @@ public class NotificationReceiver extends BroadcastReceiver {
 		this.context = context;
 		this.notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 		if (intent.hasExtra(ALARM_ID)) {
-			GeoAlarm alarm = GeoAlarm.getGeoAlarm(context, UUID.fromString(intent.getStringExtra(ALARM_ID)));
+			Alarm alarm = Alarms.get(context, UUID.fromString(intent.getStringExtra(ALARM_ID)));
 			if (alarm != null) {
 				setNotification(alarm);
 			}
 		}
 	}
 
-	private void setNotification(@NonNull final GeoAlarm nextAlarm) {
+	private void setNotification(@NonNull final Alarm nextAlarm) {
+		final Location location = Locations.get(context, nextAlarm.parent);
 		final ZonedDateTime alarmTime = nextAlarm.calculateAlarmTime(LocalDateTime.now());
 		final String alarmFormattedTime = alarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT));
 		final String title = String.format(context.getString(R.string.alarm_notification_text), alarmFormattedTime);
 
-		Intent showAlarmIntent = MapActivity.getIntent(context, nextAlarm);
+		Intent showAlarmIntent = MapActivity.getIntent(context, location);
 
 		// Create an content intent that comes with a back stack
 		// This makes hitting back from the activity go to the home screen
@@ -80,7 +84,7 @@ public class NotificationReceiver extends BroadcastReceiver {
 		                                                  .setSmallIcon(R.drawable.ic_alarm_black_24dp)
 		                                                  .setLargeIcon(icon)
 		                                                  .setContentTitle(title)
-		                                                  .setContentText(nextAlarm.name)
+		                                                  .setContentText(location.name)
 		                                                  .setContentIntent(notificationPendingIntent)
 		                                                  .build();
 

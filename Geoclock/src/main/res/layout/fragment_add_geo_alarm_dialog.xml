@@ -23,11 +23,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="250dp"/>
 
-            <android.support.v7.widget.SwitchCompat
-                style="@style/add_geo_alarm_item"
-                android:id="@+id/add_geo_alarm_enabled"
-                android:text="@string/add_geo_alarm_enabled_label"/>
-
             <TextView
                 style="@style/add_geo_alarm_label"
                 android:text="@string/add_geo_alarm_name_label"/>
@@ -64,6 +59,11 @@
                     android:layout_width="48dp"
                     android:text="@string/max_radius_label"/>
             </LinearLayout>
+
+            <android.support.v7.widget.SwitchCompat
+                style="@style/add_geo_alarm_item"
+                android:id="@+id/add_geo_alarm_enabled"
+                android:text="@string/add_geo_alarm_enabled_label"/>
 
             <TextView
                 style="@style/add_geo_alarm_label"
@@ -183,14 +183,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:id="@+id/add_geo_alarm_delete"
+            android:id="@+id/delete_location"
             android:text="@string/add_geo_alarm_delete"/>
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:id="@+id/add_geo_alarm_save"
+            android:id="@+id/save_button"
             android:text="@string/add_geo_alarm_continue"/>
     </LinearLayout>
 

@@ -1,6 +1,5 @@
 package maurizi.geoclock.test;
 
-import com.google.android.gms.maps.model.LatLng;
 import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
@@ -12,29 +11,28 @@ import org.threeten.bp.ZonedDateTime;
 
 import java.util.UUID;
 
-import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.Alarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.threeten.bp.temporal.TemporalAdjusters.nextOrSame;
 
 @SuppressWarnings("ConstantConditions")
-public class GeoAlarmTest {
+public class AlarmTest {
 
-	static final GeoAlarm testAlarm = GeoAlarm.builder()
-			.name("test")
-			.location(new LatLng(0, 0))
-			.radius(1000)
+	static final Alarm.AlarmBuilder BUILDER = Alarm.builder()
 			.id(UUID.randomUUID())
-			.build();
+			.parent(UUID.randomUUID())
+			.enabled(true);
 
 	private void assertAlarmManager(int alarmHour, int alarmDay, LocalDateTime currentTime, LocalDateTime expectedTime, String message) {
 		assertAlarmManager(alarmHour, alarmDay, currentTime, expectedTime, new DayOfWeek[] {}, message);
 	}
 
 	private void assertAlarmManager(int alarmHour, int alarmMinutes, LocalDateTime currentTime, LocalDateTime expectedLocalTime, DayOfWeek[] days, String message) {
-		final GeoAlarm timedTestAlarm = testAlarm.withDays(ImmutableSet.copyOf(days))
-		                                         .withHour(alarmHour)
-		                                         .withMinute(alarmMinutes);
+		final Alarm timedTestAlarm = BUILDER.days(ImmutableSet.copyOf(days))
+		                                    .hour(alarmHour)
+		                                    .minute(alarmMinutes)
+		                                    .build();
 
 		final ZonedDateTime expectedTime = expectedLocalTime.atZone(ZoneId.systemDefault());
 

@@ -7,7 +7,10 @@ import org.threeten.bp.Instant;
 
 import java.util.Collection;
 
-import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.Alarm;
+import maurizi.geoclock.utils.Alarms;
+import maurizi.geoclock.Location;
+import maurizi.geoclock.utils.Locations;
 import maurizi.geoclock.utils.ActiveAlarmManager;
 import maurizi.geoclock.utils.LocationServiceGoogle;
 
@@ -20,27 +23,30 @@ public class InitializationService extends IntentService {
 
 	@Override
 	public void onHandleIntent(final Intent intent) {
-		Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
+		Collection<Alarm> alarms = Alarms.get(this);
 		disableExpiredAlarms(alarms);
 
 		ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(this);
 		activeAlarmManager.clearActiveAlarms();
 
-		LocationServiceGoogle locationService = new LocationServiceGoogle(this);
-		locationService.connect(() -> locationService.addGeofences(alarms).setResultCallback(status -> {
-			// TODO: We need to handle errors somehow...
-		}));
+		Collection<Location> locations = Locations.get(this);
+		if (!locations.isEmpty()) {
+			LocationServiceGoogle locationService = new LocationServiceGoogle(this);
+			locationService.connect(() -> locationService.addGeofences(locations).setResultCallback(status -> {
+				// TODO: We need to handle errors somehow...
+			}));
+		}
 	}
 
-	public void disableExpiredAlarms(Collection<GeoAlarm> alarms) {
+	public void disableExpiredAlarms(Collection<Alarm> alarms) {
 		// When we set alarms, we store the time they will go off at.
 		// If the alarm does not repeat, and we missed it, we need to disable it.
 		Instant now = Instant.now();
-		Collection<GeoAlarm> disabledAlarms = filter(alarms, alarm ->
+		Collection<Alarm> disabledAlarms = filter(alarms, alarm ->
 			alarm.isNonRepeating() && alarm.time != null && now.isAfter(Instant.ofEpochMilli(alarm.time))
 		);
-		for (GeoAlarm alarm : disabledAlarms) {
-			GeoAlarm.save(this, alarm);
+		for (Alarm alarm : disabledAlarms) {
+			Alarms.save(this, alarm.withEnabled(false));
 		}
 	}
 }

@@ -22,7 +22,8 @@ import com.google.gson.Gson;
 import java.util.Collection;
 import java.util.UUID;
 
-import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.Location;
+import maurizi.geoclock.utils.Locations;
 import maurizi.geoclock.R;
 import maurizi.geoclock.utils.LocationServiceGoogle;
 
@@ -81,10 +82,12 @@ public class MapActivity extends AppCompatActivity
 		// Set up the drawer.
 		final DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		navigationDrawerFragment.setUp(R.id.navigation_drawer, drawerLayout);
+
+		redrawGeoAlarms();
 	}
 
 	@Override
-	public void onNavigationDrawerItemSelected(GeoAlarm alarm) {
+	public void onNavigationDrawerItemSelected(Location alarm) {
 		if (map != null) {
 			map.animateCamera(CameraUpdateFactory.newLatLng(alarm.location));
 		}
@@ -111,7 +114,7 @@ public class MapActivity extends AppCompatActivity
 	}
 
 	@NonNull
-	public static Intent getIntent(final @NonNull Context context, final @NonNull GeoAlarm nextAlarm) {
+	public static Intent getIntent(final @NonNull Context context, final @NonNull Location nextAlarm) {
 		Intent showAlarmIntent = new Intent(context, MapActivity.class);
 		showAlarmIntent.putExtra(MapActivity.ALARM_ID, nextAlarm.id.toString());
 		return showAlarmIntent;
@@ -128,14 +131,14 @@ public class MapActivity extends AppCompatActivity
 	}
 
 	private void redrawGeoAlarms() {
-		final Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
-		navigationDrawerFragment.setGeoAlarms(alarms);
+		final Collection<Location> locations = Locations.get(this);
+		navigationDrawerFragment.setGeoAlarms(locations);
 
 		if (map != null) {
 			map.clear();
-			for (final GeoAlarm alarm : alarms) {
-				markers.put(alarm.id, map.addMarker(alarm.getMarkerOptions()));
-				map.addCircle(alarm.getCircleOptions());
+			for (final Location location : locations) {
+				markers.put(location.id, map.addMarker(location.getMarkerOptions()));
+				map.addCircle(location.getCircleOptions());
 			}
 		}
 	}
@@ -151,8 +154,8 @@ public class MapActivity extends AppCompatActivity
 
 	void showAddPopup(LatLng latLng) {
 		Bundle args = new Bundle();
-		args.putParcelable(GeoAlarmFragment.INITIAL_LATLNG, latLng);
-		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+		args.putParcelable(GeoAlarmFragment.INITIAL_LATLNG_KEY, latLng);
+		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM_KEY, map.getCameraPosition().zoom);
 
 		showPopup(args);
 	}
@@ -162,12 +165,12 @@ public class MapActivity extends AppCompatActivity
 	}
 
 	void showEditPopup(UUID id) {
-		GeoAlarm alarm = GeoAlarm.getGeoAlarm(this, id);
+		Location alarm = Locations.get(this, id);
 		if (alarm != null) {
 			Bundle args = new Bundle();
-			String alarmJson = gson.toJson(alarm, GeoAlarm.class);
-			args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
-			args.putString(GeoAlarmFragment.EXISTING_ALARM, alarmJson);
+			String alarmJson = gson.toJson(alarm, Location.class);
+			args.putFloat(GeoAlarmFragment.INITIAL_ZOOM_KEY, map.getCameraPosition().zoom);
+			args.putString(GeoAlarmFragment.EXISTING_ALARM_KEY, alarmJson);
 
 			showPopup(args);
 		}
