@@ -81,6 +81,8 @@ public class MapActivity extends AppCompatActivity
 		// Set up the drawer.
 		final DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		navigationDrawerFragment.setUp(R.id.navigation_drawer, drawerLayout);
+
+		redrawGeoAlarms();
 	}
 
 	@Override
@@ -151,8 +153,8 @@ public class MapActivity extends AppCompatActivity
 
 	void showAddPopup(LatLng latLng) {
 		Bundle args = new Bundle();
-		args.putParcelable(GeoAlarmFragment.INITIAL_LATLNG, latLng);
-		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+		args.putParcelable(GeoAlarmFragment.INITIAL_LATLNG_KEY, latLng);
+		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM_KEY, map.getCameraPosition().zoom);
 
 		showPopup(args);
 	}
@@ -166,8 +168,8 @@ public class MapActivity extends AppCompatActivity
 		if (alarm != null) {
 			Bundle args = new Bundle();
 			String alarmJson = gson.toJson(alarm, GeoAlarm.class);
-			args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
-			args.putString(GeoAlarmFragment.EXISTING_ALARM, alarmJson);
+			args.putFloat(GeoAlarmFragment.INITIAL_ZOOM_KEY, map.getCameraPosition().zoom);
+			args.putString(GeoAlarmFragment.EXISTING_ALARM_KEY, alarmJson);
 
 			showPopup(args);
 		}
