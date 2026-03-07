@@ -29,12 +29,23 @@ android {
             keyAlias 'android'
             keyPassword 'android'
         }
+        release {
+            def keystorePath = System.getenv("KEYSTORE_PATH")
+            storeFile keystorePath ? file(keystorePath) : rootProject.file('debug.keystore')
+            storePassword System.getenv("STORE_PASSWORD") ?: 'android'
+            keyAlias System.getenv("KEY_ALIAS") ?: 'android'
+            keyPassword System.getenv("KEY_PASSWORD") ?: 'android'
+        }
     }
 
     buildTypes {
         debug {
             applicationIdSuffix '.debug'
             signingConfig signingConfigs.debug
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
         }
     }
 
