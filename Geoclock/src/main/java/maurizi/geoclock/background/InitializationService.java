@@ -1,10 +1,12 @@
 package maurizi.geoclock.background;
 
-import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 
-import org.threeten.bp.Instant;
+import androidx.annotation.NonNull;
+import androidx.core.app.JobIntentService;
 
+import java.time.Instant;
 import java.util.Collection;
 
 import maurizi.geoclock.GeoAlarm;
@@ -13,34 +15,33 @@ import maurizi.geoclock.utils.LocationServiceGoogle;
 
 import static com.google.common.collect.Collections2.filter;
 
-public class InitializationService extends IntentService {
-	public InitializationService() {
-		super(InitializationService.class.getName());
-	}
+public class InitializationService extends JobIntentService {
+    private static final int JOB_ID = 1000;
 
-	@Override
-	public void onHandleIntent(final Intent intent) {
-		Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
-		disableExpiredAlarms(alarms);
+    public static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, InitializationService.class, JOB_ID, work);
+    }
 
-		ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(this);
-		activeAlarmManager.clearActiveAlarms();
+    @Override
+    protected void onHandleWork(@NonNull Intent intent) {
+        Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
+        disableExpiredAlarms(alarms);
 
-		LocationServiceGoogle locationService = new LocationServiceGoogle(this);
-		locationService.connect(() -> locationService.addGeofences(alarms).setResultCallback(status -> {
-			// TODO: We need to handle errors somehow...
-		}));
-	}
+        ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(this);
+        activeAlarmManager.clearActiveAlarms();
 
-	public void disableExpiredAlarms(Collection<GeoAlarm> alarms) {
-		// When we set alarms, we store the time they will go off at.
-		// If the alarm does not repeat, and we missed it, we need to disable it.
-		Instant now = Instant.now();
-		Collection<GeoAlarm> disabledAlarms = filter(alarms, alarm ->
-			alarm.isNonRepeating() && alarm.time != null && now.isAfter(Instant.ofEpochMilli(alarm.time))
-		);
-		for (GeoAlarm alarm : disabledAlarms) {
-			GeoAlarm.save(this, alarm);
-		}
-	}
+        LocationServiceGoogle locationService = new LocationServiceGoogle(this);
+        locationService.addGeofences(alarms)
+                .addOnSuccessListener(aVoid -> { /* geofences registered */ })
+                .addOnFailureListener(e -> { /* TODO: handle registration failure */ });
+    }
+
+    private void disableExpiredAlarms(Collection<GeoAlarm> alarms) {
+        Instant now = Instant.now();
+        Collection<GeoAlarm> disabledAlarms = filter(alarms, alarm ->
+                alarm.isNonRepeating() && alarm.time != null && now.isAfter(Instant.ofEpochMilli(alarm.time)));
+        for (GeoAlarm alarm : disabledAlarms) {
+            GeoAlarm.save(this, alarm);
+        }
+    }
 }
