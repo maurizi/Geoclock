@@ -7,6 +7,7 @@ import android.content.Intent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingClient;
@@ -33,8 +34,13 @@ public class LocationServiceGoogle {
     @NonNull private final GeofencingClient geofencingClient;
 
     public LocationServiceGoogle(@NonNull Context context) {
+        this(context, LocationServices.getGeofencingClient(context));
+    }
+
+    @VisibleForTesting
+    LocationServiceGoogle(@NonNull Context context, @NonNull GeofencingClient geofencingClient) {
         this.context = context;
-        this.geofencingClient = LocationServices.getGeofencingClient(context);
+        this.geofencingClient = geofencingClient;
     }
 
     public Task<Void> addGeofence(@NonNull GeoAlarm alarm) {
@@ -43,6 +49,10 @@ public class LocationServiceGoogle {
 
     @SuppressLint("MissingPermission")
     public Task<Void> addGeofences(@NonNull Collection<GeoAlarm> alarms) {
+        if (alarms.isEmpty()) {
+            return com.google.android.gms.tasks.Tasks.forResult(null);
+        }
+
         List<Geofence> geofences = new ArrayList<>();
         for (GeoAlarm alarm : alarms) {
             geofences.add(buildGeofence(alarm));
@@ -76,9 +86,10 @@ public class LocationServiceGoogle {
     }
 
     private Geofence buildGeofence(GeoAlarm alarm) {
+        float radius = Math.max(1f, alarm.radius); // setCircularRegion throws IllegalArgumentException if radius <= 0
         return new Geofence.Builder()
                 .setRequestId(alarm.id.toString())
-                .setCircularRegion(alarm.location.latitude, alarm.location.longitude, alarm.radius)
+                .setCircularRegion(alarm.location.latitude, alarm.location.longitude, radius)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build();

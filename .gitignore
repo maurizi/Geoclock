@@ -1,5 +1,6 @@
 .gradle
 /local.properties
+**/res/values/map_key.xml
 
 
 # Android Studio file

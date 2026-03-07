@@ -104,24 +104,28 @@ public class MapActivity extends AppCompatActivity
             pendingAlarmId = null;
         }
 
-        // On Android 10+ also request background location for geofencing
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
-                        REQUEST_BACKGROUND_LOCATION);
-            }
-        }
+        requestBackgroundLocationIfNeeded();
+    }
 
-        // On Android 13+ request notification permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        REQUEST_NOTIFICATION_PERMISSION);
-            }
+    private void requestBackgroundLocationIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                    REQUEST_BACKGROUND_LOCATION);
+        } else {
+            requestNotificationPermissionIfNeeded();
+        }
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    REQUEST_NOTIFICATION_PERMISSION);
         }
     }
 
@@ -135,6 +139,9 @@ public class MapActivity extends AppCompatActivity
             } else {
                 Toast.makeText(this, R.string.fail_location, Toast.LENGTH_LONG).show();
             }
+        } else if (requestCode == REQUEST_BACKGROUND_LOCATION) {
+            // Proceed to notifications regardless of whether background location was granted
+            requestNotificationPermissionIfNeeded();
         }
     }
 

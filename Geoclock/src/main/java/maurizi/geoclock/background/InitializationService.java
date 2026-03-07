@@ -31,7 +31,7 @@ public class InitializationService extends JobIntentService {
         activeAlarmManager.clearActiveAlarms();
 
         LocationServiceGoogle locationService = new LocationServiceGoogle(this);
-        locationService.addGeofences(alarms)
+        locationService.addGeofences(filter(alarms, alarm -> alarm.enabled))
                 .addOnSuccessListener(aVoid -> { /* geofences registered */ })
                 .addOnFailureListener(e -> { /* TODO: handle registration failure */ });
     }
