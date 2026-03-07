@@ -1,15 +1,8 @@
 package maurizi.geoclock.ui;
 
-
-import android.app.Activity;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,6 +12,13 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+
 import com.google.common.collect.Lists;
 
 import java.util.Collection;
@@ -26,205 +26,152 @@ import java.util.Collection;
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
 
-/**
- * Fragment used for managing interactions for and presentation of a navigation drawer. See the <a
- * href="https://developer.android.com/design/patterns/navigation-drawer.html#Interaction"> design guidelines</a> for a
- * complete explanation of the behaviors implemented here.
- */
 public class NavigationDrawerFragment extends Fragment {
 
-	/**
-	 * Remember the position of the selected item.
-	 */
-	private static final String STATE_SELECTED_POSITION = "selected_navigation_drawer_position";
+    private static final String STATE_SELECTED_POSITION = "selected_navigation_drawer_position";
 
-	/**
-	 * A pointer to the current callbacks instance (the Activity).
-	 */
-	private NavigationDrawerCallbacks mCallbacks;
+    private NavigationDrawerCallbacks mCallbacks;
+    private ActionBarDrawerToggle mDrawerToggle;
 
-	/**
-	 * Helper component that ties the action bar to the navigation drawer.
-	 */
-	private ActionBarDrawerToggle mDrawerToggle;
+    private DrawerLayout mDrawerLayout;
+    private ListView mDrawerListView;
+    private ArrayAdapter<GeoAlarm> geoAlarmAdapter;
+    private View mFragmentContainerView;
 
-	private DrawerLayout mDrawerLayout;
-	private ListView mDrawerListView;
-	private ArrayAdapter<GeoAlarm> geoAlarmAdapter;
-	private View mFragmentContainerView;
+    private int mCurrentSelectedPosition = 0;
 
-	private int mCurrentSelectedPosition = 0;
+    public NavigationDrawerFragment() {
+    }
 
-	public NavigationDrawerFragment() {
-	}
+    public void setGeoAlarms(Collection<GeoAlarm> alarms) {
+        geoAlarmAdapter.clear();
+        for (GeoAlarm alarm : alarms) {
+            geoAlarmAdapter.add(alarm);
+        }
+    }
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (savedInstanceState != null) {
+            mCurrentSelectedPosition = savedInstanceState.getInt(STATE_SELECTED_POSITION);
+        }
+        selectItem(mCurrentSelectedPosition);
+    }
 
-	public void setGeoAlarms(Collection<GeoAlarm> alarms) {
-		geoAlarmAdapter.clear();
-		for (GeoAlarm alarm : alarms) {
-			geoAlarmAdapter.add(alarm);
-		}
-	}
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
 
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        mDrawerListView = (ListView) inflater.inflate(R.layout.fragment_navigation_drawer, container, false);
+        mDrawerListView.setOnItemClickListener((parent, view, position, id) -> selectItem(position));
+        geoAlarmAdapter = new ArrayAdapter<>(
+                getActionBar().getThemedContext(),
+                android.R.layout.simple_list_item_activated_1,
+                Lists.newArrayList(GeoAlarm.getGeoAlarms(getActivity()))
+        );
+        mDrawerListView.setAdapter(geoAlarmAdapter);
+        mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
+        return mDrawerListView;
+    }
 
-		if (savedInstanceState != null) {
-			mCurrentSelectedPosition = savedInstanceState.getInt(STATE_SELECTED_POSITION);
-		}
+    public boolean isDrawerOpen() {
+        return mDrawerLayout != null && mDrawerLayout.isDrawerOpen(mFragmentContainerView);
+    }
 
-		// Select either the default item (0) or the last selected item.
-		selectItem(mCurrentSelectedPosition);
-	}
+    public void setUp(int fragmentId, DrawerLayout drawerLayout) {
+        mFragmentContainerView = getActivity().findViewById(fragmentId);
+        mDrawerLayout = drawerLayout;
+        mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
 
-	@Override
-	public void onActivityCreated(Bundle savedInstanceState) {
-		super.onActivityCreated(savedInstanceState);
-		// Indicate that this fragment would like to influence the set of actions in the action bar.
-		setHasOptionsMenu(true);
-	}
+        ActionBar actionBar = getActionBar();
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setHomeButtonEnabled(true);
 
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		mDrawerListView = (ListView) inflater.inflate(R.layout.fragment_navigation_drawer, container, false);
-		mDrawerListView.setOnItemClickListener((parent, view, position, id) -> selectItem(position));
-		// TODO: Fix API issues
-		geoAlarmAdapter = new ArrayAdapter<>(
-				getActionBar().getThemedContext(),
-				android.R.layout.simple_list_item_activated_1,
-				Lists.newArrayList(GeoAlarm.getGeoAlarms(getActivity()))
-		);
-		mDrawerListView.setAdapter(geoAlarmAdapter);
-		mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
-		return mDrawerListView;
-	}
+        mDrawerToggle = new ActionBarDrawerToggle(
+                getActivity(),
+                mDrawerLayout,
+                R.string.navigation_drawer_open,
+                R.string.navigation_drawer_close
+        );
 
-	public boolean isDrawerOpen() {
-		return mDrawerLayout != null && mDrawerLayout.isDrawerOpen(mFragmentContainerView);
-	}
+        mDrawerLayout.post(mDrawerToggle::syncState);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
+    }
 
-	/**
-	 * Users of this fragment must call this method to set up the navigation drawer interactions.
-	 *
-	 * @param fragmentId   The android:id of this fragment in its activity's layout.
-	 * @param drawerLayout The DrawerLayout containing this fragment's UI.
-	 */
-	public void setUp(int fragmentId, DrawerLayout drawerLayout) {
-		mFragmentContainerView = getActivity().findViewById(fragmentId);
-		mDrawerLayout = drawerLayout;
+    private void selectItem(int position) {
+        mCurrentSelectedPosition = position;
+        if (mDrawerListView != null) {
+            mDrawerListView.setItemChecked(position, true);
+        }
+        if (mDrawerLayout != null) {
+            mDrawerLayout.closeDrawer(mFragmentContainerView);
+        }
+        if (mCallbacks != null && geoAlarmAdapter != null) {
+            mCallbacks.onNavigationDrawerItemSelected(geoAlarmAdapter.getItem(position));
+        }
+    }
 
-		// set a custom shadow that overlays the main content when the drawer opens
-		mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        try {
+            mCallbacks = (NavigationDrawerCallbacks) context;
+        } catch (ClassCastException e) {
+            throw new ClassCastException("Activity must implement NavigationDrawerCallbacks.");
+        }
+    }
 
-		ActionBar actionBar = getActionBar();
-		actionBar.setDisplayHomeAsUpEnabled(true);
-		actionBar.setHomeButtonEnabled(true);
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallbacks = null;
+    }
 
-		// ActionBarDrawerToggle ties together the the proper interactions
-		// between the navigation drawer and the action bar app icon.
-		mDrawerToggle = new ActionBarDrawerToggle(
-				getActivity(),
-				mDrawerLayout,
-				R.string.navigation_drawer_open,
-				R.string.navigation_drawer_close
-		);
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_SELECTED_POSITION, mCurrentSelectedPosition);
+    }
 
-		// Defer code dependent on restoration of previous instance state.
-		mDrawerLayout.post(mDrawerToggle::syncState);
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        mDrawerToggle.onConfigurationChanged(newConfig);
+    }
 
-		mDrawerLayout.setDrawerListener(mDrawerToggle);
-	}
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        if (mDrawerLayout != null && isDrawerOpen()) {
+            inflater.inflate(R.menu.global, menu);
+            showGlobalContextActionBar();
+        }
+        super.onCreateOptionsMenu(menu, inflater);
+    }
 
-	private void selectItem(int position) {
-		mCurrentSelectedPosition = position;
-		if (mDrawerListView != null) {
-			mDrawerListView.setItemChecked(position, true);
-		}
-		if (mDrawerLayout != null) {
-			mDrawerLayout.closeDrawer(mFragmentContainerView);
-		}
-		if (mCallbacks != null) {
-			if (geoAlarmAdapter != null) {
-				mCallbacks.onNavigationDrawerItemSelected(geoAlarmAdapter.getItem(position));
-			}
-		}
-	}
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
-	@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
-		try {
-			mCallbacks = (NavigationDrawerCallbacks) activity;
-		} catch (ClassCastException e) {
-			throw new ClassCastException("Activity must implement NavigationDrawerCallbacks.");
-		}
-	}
+    private void showGlobalContextActionBar() {
+        ActionBar actionBar = getActionBar();
+        actionBar.setDisplayShowTitleEnabled(true);
+        actionBar.setTitle(R.string.app_name);
+    }
 
-	@Override
-	public void onDetach() {
-		super.onDetach();
-		mCallbacks = null;
-	}
+    private ActionBar getActionBar() {
+        return ((AppCompatActivity) requireActivity()).getSupportActionBar();
+    }
 
-	@Override
-	public void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		outState.putInt(STATE_SELECTED_POSITION, mCurrentSelectedPosition);
-	}
-
-	@Override
-	public void onConfigurationChanged(Configuration newConfig) {
-		super.onConfigurationChanged(newConfig);
-		// Forward the new configuration the drawer toggle component.
-		mDrawerToggle.onConfigurationChanged(newConfig);
-	}
-
-	@Override
-	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-		// If the drawer is open, show the global app actions in the action bar. See also
-		// showGlobalContextActionBar, which controls the top-left area of the action bar.
-		if (mDrawerLayout != null && isDrawerOpen()) {
-			inflater.inflate(R.menu.global, menu);
-			showGlobalContextActionBar();
-		}
-		super.onCreateOptionsMenu(menu, inflater);
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		if (mDrawerToggle.onOptionsItemSelected(item)) {
-			return true;
-		}
-
-		return super.onOptionsItemSelected(item);
-	}
-
-	/**
-	 * Per the navigation drawer design guidelines, updates the action bar to show the global app 'context', rather than
-	 * just what's in the current screen.
-	 */
-	private void showGlobalContextActionBar() {
-		ActionBar actionBar = getActionBar();
-		actionBar.setDisplayShowTitleEnabled(true);
-		actionBar.setTitle(R.string.app_name);
-	}
-
-	public AppCompatActivity getSupportActivity() {
-		return (AppCompatActivity) super.getActivity();
-	}
-
-	private ActionBar getActionBar() {
-		return getSupportActivity().getSupportActionBar();
-	}
-
-	/**
-	 * Callbacks interface that all activities using this fragment must implement.
-	 */
-	public interface NavigationDrawerCallbacks {
-		/**
-		 * Called when an item in the navigation drawer is selected.
-		 */
-		void onNavigationDrawerItemSelected(GeoAlarm alarm);
-	}
+    public interface NavigationDrawerCallbacks {
+        void onNavigationDrawerItemSelected(GeoAlarm alarm);
+    }
 }

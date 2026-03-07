@@ -1,24 +1,25 @@
-apply plugin: 'android-sdk-manager'
 apply plugin: 'com.android.application'
-apply plugin: 'jacoco'
-apply plugin: 'me.tatarka.retrolambda'
-apply plugin: 'com.github.kt3k.coveralls'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "22.0.1"
+    namespace 'maurizi.geoclock'
+    compileSdk 34
 
     defaultConfig {
-        minSdkVersion 11
-        targetSdkVersion 22
+        minSdk 21
+        targetSdk 34
         versionCode 1
         versionName "1.0"
         applicationId "maurizi.geoclock"
     }
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildFeatures {
+        viewBinding true
     }
 
     signingConfigs {
@@ -32,7 +33,6 @@ android {
 
     buildTypes {
         debug {
-            testCoverageEnabled true
             applicationIdSuffix '.debug'
             signingConfig signingConfigs.debug
         }
@@ -41,83 +41,23 @@ android {
     lintOptions {
         disable 'InvalidPackage'
     }
-
-    packagingOptions {
-        exclude 'META-INF/services/javax.annotation.processing.Processor'
-    }
-    dexOptions {
-        javaMaxHeapSize "3g"
-    }
 }
 
 dependencies {
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.2'
 
-    compile 'com.android.support:support-v4:22.2.0'
-    compile 'com.android.support:appcompat-v7:22.2.0'
-    compile 'com.google.android.gms:play-services-maps:7.5.0'
-    compile 'com.google.android.gms:play-services-location:7.5.0'
-    compile 'com.google.code.gson:gson:2.3'
-    compile 'com.google.guava:guava:18.0'
-    compile 'org.projectlombok:lombok:1.14.8'
-    compile 'org.threeten:threetenbp:1.2'
-    compile 'com.jakewharton:butterknife:6.0.0'
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-}
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 
-coveralls {
-    jacocoReportPath 'build/reports/jacoco/test/jacocoTestReport.xml'
-}
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'com.google.android.gms:play-services-maps:19.0.0'
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.google.guava:guava:33.2.1-android'
 
-jacoco {
-    toolVersion = "0.7.1.201405082137"
-}
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
 
-def coverageSourceDirs = [
-    'src/main/java'
-]
-
-task jacocoTestReport(type: JacocoReport, dependsOn: "testDebugUnitTest") {
-    group = "Reporting"
-    description = "Generate Jacoco coverage reports after running tests."
-    reports {
-        xml.enabled = true
-        html.enabled = true
-    }
-    classDirectories = fileTree(
-            dir: './build/intermediates/classes/debug',
-            excludes: ['**/R.class',
-                       '**/R$*.class',
-                       '**/*$InjectAdapter.class',
-                       '**/*$ModuleAdapter.class',
-                       '**/*$ViewInjector*.class'
-            ])
-
-    additionalSourceDirs = files(coverageSourceDirs)
-    sourceDirectories = files(coverageSourceDirs)
-    executionData = files('build/jacoco/testDebug.exec')
-
-    def renamedFilesMap = [:]
-
-    // Hacky fix for issue: https://code.google.com/p/android/issues/detail?id=69174.
-    // Rename files with '$$' before generating report, and then rename back after
-    doFirst {
-        new File('Geoclock/build/intermediates/classes/debug').eachFileRecurse { file ->
-            if (file.name.contains('$$')) {
-                def oldPath = file.path
-                def newPath = oldPath.replace('$$', '$')
-                file.renameTo(newPath)
-                renamedFilesMap[newPath] = oldPath
-            }
-        }
-    }
-    doLast {
-        renamedFilesMap.each() {
-            def newPath, def oldPath ->
-                new File(newPath as String).renameTo(oldPath as String)
-        }
-
-        // Move report into location where coveralls is looking for it
-        new File('Geoclock/build/reports/jacoco/jacocoTestReport').renameTo('Geoclock/build/reports/jacoco/test')
-    }
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 }

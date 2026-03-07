@@ -1,14 +1,17 @@
 package maurizi.geoclock.ui;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -26,157 +29,215 @@ import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
 import maurizi.geoclock.utils.LocationServiceGoogle;
 
+import androidx.drawerlayout.widget.DrawerLayout;
+import android.view.Menu;
+import android.view.MenuItem;
 
 public class MapActivity extends AppCompatActivity
-		implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+        implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 
-	private static final String ALARM_ID = "ALARM_ID";
+    private static final String ALARM_ID = "ALARM_ID";
+    private static final int REQUEST_LOCATION_PERMISSION = 1;
+    private static final int REQUEST_BACKGROUND_LOCATION = 2;
+    private static final int REQUEST_NOTIFICATION_PERMISSION = 3;
 
-	private static final Gson gson = new Gson();
-	private static final int DEFAULT_ZOOM_LEVEL = 14;
+    private static final Gson gson = new Gson();
+    private static final int DEFAULT_ZOOM_LEVEL = 14;
 
-	private NavigationDrawerFragment navigationDrawerFragment;
-	private GoogleMap map = null;
-	private LocationServiceGoogle locationService = null;
-	private BiMap<UUID, Marker> markers = null;
+    private NavigationDrawerFragment navigationDrawerFragment;
+    private GoogleMap map = null;
+    private LocationServiceGoogle locationService = null;
+    private BiMap<UUID, Marker> markers = null;
+    private String pendingAlarmId = null;
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_map);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_map);
 
-		final SupportMapFragment mapFragment = new SupportMapFragment();
-		navigationDrawerFragment = new NavigationDrawerFragment();
-		getSupportFragmentManager().beginTransaction()
-		                           .replace(R.id.map, mapFragment)
-		                           .replace(R.id.navigation_drawer, navigationDrawerFragment)
-		                           .commit();
+        final SupportMapFragment mapFragment = new SupportMapFragment();
+        navigationDrawerFragment = new NavigationDrawerFragment();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.map, mapFragment)
+                .replace(R.id.navigation_drawer, navigationDrawerFragment)
+                .commit();
 
-		markers = HashBiMap.create();
-		mapFragment.getMapAsync(map -> {
-			this.map = map;
-			locationService = new LocationServiceGoogle(MapActivity.this);
-			locationService.connect(() -> {
-				centerCamera();
-				final Intent intent = getIntent();
+        final Intent intent = getIntent();
+        if (intent.hasExtra(ALARM_ID)) {
+            pendingAlarmId = intent.getStringExtra(ALARM_ID);
+        }
 
-				if (intent.hasExtra(ALARM_ID)) {
-					showEditPopup(UUID.fromString(intent.getStringExtra(ALARM_ID)));
-				}
-			});
-			map.setMyLocationEnabled(true);
-			map.setOnMapClickListener(this::showAddPopup);
-			map.setOnMarkerClickListener(marker -> {
-				showEditPopup(marker);
-				return true;
-			});
-			redrawGeoAlarms();
-		});
-	}
+        markers = HashBiMap.create();
+        mapFragment.getMapAsync(googleMap -> {
+            this.map = googleMap;
+            locationService = new LocationServiceGoogle(MapActivity.this);
+            map.setOnMapClickListener(this::showAddPopup);
+            map.setOnMarkerClickListener(marker -> {
+                showEditPopup(marker);
+                return true;
+            });
+            redrawGeoAlarms();
+            requestLocationPermissions();
+        });
+    }
 
-	@Override
-	public void onResume() {
-		super.onResume();
+    private void requestLocationPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            onLocationPermissionGranted();
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_LOCATION_PERMISSION);
+        }
+    }
 
-		// Set up the drawer.
-		final DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-		navigationDrawerFragment.setUp(R.id.navigation_drawer, drawerLayout);
-	}
+    @SuppressWarnings("MissingPermission")
+    private void onLocationPermissionGranted() {
+        if (map != null) {
+            map.setMyLocationEnabled(true);
+        }
+        centerCamera();
 
-	@Override
-	public void onNavigationDrawerItemSelected(GeoAlarm alarm) {
-		if (map != null) {
-			map.animateCamera(CameraUpdateFactory.newLatLng(alarm.location));
-		}
-	}
+        if (pendingAlarmId != null) {
+            showEditPopup(UUID.fromString(pendingAlarmId));
+            pendingAlarmId = null;
+        }
 
-	void restoreActionBar() {
-		ActionBar actionBar = getSupportActionBar();
-		if (actionBar != null) {
-			actionBar.setDisplayShowTitleEnabled(true);
-		}
-	}
+        // On Android 10+ also request background location for geofencing
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                        REQUEST_BACKGROUND_LOCATION);
+            }
+        }
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		if (!navigationDrawerFragment.isDrawerOpen()) {
-			// Only show items in the action bar relevant to this screen
-			// if the drawer is not showing. Otherwise, let the drawer
-			// decide what to show in the action bar.
-			getMenuInflater().inflate(R.menu.map, menu);
-			restoreActionBar();
-			return true;
-		}
-		return super.onCreateOptionsMenu(menu);
-	}
+        // On Android 13+ request notification permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        REQUEST_NOTIFICATION_PERMISSION);
+            }
+        }
+    }
 
-	@NonNull
-	public static Intent getIntent(final @NonNull Context context, final @NonNull GeoAlarm nextAlarm) {
-		Intent showAlarmIntent = new Intent(context, MapActivity.class);
-		showAlarmIntent.putExtra(MapActivity.ALARM_ID, nextAlarm.id.toString());
-		return showAlarmIntent;
-	}
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                onLocationPermissionGranted();
+            } else {
+                Toast.makeText(this, R.string.fail_location, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		int id = item.getItemId();
-		return id == R.id.action_settings || super.onOptionsItemSelected(item);
-	}
+    @Override
+    public void onResume() {
+        super.onResume();
+        final DrawerLayout drawerLayout =
+                (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawerLayout != null) {
+            navigationDrawerFragment.setUp(R.id.navigation_drawer, drawerLayout);
+        }
+    }
 
-	public void onAddGeoAlarmFragmentClose() {
-		redrawGeoAlarms();
-	}
+    @Override
+    public void onNavigationDrawerItemSelected(GeoAlarm alarm) {
+        if (map != null) {
+            map.animateCamera(CameraUpdateFactory.newLatLng(alarm.location));
+        }
+    }
 
-	private void redrawGeoAlarms() {
-		final Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
-		navigationDrawerFragment.setGeoAlarms(alarms);
+    void restoreActionBar() {
+        androidx.appcompat.app.ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayShowTitleEnabled(true);
+        }
+    }
 
-		if (map != null) {
-			map.clear();
-			for (final GeoAlarm alarm : alarms) {
-				markers.put(alarm.id, map.addMarker(alarm.getMarkerOptions()));
-				map.addCircle(alarm.getCircleOptions());
-			}
-		}
-	}
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        if (!navigationDrawerFragment.isDrawerOpen()) {
+            getMenuInflater().inflate(R.menu.map, menu);
+            restoreActionBar();
+            return true;
+        }
+        return super.onCreateOptionsMenu(menu);
+    }
 
-	private void centerCamera() {
-		if (map != null) {
-			LatLng loc = locationService.getLastLocation();
-			if (loc != null) {
-				map.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, DEFAULT_ZOOM_LEVEL));
-			}
-		}
-	}
+    @NonNull
+    public static Intent getIntent(final @NonNull Context context, final @NonNull GeoAlarm nextAlarm) {
+        Intent showAlarmIntent = new Intent(context, MapActivity.class);
+        showAlarmIntent.putExtra(MapActivity.ALARM_ID, nextAlarm.id.toString());
+        return showAlarmIntent;
+    }
 
-	void showAddPopup(LatLng latLng) {
-		Bundle args = new Bundle();
-		args.putParcelable(GeoAlarmFragment.INITIAL_LATLNG, latLng);
-		args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        return id == R.id.action_settings || super.onOptionsItemSelected(item);
+    }
 
-		showPopup(args);
-	}
+    public void onAddGeoAlarmFragmentClose() {
+        redrawGeoAlarms();
+    }
 
-	void showEditPopup(Marker marker) {
-		showEditPopup(markers.inverse().get(marker));
-	}
+    private void redrawGeoAlarms() {
+        final Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
+        navigationDrawerFragment.setGeoAlarms(alarms);
 
-	void showEditPopup(UUID id) {
-		GeoAlarm alarm = GeoAlarm.getGeoAlarm(this, id);
-		if (alarm != null) {
-			Bundle args = new Bundle();
-			String alarmJson = gson.toJson(alarm, GeoAlarm.class);
-			args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
-			args.putString(GeoAlarmFragment.EXISTING_ALARM, alarmJson);
+        if (map != null) {
+            map.clear();
+            for (final GeoAlarm alarm : alarms) {
+                markers.put(alarm.id, map.addMarker(alarm.getMarkerOptions()));
+                map.addCircle(alarm.getCircleOptions());
+            }
+        }
+    }
 
-			showPopup(args);
-		}
-	}
+    private void centerCamera() {
+        if (map != null && locationService != null) {
+            locationService.getLastLocation(loc -> {
+                if (loc != null && map != null) {
+                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, DEFAULT_ZOOM_LEVEL));
+                }
+            });
+        }
+    }
 
-	void showPopup(Bundle args) {
-		GeoAlarmFragment popup = new GeoAlarmFragment();
-		popup.setArguments(args);
-		popup.show(getSupportFragmentManager(), "AddGeoAlarmFragment");
-		popup.setLocationService(locationService);
-	}
+    void showAddPopup(LatLng latLng) {
+        Bundle args = new Bundle();
+        args.putParcelable(GeoAlarmFragment.INITIAL_LATLNG, latLng);
+        args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+        showPopup(args);
+    }
+
+    void showEditPopup(Marker marker) {
+        showEditPopup(markers.inverse().get(marker));
+    }
+
+    void showEditPopup(UUID id) {
+        GeoAlarm alarm = GeoAlarm.getGeoAlarm(this, id);
+        if (alarm != null) {
+            Bundle args = new Bundle();
+            String alarmJson = gson.toJson(alarm, GeoAlarm.class);
+            args.putFloat(GeoAlarmFragment.INITIAL_ZOOM, map.getCameraPosition().zoom);
+            args.putString(GeoAlarmFragment.EXISTING_ALARM, alarmJson);
+            showPopup(args);
+        }
+    }
+
+    void showPopup(Bundle args) {
+        GeoAlarmFragment popup = new GeoAlarmFragment();
+        popup.setArguments(args);
+        popup.show(getSupportFragmentManager(), "AddGeoAlarmFragment");
+        popup.setLocationService(locationService);
+    }
 }

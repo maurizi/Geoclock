@@ -4,61 +4,51 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.provider.AlarmClock;
-import android.util.Log;
 
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.UUID;
 
 import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.ui.AlarmRingingActivity;
 import maurizi.geoclock.utils.ActiveAlarmManager;
 
 public class AlarmClockReceiver extends BroadcastReceiver {
-	private static final String ALARM_ID = "alarm_id";
-	private static final String TAG = GeofenceReceiver.class.getSimpleName();
+    private static final String ALARM_ID = "alarm_id";
 
-	public static PendingIntent getPendingIntent(Context context, GeoAlarm alarm) {
-		Intent intent = new Intent(context, AlarmClockReceiver.class);
-		intent.putExtra(ALARM_ID, alarm.id.toString());
-		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-	}
+    public static PendingIntent getPendingIntent(Context context, GeoAlarm alarm) {
+        Intent intent = new Intent(context, AlarmClockReceiver.class);
+        intent.putExtra(ALARM_ID, alarm.id.toString());
+        return PendingIntent.getBroadcast(context, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
 
-	public static PendingIntent getPendingIntent(Context context) {
-		Intent intent = new Intent(context, AlarmClockReceiver.class);
-		return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-	}
+    public static PendingIntent getPendingIntent(Context context) {
+        Intent intent = new Intent(context, AlarmClockReceiver.class);
+        return PendingIntent.getBroadcast(context, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
 
-	@Override
-	public void onReceive(final Context context, final Intent intent) {
-		if (intent.hasExtra(ALARM_ID)) {
-			GeoAlarm alarm = GeoAlarm.getGeoAlarm(context, UUID.fromString(intent.getStringExtra(ALARM_ID)));
-			if (alarm != null && alarm.enabled) {
-				ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(context);
+    @Override
+    public void onReceive(final Context context, final Intent intent) {
+        if (intent.hasExtra(ALARM_ID)) {
+            GeoAlarm alarm = GeoAlarm.getGeoAlarm(context, UUID.fromString(intent.getStringExtra(ALARM_ID)));
+            if (alarm != null && alarm.enabled) {
+                ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(context);
 
-				Intent alarmClockIntent = new Intent(AlarmClock.ACTION_SET_ALARM);
-				Calendar cal = new GregorianCalendar();
-				alarmClockIntent.putExtra(AlarmClock.EXTRA_HOUR, cal.get(Calendar.HOUR_OF_DAY));
-				alarmClockIntent.putExtra(AlarmClock.EXTRA_MINUTES, cal.get(Calendar.MINUTE) + 1);
-				alarmClockIntent.putExtra(AlarmClock.EXTRA_SKIP_UI, true);
-				alarmClockIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				if (intent.resolveActivity(context.getPackageManager()) != null) {
-					context.startActivity(alarmClockIntent);
-				} else {
-					// TODO: I have no idea how to handle this
-					Log.e(TAG, "There is no alarm clock app");
-				}
+                Intent ringIntent = new Intent(context, AlarmRingingActivity.class);
+                ringIntent.putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, alarm.id.toString());
+                ringIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+                context.startActivity(ringIntent);
 
-				if (alarm.days == null || alarm.days.isEmpty())  {
-					GeoAlarm.remove(context, alarm);
-					GeoAlarm.save(context, alarm.withEnabled(false));
-					activeAlarmManager.removeActiveAlarms(ImmutableSet.of(alarm.id));
-				} else {
-					activeAlarmManager.resetActiveAlarms();
-				}
-			}
-		}
-	}
+                if (alarm.days == null || alarm.days.isEmpty()) {
+                    GeoAlarm.remove(context, alarm);
+                    GeoAlarm.save(context, alarm.withEnabled(false));
+                    activeAlarmManager.removeActiveAlarms(ImmutableSet.of(alarm.id));
+                } else {
+                    activeAlarmManager.resetActiveAlarms();
+                }
+            }
+        }
+    }
 }

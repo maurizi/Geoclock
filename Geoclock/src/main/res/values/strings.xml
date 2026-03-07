@@ -31,4 +31,8 @@
     <string name="alarm_notification_text">Upcoming alarm at %s</string>
     <string name="edit_title">Edit alarm area</string>
 
+    <string name="snooze_5min">Snooze (5 min)</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="location_permission_rationale">Location permission is needed to detect when you enter your alarm areas.</string>
 </resources>
+
