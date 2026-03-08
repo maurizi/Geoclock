@@ -1,22 +1,27 @@
 <resources>
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="@style/Theme.AppCompat.Light.DarkActionBar">
+    <!-- Base application theme. MaterialComponents bridge theme enables Material button styles
+         while keeping all existing AppCompat code working unchanged. -->
+    <style name="AppTheme" parent="@style/Theme.MaterialComponents.Light.DarkActionBar">
         <!-- Customize your theme here. -->
+    </style>
+
+    <style name="AlarmCard">
+        <item name="android:layout_margin">@dimen/card_margin</item>
+    </style>
+
+    <style name="AlarmCard.Title">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="AlarmCard.Secondary">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">?android:textColorSecondary</item>
     </style>
 
     <style name="add_geo_alarm_item">
         <item name="android:padding">5dp</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-    </style>
-
-    <style name="add_geo_alarm_label">
-        <item name="android:padding">5dp</item>
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">?android:textColorSecondary</item>
-        <item name="android:gravity">center_vertical</item>
-        <item name="android:paddingLeft">8dip</item>
     </style>
 </resources>

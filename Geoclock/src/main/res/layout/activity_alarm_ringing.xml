@@ -27,32 +27,38 @@
         android:layout_marginTop="16dp"
         android:textColor="#CCCCCC"
         android:textSize="20sp"
-        app:layout_constraintBottom_toTopOf="@+id/alarm_ringing_snooze"
+        app:layout_constraintBottom_toTopOf="@+id/button_row"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/alarm_ringing_name"/>
 
-    <Button
-        android:id="@+id/alarm_ringing_snooze"
+    <LinearLayout
+        android:id="@+id/button_row"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:layout_marginTop="32dp"
-        android:layout_marginEnd="8dp"
-        android:text="@string/snooze_5min"
+        app:layout_constraintTop_toBottomOf="@id/alarm_ringing_time"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/alarm_ringing_dismiss"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/alarm_ringing_time"/>
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <Button
-        android:id="@+id/alarm_ringing_dismiss"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="@string/dismiss"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/alarm_ringing_snooze"
-        app:layout_constraintTop_toTopOf="@+id/alarm_ringing_snooze"/>
+        <Button
+            android:id="@+id/alarm_ringing_snooze"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="@string/snooze_5min"/>
+
+        <Button
+            android:id="@+id/alarm_ringing_dismiss"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="@string/dismiss"/>
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

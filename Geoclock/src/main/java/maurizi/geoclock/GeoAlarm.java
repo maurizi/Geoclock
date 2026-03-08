@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
+import java.util.Locale;
+
 import lombok.NonNull;
 import lombok.Value;
 import lombok.Builder;
@@ -43,7 +45,7 @@ public class GeoAlarm {
     private static final String ALARM_PREFS = "alarms";
 
     @NonNull public UUID id;
-    @NonNull public String name;
+    @Nullable public String place;
     public int radius;
     @NonNull public LatLng location;
     public boolean enabled;
@@ -55,11 +57,12 @@ public class GeoAlarm {
 
     @Override
     public String toString() {
-        return name;
+        return place != null ? place : String.format(Locale.US, "%.4f,%.4f", location.latitude, location.longitude);
     }
 
     public MarkerOptions getMarkerOptions() {
-        return new MarkerOptions().position(location).title(name);
+        String title = place != null ? place : "";
+        return new MarkerOptions().position(location).title(title);
     }
 
     public CircleOptions getCircleOptions() {
@@ -152,7 +155,9 @@ public class GeoAlarm {
     public static void save(Context context, GeoAlarm newAlarm) {
         if (newAlarm.enabled) {
             final ZonedDateTime alarmTime = newAlarm.calculateAlarmTime(LocalDateTime.now());
-            newAlarm = newAlarm.withTime(alarmTime.toInstant().toEpochMilli());
+            if (alarmTime != null) {
+                newAlarm = newAlarm.withTime(alarmTime.toInstant().toEpochMilli());
+            }
         }
         SharedPreferences prefs = getSharedAlarmPreferences(context);
         Editor editor = prefs.edit();

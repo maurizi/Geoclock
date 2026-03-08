@@ -2,11 +2,8 @@
 <resources>
 
     <string name="app_name">Geoclock</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="action_settings">Settings</string>
     <string name="add_geo_alarm_title">Add alarm area</string>
-    <string name="add_geo_alarm_name_label">Name</string>
     <string name="add_geo_alarm_cancel">Cancel</string>
     <string name="add_geo_alarm_continue">Save</string>
     <string name="add_geo_alarm_radius_label">Size</string>
@@ -21,18 +18,30 @@
     <string name="monday">M</string>
     <string name="sunday">S</string>
     <string name="add_geo_alarm_time_label">Time</string>
-    <string name="add_geo_alarm_validation">That name is blank</string>
     <string name="add_geo_alarm_delete">Delete</string>
     <string name="lost_location">Lost location</string>
     <string name="fail_location">Failed to get location</string>
     <string name="fail_map">Failed to load map</string>
-    <string name="add_geo_alarm_name_hint">alarm name</string>
     <string name="add_geo_alarm_enabled_label">Enabled</string>
     <string name="alarm_notification_text">Upcoming alarm at %s</string>
     <string name="edit_title">Edit alarm area</string>
-
     <string name="snooze_5min">Snooze (5 min)</string>
     <string name="dismiss">Dismiss</string>
     <string name="location_permission_rationale">Location permission is needed to detect when you enter your alarm areas.</string>
-</resources>
 
+    <string name="empty_state_title">No alarms yet</string>
+    <string name="empty_state_body">Tap + to add your first location alarm</string>
+    <string name="change_location">Change</string>
+    <string name="rename_place">Rename place</string>
+    <string name="rename_place_hint">Place name</string>
+    <string name="distance_meters">%1$dm away</string>
+    <string name="distance_km">%1$.1fkm away</string>
+    <string name="radius_label">%1$dm radius</string>
+    <string name="days_once">Once</string>
+    <string name="days_every_day">Every day</string>
+    <string name="delete_confirm_title">Delete alarm?</string>
+    <string name="delete_confirm_message">This alarm will be permanently removed.</string>
+
+    <!-- Empty string for attribution tag workaround (Play Services logs a warning otherwise) -->
+    <string name="empty"></string>
+</resources>

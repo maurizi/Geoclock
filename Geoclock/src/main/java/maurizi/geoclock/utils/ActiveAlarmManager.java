@@ -83,7 +83,7 @@ public class ActiveAlarmManager {
             setNotification(nextAlarm, alarmTime);
             setAlarm(nextAlarm, alarmTime);
         } else {
-            notificationManager.cancelAll();
+            notificationManager.cancel(NotificationReceiver.NOTIFICATION_ID);
         }
     }
 
@@ -110,13 +110,21 @@ public class ActiveAlarmManager {
         final long millis = alarmTime.toInstant().toEpochMilli();
         final PendingIntent pendingAlarmIntent = AlarmClockReceiver.getPendingIntent(context, alarm);
 
+        // setAlarmClock() is always exact, fires through Doze, and — critically — grants
+        // the broadcast receiver permission to call startForegroundService(). The other
+        // exact-alarm APIs (setExactAndAllowWhileIdle, setAndAllowWhileIdle) do NOT grant
+        // that permission, causing ForegroundServiceStartNotAllowedException on API 31+.
+        // It also shows the alarm in the system clock UI, appropriate for an alarm app.
+        // Requires SCHEDULE_EXACT_ALARM or USE_EXACT_ALARM permission.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-            // Exact alarms not permitted; use inexact wakeup
-            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pendingAlarmIntent);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pendingAlarmIntent);
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, millis, pendingAlarmIntent);
+            // Permission not granted — alarm cannot be scheduled. MapActivity prompts the
+            // user to grant it; nothing to do here.
+            return;
         }
+        android.content.Intent showIntent = maurizi.geoclock.ui.MapActivity.getIntent(context, alarm);
+        android.app.PendingIntent showPi = android.app.PendingIntent.getActivity(
+                context, alarm.id.hashCode(), showIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+        alarmManager.setAlarmClock(new AlarmManager.AlarmClockInfo(millis, showPi), pendingAlarmIntent);
     }
 }

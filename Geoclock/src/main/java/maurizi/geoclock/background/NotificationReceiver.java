@@ -27,7 +27,7 @@ import maurizi.geoclock.ui.MapActivity;
 
 public class NotificationReceiver extends BroadcastReceiver {
     private static final String ALARM_ID = "alarm_id";
-    private static final int NOTIFICATION_ID = 42;
+    public static final int NOTIFICATION_ID = 42;
     private static final String CHANNEL_ID = "geoclock_upcoming";
 
     private NotificationManager notificationManager;
@@ -90,16 +90,23 @@ public class NotificationReceiver extends BroadcastReceiver {
         PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        Intent cancelIntent = new Intent(context, AlarmClockReceiver.class);
+        cancelIntent.setAction(AlarmClockReceiver.ACTION_CANCEL_UPCOMING);
+        cancelIntent.putExtra(ALARM_ID, nextAlarm.id.toString());
+        PendingIntent cancelPi = PendingIntent.getBroadcast(context, nextAlarm.id.hashCode(),
+                cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
         Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
         Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_alarm_black_24dp)
                 .setLargeIcon(icon)
                 .setContentTitle(title)
-                .setContentText(nextAlarm.name)
+                .setContentText(nextAlarm.toString())
                 .setContentIntent(notificationPendingIntent)
+                .addAction(0, "Cancel alarm", cancelPi)
                 .build();
 
-        notificationManager.cancelAll();
+        notificationManager.cancel(NOTIFICATION_ID);
         notificationManager.notify(NOTIFICATION_ID, notification);
     }
 }
