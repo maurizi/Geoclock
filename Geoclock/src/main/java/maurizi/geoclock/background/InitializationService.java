@@ -41,7 +41,7 @@ public class InitializationService extends JobIntentService {
         Collection<GeoAlarm> disabledAlarms = filter(alarms, alarm ->
                 alarm.isNonRepeating() && alarm.time != null && now.isAfter(Instant.ofEpochMilli(alarm.time)));
         for (GeoAlarm alarm : disabledAlarms) {
-            GeoAlarm.save(this, alarm);
+            GeoAlarm.save(this, alarm.withEnabled(false));
         }
     }
 }

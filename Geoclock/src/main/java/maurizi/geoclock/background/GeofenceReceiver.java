@@ -45,7 +45,11 @@ public class GeofenceReceiver extends BroadcastReceiver {
                     Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context)), a -> a != null);
             ImmutableSet<UUID> affectedAlarmIds = ImmutableSet.copyOf(transform(affectedAlarms, alarm -> alarm.id));
             if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                activeAlarmManager.addActiveAlarms(affectedAlarmIds);
+                ImmutableSet<UUID> enabledAlarmIds = ImmutableSet.copyOf(
+                        transform(filter(affectedAlarms, alarm -> alarm.enabled), alarm -> alarm.id));
+                if (!enabledAlarmIds.isEmpty()) {
+                    activeAlarmManager.addActiveAlarms(enabledAlarmIds);
+                }
             } else {
                 activeAlarmManager.removeActiveAlarms(affectedAlarmIds);
             }

@@ -37,7 +37,9 @@ public class AlarmRingingService extends Service {
     public static final String ACTION_DISMISS = "action_dismiss";
     public static final String ACTION_SNOOZE = "action_snooze";
     private static final String ALARM_RINGING_CHANNEL = "alarm_ringing";
-    static long SNOOZE_DURATION_MS = 5 * 60 * 1000L;
+    public static long SNOOZE_DURATION_MS = 5 * 60 * 1000L;
+    /** Set to true in tests to suppress ringtone and vibration. */
+    public static boolean AUDIO_DISABLED = false;
     private static final int SNOOZE_REQUEST_CODE = 9001;
 
     private Ringtone ringtone;
@@ -60,9 +62,19 @@ public class AlarmRingingService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String alarmId = intent != null ? intent.getStringExtra(EXTRA_ALARM_ID) : null;
-        GeoAlarm alarm = null;
-        if (alarmId != null) {
-            alarm = GeoAlarm.getGeoAlarm(this, UUID.fromString(alarmId));
+        GeoAlarm alarm = alarmId != null ? GeoAlarm.getGeoAlarm(this, UUID.fromString(alarmId)) : null;
+
+        // Must call startForeground() before any early return: on API 26+ the service may
+        // have been started via startForegroundService() (including when the system upgrades
+        // startService() for services with a declared foregroundServiceType), so we must
+        // satisfy the foreground contract immediately or risk ForegroundServiceDidNotStartInTimeException.
+        ensureNotificationChannel();
+        Notification notification = buildNotification(alarm);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(AlarmClockReceiver.RINGING_NOTIFICATION_ID, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(AlarmClockReceiver.RINGING_NOTIFICATION_ID, notification);
         }
 
         String action = intent != null ? intent.getAction() : null;
@@ -76,16 +88,6 @@ public class AlarmRingingService extends Service {
             }
             stopSelf();
             return START_NOT_STICKY;
-        }
-
-        ensureNotificationChannel();
-        Notification notification = buildNotification(alarm);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(AlarmClockReceiver.RINGING_NOTIFICATION_ID, notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-        } else {
-            startForeground(AlarmClockReceiver.RINGING_NOTIFICATION_ID, notification);
         }
 
         startAlarm();
@@ -160,6 +162,7 @@ public class AlarmRingingService extends Service {
     }
 
     private void startAlarm() {
+        if (AUDIO_DISABLED) return;
         // Stop any previous playback (handles re-delivery via START_STICKY)
         if (ringtone != null && ringtone.isPlaying()) ringtone.stop();
         if (vibrator != null) vibrator.cancel();

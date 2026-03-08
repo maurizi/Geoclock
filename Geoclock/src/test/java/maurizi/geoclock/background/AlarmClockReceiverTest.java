@@ -1,5 +1,6 @@
 package maurizi.geoclock.background;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 
@@ -13,12 +14,11 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
-import org.robolectric.shadows.ShadowApplication;
+import org.robolectric.shadows.ShadowNotificationManager;
 
 import java.util.UUID;
 
 import maurizi.geoclock.GeoAlarm;
-import maurizi.geoclock.ui.AlarmRingingActivity;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -54,16 +54,16 @@ public class AlarmClockReceiverTest {
     }
 
     @Test
-    public void onReceive_enabledAlarm_startsAlarmRingingActivity() {
+    public void onReceive_enabledAlarm_startsAlarmRingingService() {
         GeoAlarm alarm = saveAlarm(enabledAlarm());
-        Intent intent = alarmIntent(alarm);
 
-        receiver.onReceive(context, intent);
+        receiver.onReceive(context, alarmIntent(alarm));
 
-        Intent started = Shadows.shadowOf((android.app.Application) context).getNextStartedActivity();
-        assertNotNull(started);
-        assertEquals(AlarmRingingActivity.class.getName(), started.getComponent().getClassName());
-        assertEquals(alarm.id.toString(), started.getStringExtra(AlarmRingingActivity.EXTRA_ALARM_ID));
+        // Audio and full-screen intent are now handled by AlarmRingingService, not startActivity.
+        assertNull(Shadows.shadowOf((android.app.Application) context).getNextStartedActivity());
+        Intent startedService = Shadows.shadowOf((android.app.Application) context).getNextStartedService();
+        assertNotNull("Expected AlarmRingingService to be started", startedService);
+        assertEquals(AlarmRingingService.class.getName(), startedService.getComponent().getClassName());
     }
 
     @Test
@@ -94,12 +94,70 @@ public class AlarmClockReceiverTest {
         assertEquals(true, saved.enabled);
     }
 
+    // ---- Cancel upcoming ----
+
+    @Test
+    public void onReceive_cancelUpcoming_disablesAlarm() {
+        GeoAlarm alarm = saveAlarm(enabledAlarm());
+        Intent intent = new Intent(context, AlarmClockReceiver.class);
+        intent.setAction(AlarmClockReceiver.ACTION_CANCEL_UPCOMING);
+        intent.putExtra("alarm_id", alarm.id.toString());
+        receiver.onReceive(context, intent);
+        GeoAlarm saved = GeoAlarm.getGeoAlarm(context, alarm.id);
+        assertNotNull(saved);
+        assertEquals(false, saved.enabled);
+    }
+
+    @Test
+    public void onReceive_cancelUpcoming_cancelsNotification() {
+        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        ShadowNotificationManager shadowNm = Shadows.shadowOf(nm);
+
+        GeoAlarm alarm = saveAlarm(enabledAlarm());
+        Intent intent = new Intent(context, AlarmClockReceiver.class);
+        intent.setAction(AlarmClockReceiver.ACTION_CANCEL_UPCOMING);
+        intent.putExtra("alarm_id", alarm.id.toString());
+        receiver.onReceive(context, intent);
+
+        // The NOTIFICATION_ID from NotificationReceiver should be cancelled
+        assertEquals(0, shadowNm.getAllNotifications().size());
+    }
+
+    @Test
+    public void onReceive_cancelUpcoming_unknownAlarmId_doesNotCrash() {
+        Intent intent = new Intent(context, AlarmClockReceiver.class);
+        intent.setAction(AlarmClockReceiver.ACTION_CANCEL_UPCOMING);
+        intent.putExtra("alarm_id", UUID.randomUUID().toString());
+        receiver.onReceive(context, intent); // should not throw
+    }
+
+    // ---- Snooze bypass ----
+
+    @Test
+    public void onReceive_snoozedDisabledAlarm_startsAlarmRingingService() {
+        GeoAlarm alarm = saveAlarm(enabledAlarm().withEnabled(false));
+        Intent intent = new Intent(context, AlarmClockReceiver.class);
+        intent.putExtra("alarm_id", alarm.id.toString());
+        intent.putExtra(AlarmClockReceiver.EXTRA_IS_SNOOZE, true);
+        receiver.onReceive(context, intent);
+        Intent startedService = Shadows.shadowOf((android.app.Application) context).getNextStartedService();
+        assertNotNull("Snoozed alarm should start AlarmRingingService even if disabled", startedService);
+        assertEquals(AlarmRingingService.class.getName(), startedService.getComponent().getClassName());
+    }
+
+    @Test
+    public void onReceive_disabledAlarm_noSnoozeFlag_doesNotStartService() {
+        GeoAlarm alarm = saveAlarm(enabledAlarm().withEnabled(false));
+        receiver.onReceive(context, alarmIntent(alarm));
+        assertNull("Disabled alarm without snooze flag should not start service",
+                Shadows.shadowOf((android.app.Application) context).getNextStartedService());
+    }
+
     // ---- helpers ----
 
     private GeoAlarm enabledAlarm() {
         return GeoAlarm.builder()
                 .id(UUID.randomUUID())
-                .name("test")
                 .location(new LatLng(0, 0))
                 .radius(100)
                 .enabled(true)

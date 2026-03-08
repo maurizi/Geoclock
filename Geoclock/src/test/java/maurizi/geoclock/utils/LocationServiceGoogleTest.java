@@ -98,7 +98,6 @@ public class LocationServiceGoogleTest {
     private static GeoAlarm alarm(int radius) {
         return GeoAlarm.builder()
                 .id(UUID.randomUUID())
-                .name("test")
                 .location(new LatLng(37.4, -122.0))
                 .radius(radius)
                 .enabled(true)
