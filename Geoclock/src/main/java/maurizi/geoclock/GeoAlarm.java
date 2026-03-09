@@ -41,144 +41,157 @@ import static java.time.temporal.TemporalAdjusters.next;
 @With
 public class GeoAlarm {
 
-    private static final Gson gson = new Gson();
-    private static final String ALARM_PREFS = "alarms";
+	private static final Gson gson = new Gson();
+	private static final String ALARM_PREFS = "alarms";
 
-    @NonNull public UUID id;
-    @Nullable public String place;
-    public int radius;
-    @NonNull public LatLng location;
-    public boolean enabled;
+	@NonNull public UUID id;
+	@Nullable public String place;
+	public int radius;
+	@NonNull public LatLng location;
+	public boolean enabled;
 
-    @Nullable public Long time;
-    @Nullable public Integer hour;
-    @Nullable public Integer minute;
-    @Nullable public Set<DayOfWeek> days;
+	@Nullable public Long time;
+	@Nullable public Integer hour;
+	@Nullable public Integer minute;
+	@Nullable public Set<DayOfWeek> days;
+	@Nullable public String ringtoneUri;
 
-    @Override
-    public String toString() {
-        return place != null ? place : String.format(Locale.US, "%.4f,%.4f", location.latitude, location.longitude);
-    }
+	public String toJson() {
+		return gson.toJson(this, GeoAlarm.class);
+	}
 
-    public MarkerOptions getMarkerOptions() {
-        String title = place != null ? place : "";
-        return new MarkerOptions().position(location).title(title);
-    }
+	@Override
+	public String toString() {
+		return place != null ? place : String.format(Locale.US, "%.4f,%.4f", location.latitude, location.longitude);
+	}
 
-    public CircleOptions getCircleOptions() {
-        return new CircleOptions().center(location).radius(radius).fillColor(R.color.geofence_fill_color);
-    }
+	public MarkerOptions getMarkerOptions() {
+		String title = place != null ? place : "";
+		return new MarkerOptions().position(location).title(title);
+	}
 
-    private LocalTime getAlarmTime() {
-        if (hour == null || minute == null) {
-            return null;
-        }
-        return LocalTime.of(hour, minute);
-    }
+	public static String getRadiusSizeLabel(Context context, int radius) {
+		if (radius <= 50) return context.getString(R.string.radius_nearby);
+		if (radius <= 80) return context.getString(R.string.radius_small);
+		if (radius <= 130) return context.getString(R.string.radius_medium);
+		if (radius <= 170) return context.getString(R.string.radius_large);
+		return context.getString(R.string.radius_wide);
+	}
 
-    private boolean isAlarmForToday(LocalDateTime now) {
-        LocalTime time = getAlarmTime();
-        return now != null && time != null && time.isAfter(now.toLocalTime());
-    }
+	public CircleOptions getCircleOptions() {
+		return new CircleOptions().center(location).radius(radius).fillColor(R.color.geofence_fill_color);
+	}
 
-    /**
-     * @return A ZonedDateTime for when the alarm is due to go off
-     */
-    public ZonedDateTime calculateAlarmTime(LocalDateTime now) {
-        final LocalTime alarmTime = getAlarmTime();
+	private LocalTime getAlarmTime() {
+		if (hour == null || minute == null) {
+			return null;
+		}
+		return LocalTime.of(hour, minute);
+	}
 
-        if (now == null || alarmTime == null) {
-            return null;
-        }
+	private boolean isAlarmForToday(LocalDateTime now) {
+		LocalTime time = getAlarmTime();
+		return now != null && time != null && time.isAfter(now.toLocalTime());
+	}
 
-        final LocalDateTime alarmDateTime = isNonRepeating()
-                ? alarmTime.atDate(isAlarmForToday(now)
-                        ? now.toLocalDate()
-                        : now.toLocalDate().plusDays(1))
-                : alarmTime.atDate(getSoonestDayForRepeatingAlarm(now));
+	/**
+	 * @return A ZonedDateTime for when the alarm is due to go off
+	 */
+	public ZonedDateTime calculateAlarmTime(LocalDateTime now) {
+		final LocalTime alarmTime = getAlarmTime();
 
-        return alarmDateTime.atZone(ZoneId.systemDefault());
-    }
+		if (now == null || alarmTime == null) {
+			return null;
+		}
 
-    public boolean isNonRepeating() {
-        return days == null || days.isEmpty();
-    }
+		final LocalDateTime alarmDateTime = isNonRepeating()
+		        ? alarmTime.atDate(isAlarmForToday(now)
+		                ? now.toLocalDate()
+		                : now.toLocalDate().plusDays(1))
+		        : alarmTime.atDate(getSoonestDayForRepeatingAlarm(now));
 
-    private LocalDate getSoonestDayForRepeatingAlarm(LocalDateTime now) {
-        assert days != null;
-        if (isNonRepeating()) {
-            throw new AssertionError();
-        }
+		return alarmDateTime.atZone(ZoneId.systemDefault());
+	}
 
-        final DayOfWeek currentDayOfWeek = now.getDayOfWeek();
+	public boolean isNonRepeating() {
+		return days == null || days.isEmpty();
+	}
 
-        if (isAlarmForToday(now) && days.contains(currentDayOfWeek)) {
-            return now.toLocalDate();
-        }
+	private LocalDate getSoonestDayForRepeatingAlarm(LocalDateTime now) {
+		assert days != null;
+		if (isNonRepeating()) {
+			throw new AssertionError();
+		}
 
-        final Collection<DayOfWeek> daysAfterToday = filter(days, weekday -> weekday.getValue() > currentDayOfWeek.getValue());
+		final DayOfWeek currentDayOfWeek = now.getDayOfWeek();
 
-        final Collection<DayOfWeek> daysTodayAndBefore = filter(
-                days, weekday -> weekday.getValue() <= currentDayOfWeek.getValue());
+		if (isAlarmForToday(now) && days.contains(currentDayOfWeek)) {
+			return now.toLocalDate();
+		}
 
-        final ImmutableList<DayOfWeek> allDays = ImmutableList.<DayOfWeek>builder()
-                .addAll(daysAfterToday)
-                .addAll(daysTodayAndBefore).build();
+		final Collection<DayOfWeek> daysAfterToday = filter(days, weekday -> weekday.getValue() > currentDayOfWeek.getValue());
 
-        final DayOfWeek nextDayForAlarm = allDays.get(0);
-        return now.toLocalDate().with(next(nextDayForAlarm));
-    }
+		final Collection<DayOfWeek> daysTodayAndBefore = filter(
+		        days, weekday -> weekday.getValue() <= currentDayOfWeek.getValue());
 
-    @Nullable
-    public static GeoAlarm getGeoAlarm(Context context, UUID id) {
-        SharedPreferences prefs = getSharedAlarmPreferences(context);
-        String json = prefs.getString(id.toString(), null);
-        if (json != null) {
-            return parse(json);
-        }
-        return null;
-    }
+		final ImmutableList<DayOfWeek> allDays = ImmutableList.<DayOfWeek>builder()
+		        .addAll(daysAfterToday)
+		        .addAll(daysTodayAndBefore).build();
 
-    public static Collection<GeoAlarm> getGeoAlarms(Context context) {
-        SharedPreferences prefs = getSharedAlarmPreferences(context);
-        Collection<?> json = prefs.getAll().values();
-        return ImmutableList.<GeoAlarm>builder()
-                .addAll(filter(transform(json, GeoAlarm::parse), (GeoAlarm geoAlarm) -> geoAlarm != null))
-                .build();
-    }
+		final DayOfWeek nextDayForAlarm = allDays.get(0);
+		return now.toLocalDate().with(next(nextDayForAlarm));
+	}
 
-    public static Function<com.google.android.gms.location.Geofence, GeoAlarm> getGeoAlarmForGeofenceFn(Context context) {
-        final SharedPreferences prefs = getSharedAlarmPreferences(context);
-        return geofence -> parse(prefs.getString(geofence.getRequestId(), null));
-    }
+	@Nullable
+	public static GeoAlarm getGeoAlarm(Context context, UUID id) {
+		SharedPreferences prefs = getSharedAlarmPreferences(context);
+		String json = prefs.getString(id.toString(), null);
+		if (json != null) {
+			return parse(json);
+		}
+		return null;
+	}
 
-    public static void save(Context context, GeoAlarm newAlarm) {
-        if (newAlarm.enabled) {
-            final ZonedDateTime alarmTime = newAlarm.calculateAlarmTime(LocalDateTime.now());
-            if (alarmTime != null) {
-                newAlarm = newAlarm.withTime(alarmTime.toInstant().toEpochMilli());
-            }
-        }
-        SharedPreferences prefs = getSharedAlarmPreferences(context);
-        Editor editor = prefs.edit();
-        editor.putString(newAlarm.id.toString(), gson.toJson(newAlarm, GeoAlarm.class))
-                .commit();
-    }
+	public static Collection<GeoAlarm> getGeoAlarms(Context context) {
+		SharedPreferences prefs = getSharedAlarmPreferences(context);
+		Collection<?> json = prefs.getAll().values();
+		return ImmutableList.<GeoAlarm>builder()
+		        .addAll(filter(transform(json, GeoAlarm::parse), (GeoAlarm geoAlarm) -> geoAlarm != null))
+		        .build();
+	}
 
-    public static void remove(Context context, GeoAlarm oldAlarm) {
-        SharedPreferences prefs = getSharedAlarmPreferences(context);
-        prefs.edit().remove(oldAlarm.id.toString()).commit();
-    }
+	public static Function<com.google.android.gms.location.Geofence, GeoAlarm> getGeoAlarmForGeofenceFn(Context context) {
+		final SharedPreferences prefs = getSharedAlarmPreferences(context);
+		return geofence -> parse(prefs.getString(geofence.getRequestId(), null));
+	}
 
-    private static GeoAlarm parse(Object json) {
-        try {
-            return gson.fromJson((String) json, GeoAlarm.class);
-        } catch (JsonSyntaxException e) {
-            return null;
-        }
-    }
+	public static void save(Context context, GeoAlarm newAlarm) {
+		if (newAlarm.enabled) {
+			final ZonedDateTime alarmTime = newAlarm.calculateAlarmTime(LocalDateTime.now());
+			if (alarmTime != null) {
+				newAlarm = newAlarm.withTime(alarmTime.toInstant().toEpochMilli());
+			}
+		}
+		SharedPreferences prefs = getSharedAlarmPreferences(context);
+		Editor editor = prefs.edit();
+		editor.putString(newAlarm.id.toString(), gson.toJson(newAlarm, GeoAlarm.class))
+		        .commit();
+	}
 
-    private static SharedPreferences getSharedAlarmPreferences(Context context) {
-        return context.getSharedPreferences(ALARM_PREFS, Context.MODE_PRIVATE);
-    }
+	public static void remove(Context context, GeoAlarm oldAlarm) {
+		SharedPreferences prefs = getSharedAlarmPreferences(context);
+		prefs.edit().remove(oldAlarm.id.toString()).commit();
+	}
+
+	private static GeoAlarm parse(Object json) {
+		try {
+			return gson.fromJson((String) json, GeoAlarm.class);
+		} catch (JsonSyntaxException e) {
+			return null;
+		}
+	}
+
+	private static SharedPreferences getSharedAlarmPreferences(Context context) {
+		return context.getSharedPreferences(ALARM_PREFS, Context.MODE_PRIVATE);
+	}
 }

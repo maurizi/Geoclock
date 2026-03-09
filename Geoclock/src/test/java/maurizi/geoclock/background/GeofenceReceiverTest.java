@@ -39,79 +39,79 @@ import static org.junit.Assert.assertNull;
 @Config(sdk = 33)
 public class GeofenceReceiverTest {
 
-    private Context context;
-    private GeofenceReceiver receiver;
-    private ShadowAlarmManager shadowAlarmManager;
+	private Context context;
+	private GeofenceReceiver receiver;
+	private ShadowAlarmManager shadowAlarmManager;
 
-    @Before
-    public void setUp() {
-        context = ApplicationProvider.getApplicationContext();
-        receiver = new GeofenceReceiver();
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        shadowAlarmManager = Shadows.shadowOf(alarmManager);
-        ShadowAlarmManager.setCanScheduleExactAlarms(true);
-    }
+	@Before
+	public void setUp() {
+		context = ApplicationProvider.getApplicationContext();
+		receiver = new GeofenceReceiver();
+		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+		shadowAlarmManager = Shadows.shadowOf(alarmManager);
+		ShadowAlarmManager.setCanScheduleExactAlarms(true);
+	}
 
-    @Test
-    public void onReceive_nullGeofencingEvent_doesNotCrash() {
-        // A plain intent produces a null GeofencingEvent — receiver should return silently
-        Intent plainIntent = new Intent(context, GeofenceReceiver.class);
-        receiver.onReceive(context, plainIntent);
-        // No alarm should be scheduled
-        assertNull(shadowAlarmManager.getNextScheduledAlarm());
-    }
+	@Test
+	public void onReceive_nullGeofencingEvent_doesNotCrash() {
+		// A plain intent produces a null GeofencingEvent — receiver should return silently
+		Intent plainIntent = new Intent(context, GeofenceReceiver.class);
+		receiver.onReceive(context, plainIntent);
+		// No alarm should be scheduled
+		assertNull(shadowAlarmManager.getNextScheduledAlarm());
+	}
 
-    @Test
-    public void onReceive_nullGeofencingEvent_doesNotScheduleAlarm() {
-        saveAlarm(enabledAlarm());
-        Intent plainIntent = new Intent(context, GeofenceReceiver.class);
-        receiver.onReceive(context, plainIntent);
-        assertNull(shadowAlarmManager.getNextScheduledAlarm());
-    }
+	@Test
+	public void onReceive_nullGeofencingEvent_doesNotScheduleAlarm() {
+		saveAlarm(enabledAlarm());
+		Intent plainIntent = new Intent(context, GeofenceReceiver.class);
+		receiver.onReceive(context, plainIntent);
+		assertNull(shadowAlarmManager.getNextScheduledAlarm());
+	}
 
-    @Test
-    public void onReceive_withEnabledAlarmInPrefs_nullEvent_doesNotSchedule() {
-        // Even with a valid alarm saved, a null event means no transition is processed
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        Intent intent = new Intent(context, GeofenceReceiver.class);
-        intent.putExtra("alarm_id", alarm.id.toString());
-        receiver.onReceive(context, intent);
-        assertNull(shadowAlarmManager.getNextScheduledAlarm());
-    }
+	@Test
+	public void onReceive_withEnabledAlarmInPrefs_nullEvent_doesNotSchedule() {
+		// Even with a valid alarm saved, a null event means no transition is processed
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		Intent intent = new Intent(context, GeofenceReceiver.class);
+		intent.putExtra("alarm_id", alarm.id.toString());
+		receiver.onReceive(context, intent);
+		assertNull(shadowAlarmManager.getNextScheduledAlarm());
+	}
 
-    @Test
-    public void onReceive_withDisabledAlarm_nullEvent_doesNotSchedule() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm().withEnabled(false));
-        Intent intent = new Intent(context, GeofenceReceiver.class);
-        intent.putExtra("alarm_id", alarm.id.toString());
-        receiver.onReceive(context, intent);
-        assertNull(shadowAlarmManager.getNextScheduledAlarm());
-    }
+	@Test
+	public void onReceive_withDisabledAlarm_nullEvent_doesNotSchedule() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm().withEnabled(false));
+		Intent intent = new Intent(context, GeofenceReceiver.class);
+		intent.putExtra("alarm_id", alarm.id.toString());
+		receiver.onReceive(context, intent);
+		assertNull(shadowAlarmManager.getNextScheduledAlarm());
+	}
 
-    @Test
-    public void onReceive_withUnknownAlarmId_nullEvent_doesNotCrash() {
-        Intent intent = new Intent(context, GeofenceReceiver.class);
-        intent.putExtra("alarm_id", UUID.randomUUID().toString());
-        receiver.onReceive(context, intent);
-        assertNull(shadowAlarmManager.getNextScheduledAlarm());
-    }
+	@Test
+	public void onReceive_withUnknownAlarmId_nullEvent_doesNotCrash() {
+		Intent intent = new Intent(context, GeofenceReceiver.class);
+		intent.putExtra("alarm_id", UUID.randomUUID().toString());
+		receiver.onReceive(context, intent);
+		assertNull(shadowAlarmManager.getNextScheduledAlarm());
+	}
 
-    // ---- helpers ----
+	// ---- helpers ----
 
-    private GeoAlarm enabledAlarm() {
-        return GeoAlarm.builder()
-                .id(UUID.randomUUID())
-                .location(new LatLng(37.4, -122.0))
-                .radius(100)
-                .enabled(true)
-                .hour(8)
-                .minute(0)
-                .days(ImmutableSet.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY))
-                .build();
-    }
+	private GeoAlarm enabledAlarm() {
+		return GeoAlarm.builder()
+		        .id(UUID.randomUUID())
+		        .location(new LatLng(37.4, -122.0))
+		        .radius(100)
+		        .enabled(true)
+		        .hour(8)
+		        .minute(0)
+		        .days(ImmutableSet.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY))
+		        .build();
+	}
 
-    private GeoAlarm saveAlarm(GeoAlarm alarm) {
-        GeoAlarm.save(context, alarm);
-        return alarm;
-    }
+	private GeoAlarm saveAlarm(GeoAlarm alarm) {
+		GeoAlarm.save(context, alarm);
+		return alarm;
+	}
 }

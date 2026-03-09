@@ -38,259 +38,293 @@ import static org.junit.Assert.assertTrue;
 @Config(sdk = 33)
 public class AlarmRingingServiceTest {
 
-    private Context context;
-    private ShadowAlarmManager shadowAlarmManager;
-    private ShadowNotificationManager shadowNotificationManager;
-    private static final long ORIGINAL_SNOOZE_MS = AlarmRingingService.SNOOZE_DURATION_MS;
+	private Context context;
+	private ShadowAlarmManager shadowAlarmManager;
+	private ShadowNotificationManager shadowNotificationManager;
+	private static final long ORIGINAL_SNOOZE_MS = AlarmRingingService.SNOOZE_DURATION_MS;
 
-    @Before
-    public void setUp() {
-        context = ApplicationProvider.getApplicationContext();
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        shadowAlarmManager = Shadows.shadowOf(alarmManager);
-        ShadowAlarmManager.setCanScheduleExactAlarms(true);
-        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        shadowNotificationManager = Shadows.shadowOf(nm);
-        // Reset snooze duration
-        AlarmRingingService.SNOOZE_DURATION_MS = ORIGINAL_SNOOZE_MS;
-    }
+	@Before
+	public void setUp() {
+		context = ApplicationProvider.getApplicationContext();
+		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+		shadowAlarmManager = Shadows.shadowOf(alarmManager);
+		ShadowAlarmManager.setCanScheduleExactAlarms(true);
+		NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+		shadowNotificationManager = Shadows.shadowOf(nm);
+		// Reset snooze duration
+		AlarmRingingService.SNOOZE_DURATION_MS = ORIGINAL_SNOOZE_MS;
+	}
 
-    @After
-    public void tearDown() {
-        AlarmRingingService.SNOOZE_DURATION_MS = ORIGINAL_SNOOZE_MS;
-    }
+	@After
+	public void tearDown() {
+		AlarmRingingService.SNOOZE_DURATION_MS = ORIGINAL_SNOOZE_MS;
+	}
 
-    @Test
-    public void normalStart_servicePostsForegroundNotification() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-        controller.startCommand(0, 0);
-        // startForeground() posts a notification with RINGING_NOTIFICATION_ID
-        assertNotNull("startForeground should post the ringing notification",
-                shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
-    }
+	@Test
+	public void normalStart_servicePostsForegroundNotification() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		// startForeground() posts a notification with RINGING_NOTIFICATION_ID
+		assertNotNull("startForeground should post the ringing notification",
+		        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+	}
 
-    @Test
-    public void actionDismiss_stopsService() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        Intent intent = startIntent(alarm);
-        intent.setAction(AlarmRingingService.ACTION_DISMISS);
-        // START_NOT_STICKY is returned for DISMISS — the service does not post a notification
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, intent).create();
-        int result = controller.startCommand(0, 0).get().onStartCommand(intent, 0, 0);
-        assertEquals("DISMISS should return START_NOT_STICKY",
-                android.app.Service.START_NOT_STICKY, result);
-    }
+	@Test
+	public void actionDismiss_stopsService() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		Intent intent = startIntent(alarm);
+		intent.setAction(AlarmRingingService.ACTION_DISMISS);
+		// START_NOT_STICKY is returned for DISMISS — the service does not post a notification
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, intent).create();
+		int result = controller.startCommand(0, 0).get().onStartCommand(intent, 0, 0);
+		assertEquals("DISMISS should return START_NOT_STICKY",
+		        android.app.Service.START_NOT_STICKY, result);
+	}
 
-    @Test
-    public void actionDismiss_doesNotScheduleSnooze() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        Intent intent = startIntent(alarm);
-        intent.setAction(AlarmRingingService.ACTION_DISMISS);
-        Robolectric.buildService(AlarmRingingService.class, intent).create().startCommand(0, 0);
-        assertNull("DISMISS should not schedule a snooze alarm",
-                shadowAlarmManager.getNextScheduledAlarm());
-    }
+	@Test
+	public void actionDismiss_doesNotScheduleSnooze() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		Intent intent = startIntent(alarm);
+		intent.setAction(AlarmRingingService.ACTION_DISMISS);
+		Robolectric.buildService(AlarmRingingService.class, intent).create().startCommand(0, 0);
+		assertNull("DISMISS should not schedule a snooze alarm",
+		        shadowAlarmManager.getNextScheduledAlarm());
+	}
 
-    @Test
-    public void actionSnooze_schedulesSnoozeAlarm() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        Intent intent = startIntent(alarm);
-        intent.setAction(AlarmRingingService.ACTION_SNOOZE);
-        Robolectric.buildService(AlarmRingingService.class, intent).create().startCommand(0, 0);
-        assertNotNull("SNOOZE should schedule a new alarm",
-                shadowAlarmManager.getNextScheduledAlarm());
-    }
+	@Test
+	public void actionSnooze_schedulesSnoozeAlarm() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		Intent intent = startIntent(alarm);
+		intent.setAction(AlarmRingingService.ACTION_SNOOZE);
+		Robolectric.buildService(AlarmRingingService.class, intent).create().startCommand(0, 0);
+		assertNotNull("SNOOZE should schedule a new alarm",
+		        shadowAlarmManager.getNextScheduledAlarm());
+	}
 
-    @Test
-    public void actionSnooze_returnedStartNotSticky() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        Intent intent = startIntent(alarm);
-        intent.setAction(AlarmRingingService.ACTION_SNOOZE);
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, intent).create();
-        int result = controller.startCommand(0, 0).get().onStartCommand(intent, 0, 0);
-        assertEquals("SNOOZE should return START_NOT_STICKY",
-                android.app.Service.START_NOT_STICKY, result);
-    }
+	@Test
+	public void actionSnooze_returnedStartNotSticky() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		Intent intent = startIntent(alarm);
+		intent.setAction(AlarmRingingService.ACTION_SNOOZE);
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, intent).create();
+		int result = controller.startCommand(0, 0).get().onStartCommand(intent, 0, 0);
+		assertEquals("SNOOZE should return START_NOT_STICKY",
+		        android.app.Service.START_NOT_STICKY, result);
+	}
 
-    @Test
-    public void scheduleSnooze_triggerTimeIsApproximately5Minutes() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        long before = System.currentTimeMillis();
-        AlarmRingingService.scheduleSnooze(context, alarm);
-        long after = System.currentTimeMillis();
+	@Test
+	public void scheduleSnooze_triggerTimeIsApproximately5Minutes() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		long before = System.currentTimeMillis();
+		AlarmRingingService.scheduleSnooze(context, alarm);
+		long after = System.currentTimeMillis();
 
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        AlarmManager.AlarmClockInfo clockInfo = alarmManager.getNextAlarmClock();
-        assertNotNull(clockInfo);
-        long triggerMs = clockInfo.getTriggerTime();
-        assertTrue("Snooze trigger should be ~5 min from now",
-                triggerMs >= before + 5 * 60 * 1000L - 1000L &&
-                triggerMs <= after + 5 * 60 * 1000L + 1000L);
-    }
+		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+		AlarmManager.AlarmClockInfo clockInfo = alarmManager.getNextAlarmClock();
+		assertNotNull(clockInfo);
+		long triggerMs = clockInfo.getTriggerTime();
+		assertTrue("Snooze trigger should be ~5 min from now",
+		        triggerMs >= before + 5 * 60 * 1000L - 1000L &&
+		        triggerMs <= after + 5 * 60 * 1000L + 1000L);
+	}
 
-    @Test
-    public void scheduleSnooze_pendingIntentTargetsAlarmClockReceiver() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        AlarmRingingService.scheduleSnooze(context, alarm);
+	@Test
+	public void scheduleSnooze_pendingIntentTargetsAlarmClockReceiver() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		AlarmRingingService.scheduleSnooze(context, alarm);
 
-        ShadowAlarmManager.ScheduledAlarm scheduled = shadowAlarmManager.getNextScheduledAlarm();
-        assertNotNull(scheduled);
-        // Fire the pending intent and verify it targets AlarmClockReceiver
-        ShadowApplication sa = Shadows.shadowOf((Application) context);
-        try {
-            scheduled.operation.send();
-        } catch (Exception ignored) {}
-        Intent broadcast = sa.getBroadcastIntents().stream()
-                .filter(i -> i.getComponent() != null &&
-                        AlarmClockReceiver.class.getName().equals(i.getComponent().getClassName()))
-                .findFirst().orElse(null);
-        assertNotNull("Snooze should broadcast to AlarmClockReceiver", broadcast);
-    }
+		ShadowAlarmManager.ScheduledAlarm scheduled = shadowAlarmManager.getNextScheduledAlarm();
+		assertNotNull(scheduled);
+		// Fire the pending intent and verify it targets AlarmClockReceiver
+		ShadowApplication sa = Shadows.shadowOf((Application) context);
+		try {
+			scheduled.operation.send();
+		} catch (Exception ignored) {}
+		Intent broadcast = sa.getBroadcastIntents().stream()
+		        .filter(i -> i.getComponent() != null &&
+		                AlarmClockReceiver.class.getName().equals(i.getComponent().getClassName()))
+		        .findFirst().orElse(null);
+		assertNotNull("Snooze should broadcast to AlarmClockReceiver", broadcast);
+	}
 
-    @Test
-    public void scheduleSnooze_intentHasIsSnoozeExtra() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        AlarmRingingService.scheduleSnooze(context, alarm);
+	@Test
+	public void scheduleSnooze_intentHasIsSnoozeExtra() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		AlarmRingingService.scheduleSnooze(context, alarm);
 
-        ShadowAlarmManager.ScheduledAlarm scheduled = shadowAlarmManager.getNextScheduledAlarm();
-        assertNotNull(scheduled);
-        ShadowApplication sa = Shadows.shadowOf((Application) context);
-        try {
-            scheduled.operation.send();
-        } catch (Exception ignored) {}
-        Intent broadcast = sa.getBroadcastIntents().stream()
-                .filter(i -> i.getComponent() != null &&
-                        AlarmClockReceiver.class.getName().equals(i.getComponent().getClassName()))
-                .findFirst().orElse(null);
-        assertNotNull(broadcast);
-        assertTrue("Snooze intent should have EXTRA_IS_SNOOZE=true",
-                broadcast.getBooleanExtra(AlarmClockReceiver.EXTRA_IS_SNOOZE, false));
-    }
+		ShadowAlarmManager.ScheduledAlarm scheduled = shadowAlarmManager.getNextScheduledAlarm();
+		assertNotNull(scheduled);
+		ShadowApplication sa = Shadows.shadowOf((Application) context);
+		try {
+			scheduled.operation.send();
+		} catch (Exception ignored) {}
+		Intent broadcast = sa.getBroadcastIntents().stream()
+		        .filter(i -> i.getComponent() != null &&
+		                AlarmClockReceiver.class.getName().equals(i.getComponent().getClassName()))
+		        .findFirst().orElse(null);
+		assertNotNull(broadcast);
+		assertTrue("Snooze intent should have EXTRA_IS_SNOOZE=true",
+		        broadcast.getBooleanExtra(AlarmClockReceiver.EXTRA_IS_SNOOZE, false));
+	}
 
-    @Test
-    public void buildNotification_hasSnoozeAction() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-        controller.startCommand(0, 0);
-        Notification n = shadowNotificationManager.getNotification(
-                AlarmClockReceiver.RINGING_NOTIFICATION_ID);
-        assertNotNull(n);
-        boolean hasSnooze = false;
-        for (Notification.Action action : n.actions) {
-            if ("Snooze".contentEquals(action.title)) {
-                hasSnooze = true;
-                break;
-            }
-        }
-        assertTrue("Notification should have a Snooze action", hasSnooze);
-    }
+	@Test
+	public void buildNotification_hasSnoozeAction() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		Notification n = shadowNotificationManager.getNotification(
+		        AlarmClockReceiver.RINGING_NOTIFICATION_ID);
+		assertNotNull(n);
+		boolean hasSnooze = false;
+		for (Notification.Action action : n.actions) {
+			if ("Snooze".contentEquals(action.title)) {
+				hasSnooze = true;
+				break;
+			}
+		}
+		assertTrue("Notification should have a Snooze action", hasSnooze);
+	}
 
-    @Test
-    public void buildNotification_hasDismissAction() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-        controller.startCommand(0, 0);
-        Notification n = shadowNotificationManager.getNotification(
-                AlarmClockReceiver.RINGING_NOTIFICATION_ID);
-        assertNotNull(n);
-        boolean hasDismiss = false;
-        for (Notification.Action action : n.actions) {
-            if ("Dismiss".contentEquals(action.title)) {
-                hasDismiss = true;
-                break;
-            }
-        }
-        assertTrue("Notification should have a Dismiss action", hasDismiss);
-    }
+	@Test
+	public void buildNotification_hasDismissAction() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		Notification n = shadowNotificationManager.getNotification(
+		        AlarmClockReceiver.RINGING_NOTIFICATION_ID);
+		assertNotNull(n);
+		boolean hasDismiss = false;
+		for (Notification.Action action : n.actions) {
+			if ("Dismiss".contentEquals(action.title)) {
+				hasDismiss = true;
+				break;
+			}
+		}
+		assertTrue("Notification should have a Dismiss action", hasDismiss);
+	}
 
-    @Test
-    public void buildNotification_hasFullScreenIntent() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-        controller.startCommand(0, 0);
-        Notification n = shadowNotificationManager.getNotification(
-                AlarmClockReceiver.RINGING_NOTIFICATION_ID);
-        assertNotNull(n);
-        assertNotNull("Notification should have a full-screen intent", n.fullScreenIntent);
-    }
+	@Test
+	public void buildNotification_hasFullScreenIntent() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		Notification n = shadowNotificationManager.getNotification(
+		        AlarmClockReceiver.RINGING_NOTIFICATION_ID);
+		assertNotNull(n);
+		assertNotNull("Notification should have a full-screen intent", n.fullScreenIntent);
+	}
 
-    @Test
-    public void buildNotification_categoryIsAlarm() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-        controller.startCommand(0, 0);
-        Notification n = shadowNotificationManager.getNotification(
-                AlarmClockReceiver.RINGING_NOTIFICATION_ID);
-        assertNotNull(n);
-        assertEquals(Notification.CATEGORY_ALARM, n.category);
-    }
+	@Test
+	public void buildNotification_categoryIsAlarm() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		Notification n = shadowNotificationManager.getNotification(
+		        AlarmClockReceiver.RINGING_NOTIFICATION_ID);
+		assertNotNull(n);
+		assertEquals(Notification.CATEGORY_ALARM, n.category);
+	}
 
-    @Test
-    public void buildNotification_isOngoing() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-        controller.startCommand(0, 0);
-        Notification n = shadowNotificationManager.getNotification(
-                AlarmClockReceiver.RINGING_NOTIFICATION_ID);
-        assertNotNull(n);
-        assertTrue("Notification should be ongoing",
-                (n.flags & Notification.FLAG_ONGOING_EVENT) != 0);
-    }
+	@Test
+	public void buildNotification_isOngoing() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		Notification n = shadowNotificationManager.getNotification(
+		        AlarmClockReceiver.RINGING_NOTIFICATION_ID);
+		assertNotNull(n);
+		assertTrue("Notification should be ongoing",
+		        (n.flags & Notification.FLAG_ONGOING_EVENT) != 0);
+	}
 
-    @Test
-    public void buildNotification_visibilityIsPublic() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-        controller.startCommand(0, 0);
-        Notification n = shadowNotificationManager.getNotification(
-                AlarmClockReceiver.RINGING_NOTIFICATION_ID);
-        assertNotNull(n);
-        assertEquals(Notification.VISIBILITY_PUBLIC, n.visibility);
-    }
+	@Test
+	public void buildNotification_visibilityIsPublic() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		Notification n = shadowNotificationManager.getNotification(
+		        AlarmClockReceiver.RINGING_NOTIFICATION_ID);
+		assertNotNull(n);
+		assertEquals(Notification.VISIBILITY_PUBLIC, n.visibility);
+	}
 
-    @Test
-    public void buildNotification_channelHasHighImportance() {
-        GeoAlarm alarm = saveAlarm(enabledAlarm());
-        ServiceController<AlarmRingingService> controller =
-                Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-        controller.startCommand(0, 0);
-        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        android.app.NotificationChannel channel = nm.getNotificationChannel("alarm_ringing");
-        assertNotNull("Notification channel should be created", channel);
-        assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.getImportance());
-    }
+	@Test
+	public void buildNotification_channelHasHighImportance() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+		android.app.NotificationChannel channel = nm.getNotificationChannel("alarm_ringing");
+		assertNotNull("Notification channel should be created", channel);
+		assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.getImportance());
+	}
 
-    // ---- helpers ----
+	// ---- ringtone URI tests ----
 
-    private GeoAlarm enabledAlarm() {
-        return GeoAlarm.builder()
-                .id(UUID.randomUUID())
-                .location(new LatLng(37.4, -122.0))
-                .radius(100)
-                .enabled(true)
-                .hour(8)
-                .minute(0)
-                .build();
-    }
+	@Test
+	public void alarm_withExplicitRingtoneUri_serviceStarts() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm().withRingtoneUri("content://media/internal/audio/media/42"));
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		assertNotNull("Service should start with explicit ringtone URI",
+		        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+	}
 
-    private GeoAlarm saveAlarm(GeoAlarm alarm) {
-        GeoAlarm.save(context, alarm);
-        return alarm;
-    }
+	@Test
+	public void alarm_withNullRingtoneUri_vibrateOnly_serviceStarts() {
+		GeoAlarm alarm = saveAlarm(enabledAlarm().withRingtoneUri(null));
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		assertNotNull("Service should start with vibrate-only (null URI)",
+		        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+	}
 
-    private Intent startIntent(GeoAlarm alarm) {
-        Intent intent = new Intent(context, AlarmRingingService.class);
-        intent.putExtra(AlarmRingingService.EXTRA_ALARM_ID, alarm.id.toString());
-        return intent;
-    }
+	@Test
+	public void alarm_legacyWithoutRingtoneField_serviceStarts() {
+		// Legacy alarms: ringtoneUri field not present (null by default)
+		GeoAlarm alarm = saveAlarm(enabledAlarm());
+		assertNull("Legacy alarm should have null ringtoneUri", alarm.ringtoneUri);
+		ServiceController<AlarmRingingService> controller =
+		        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+		controller.startCommand(0, 0);
+		assertNotNull("Service should start for legacy alarm",
+		        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+	}
+
+	// ---- helpers ----
+
+	private GeoAlarm enabledAlarm() {
+		return GeoAlarm.builder()
+		        .id(UUID.randomUUID())
+		        .location(new LatLng(37.4, -122.0))
+		        .radius(100)
+		        .enabled(true)
+		        .hour(8)
+		        .minute(0)
+		        .build();
+	}
+
+	private GeoAlarm saveAlarm(GeoAlarm alarm) {
+		GeoAlarm.save(context, alarm);
+		return alarm;
+	}
+
+	private Intent startIntent(GeoAlarm alarm) {
+		Intent intent = new Intent(context, AlarmRingingService.class);
+		intent.putExtra(AlarmRingingService.EXTRA_ALARM_ID, alarm.id.toString());
+		return intent;
+	}
 }

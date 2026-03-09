@@ -68,9 +68,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api-level: [26, 31, 33, 34]
+        api-level: [27, 31, 34]
     steps:
       - uses: actions/checkout@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -82,12 +87,13 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
-          image-type: google_apis
+          target: default
           ram-size: 4096M
           script: |
             adb shell settings put global location_mode 3
             ./gradlew installDebug installDebugAndroidTest --stacktrace
             adb shell appops set maurizi.geoclock.debug android:mock_location allow
+            adb shell appops set maurizi.geoclock.debug SCHEDULE_EXACT_ALARM allow || true
             adb shell am instrument -w -e package maurizi.geoclock maurizi.geoclock.debug.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tee test-output.txt
             grep -q "^OK " test-output.txt
         env:

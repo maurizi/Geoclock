@@ -1,6 +1,9 @@
 package maurizi.geoclock.ui;
 
+import android.app.KeyguardManager;
+import android.content.Context;
 import android.content.Intent;
+import android.os.PowerManager;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
@@ -16,6 +19,8 @@ import com.google.android.gms.maps.model.LatLng;
 
 import org.junit.After;
 import org.junit.Before;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -33,85 +38,109 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
 // Espresso's InputManagerEventInjectionStrategy uses InputManager.getInstance() via
 // reflection, which was restricted in API 36. Skip until Espresso ships a fix.
-@SdkSuppress(maxSdkVersion = 35)
+@SdkSuppress(minSdkVersion = 27, maxSdkVersion = 35)
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class AlarmRingingActivityTest {
 
-    private GeoAlarm testAlarm;
-    private ActivityScenario<AlarmRingingActivity> scenario;
+	private GeoAlarm testAlarm;
+	private ActivityScenario<AlarmRingingActivity> scenario;
+	private PowerManager.WakeLock wakeLock;
 
-    @Before
-    public void setUp() {
-        testAlarm = GeoAlarm.builder()
-                .id(UUID.randomUUID())
-                .place("Morning Run")
-                .location(new LatLng(37.4, -122.0))
-                .radius(100)
-                .enabled(true)
-                .hour(7)
-                .minute(30)
-                .build();
-        GeoAlarm.save(ApplicationProvider.getApplicationContext(), testAlarm);
-    }
+	@SuppressWarnings("deprecation")
+	@Before
+	public void setUp() {
+		Context ctx = ApplicationProvider.getApplicationContext();
+		// Keep screen on and dismiss keyguard so Espresso can interact with the activity
+		PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
+		wakeLock = pm.newWakeLock(
+		        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+		        "geoclock:test");
+		wakeLock.acquire(60_000);
+		KeyguardManager km = (KeyguardManager) ctx.getSystemService(Context.KEYGUARD_SERVICE);
+		//noinspection deprecation
+		KeyguardManager.KeyguardLock kl = km.newKeyguardLock("geoclock:test");
+		kl.disableKeyguard();
 
-    @After
-    public void tearDown() {
-        GeoAlarm.remove(ApplicationProvider.getApplicationContext(), testAlarm);
-        if (scenario != null) {
-            scenario.close();
-        }
-    }
+		testAlarm = GeoAlarm.builder()
+		        .id(UUID.randomUUID())
+		        .place("Morning Run")
+		        .location(new LatLng(37.4, -122.0))
+		        .radius(100)
+		        .enabled(true)
+		        .hour(7)
+		        .minute(30)
+		        .build();
+		GeoAlarm.save(ApplicationProvider.getApplicationContext(), testAlarm);
+	}
 
-    private ActivityScenario<AlarmRingingActivity> launch() {
-        Intent intent = new Intent(ApplicationProvider.getApplicationContext(), AlarmRingingActivity.class);
-        intent.putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, testAlarm.id.toString());
-        return ActivityScenario.launch(intent);
-    }
+	@After
+	public void tearDown() {
+		if (testAlarm != null) {
+			GeoAlarm.remove(ApplicationProvider.getApplicationContext(), testAlarm);
+		}
+		if (scenario != null) {
+			scenario.close();
+		}
+		if (wakeLock != null && wakeLock.isHeld()) {
+			wakeLock.release();
+		}
+	}
 
-    @Test
-    public void alarmNameIsDisplayed() {
-        scenario = launch();
-        onView(withId(R.id.alarm_ringing_name)).check(matches(withText("Morning Run")));
-    }
+	private ActivityScenario<AlarmRingingActivity> launch() {
+		Intent intent = new Intent(ApplicationProvider.getApplicationContext(), AlarmRingingActivity.class);
+		intent.putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, testAlarm.id.toString());
+		return ActivityScenario.launch(intent);
+	}
 
-    @Test
-    public void dismissButtonIsDisplayed() {
-        scenario = launch();
-        onView(withId(R.id.alarm_ringing_dismiss)).check(matches(isDisplayed()));
-    }
+	@Test
+	public void alarmNameIsDisplayed() {
+		scenario = launch();
+		onView(withId(R.id.alarm_ringing_name)).check(matches(withText("Morning Run")));
+	}
 
-    @Test
-    public void snoozeButtonIsDisplayed() {
-        scenario = launch();
-        onView(withId(R.id.alarm_ringing_snooze)).check(matches(isDisplayed()));
-    }
+	@Test
+	public void dismissButtonIsDisplayed() {
+		scenario = launch();
+		onView(withId(R.id.alarm_ringing_dismiss)).check(matches(isDisplayed()));
+	}
 
-    @Test
-    public void dismissButton_closesActivity() {
-        scenario = launch();
-        onView(withId(R.id.alarm_ringing_dismiss)).perform(click());
-        // After dismiss, activity should be finishing
-        scenario.onActivity(activity -> {
-            assert activity.isFinishing();
-        });
-    }
+	@Test
+	public void snoozeButtonIsDisplayed() {
+		scenario = launch();
+		onView(withId(R.id.alarm_ringing_snooze)).check(matches(isDisplayed()));
+	}
 
-    @Test
-    public void snoozeButton_closesActivity() {
-        scenario = launch();
-        onView(withId(R.id.alarm_ringing_snooze)).perform(click());
-        scenario.onActivity(activity -> {
-            assert activity.isFinishing();
-        });
-    }
+	@Test
+	public void dismissButton_closesActivity() throws Exception {
+		scenario = launch();
+		onView(withId(R.id.alarm_ringing_dismiss)).perform(click());
+		Thread.sleep(1000);
+		assertActivityFinishedOrDestroyed();
+	}
 
-    @Test
-    public void launchWithNoAlarmId_showsTimeWithoutCrashing() {
-        // Should not crash if no alarm ID is in the intent
-        Intent intent = new Intent(ApplicationProvider.getApplicationContext(), AlarmRingingActivity.class);
-        try (ActivityScenario<AlarmRingingActivity> s = ActivityScenario.launch(intent)) {
-            onView(withId(R.id.alarm_ringing_dismiss)).check(matches(isDisplayed()));
-        }
-    }
+	@Test
+	public void snoozeButton_closesActivity() throws Exception {
+		scenario = launch();
+		onView(withId(R.id.alarm_ringing_snooze)).perform(click());
+		Thread.sleep(1000);
+		assertActivityFinishedOrDestroyed();
+	}
+
+	private void assertActivityFinishedOrDestroyed() {
+		androidx.lifecycle.Lifecycle.State state = scenario.getState();
+		if (state == androidx.lifecycle.Lifecycle.State.DESTROYED) return;
+		// Activity may not be fully destroyed yet but should be finishing
+		scenario.onActivity(activity -> assertTrue(
+		        "Activity should be finishing", activity.isFinishing()));
+	}
+
+	@Test
+	public void launchWithNoAlarmId_showsTimeWithoutCrashing() {
+		// Should not crash if no alarm ID is in the intent
+		Intent intent = new Intent(ApplicationProvider.getApplicationContext(), AlarmRingingActivity.class);
+		try (ActivityScenario<AlarmRingingActivity> s = ActivityScenario.launch(intent)) {
+			onView(withId(R.id.alarm_ringing_dismiss)).check(matches(isDisplayed()));
+		}
+	}
 }

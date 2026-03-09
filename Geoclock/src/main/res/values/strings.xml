@@ -34,13 +34,35 @@
     <string name="change_location">Change</string>
     <string name="rename_place">Rename place</string>
     <string name="rename_place_hint">Place name</string>
-    <string name="distance_meters">%1$dm away</string>
-    <string name="distance_km">%1$.1fkm away</string>
     <string name="radius_label">%1$dm radius</string>
+    <string name="radius_nearby">Nearby</string>
+    <string name="radius_small">Small area</string>
+    <string name="radius_medium">Medium area</string>
+    <string name="radius_large">Large area</string>
+    <string name="radius_wide">Wide area</string>
+    <string name="choose_sound">Choose</string>
+    <string name="days_weekdays">Weekdays</string>
+    <string name="days_weekends">Weekends</string>
+    <string name="place_name_hint">Place name</string>
     <string name="days_once">Once</string>
     <string name="days_every_day">Every day</string>
     <string name="delete_confirm_title">Delete alarm?</string>
     <string name="delete_confirm_message">This alarm will be permanently removed.</string>
+
+    <string name="inside_geofence">Within area</string>
+    <string name="section_in_range">Within range</string>
+    <string name="section_out_of_range">Out of range</string>
+    <string name="distance_edge_meters">%1$dm away</string>
+    <string name="distance_edge_km">%1$.1fkm away</string>
+    <string name="ringtone_label">Alarm sound</string>
+    <string name="ringtone_vibrate_only">Vibrate only</string>
+    <string name="ringtone_default">Default alarm sound</string>
+    <string name="perm_background_location">Geoclock needs location access in the background to detect when you enter an alarm\'s geofence area.</string>
+    <string name="perm_notifications">Geoclock needs notification permission to alert you when your alarm goes off.</string>
+    <string name="perm_exact_alarm">Geoclock needs permission to schedule exact alarms so your alarm fires at the right time.</string>
+    <string name="perm_full_screen_intent">Grant \"Display over other apps\" so your alarm can show on the lock screen.</string>
+    <string name="perm_denied_toast">Some permissions were denied. The alarm may not work correctly.</string>
+    <string name="perm_rationale_title">Permission needed</string>
 
     <!-- Empty string for attribution tag workaround (Play Services logs a warning otherwise) -->
     <string name="empty"></string>

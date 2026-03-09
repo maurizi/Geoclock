@@ -24,37 +24,37 @@ import org.robolectric.annotation.Config;
 @Config(sdk = 33)
 public class InitializationReceiverTest {
 
-    private Context context;
-    private InitializationReceiver receiver;
+	private Context context;
+	private InitializationReceiver receiver;
 
-    @Before
-    public void setUp() {
-        context = ApplicationProvider.getApplicationContext();
-        receiver = new InitializationReceiver();
-    }
+	@Before
+	public void setUp() {
+		context = ApplicationProvider.getApplicationContext();
+		receiver = new InitializationReceiver();
+	}
 
-    @Test
-    public void bootCompleted_doesNotCrash() {
-        receiver.onReceive(context, new Intent(Intent.ACTION_BOOT_COMPLETED));
-    }
+	@Test
+	public void bootCompleted_doesNotCrash() {
+		receiver.onReceive(context, new Intent(Intent.ACTION_BOOT_COMPLETED));
+	}
 
-    @Test
-    public void timeSet_doesNotCrash() {
-        receiver.onReceive(context, new Intent(Intent.ACTION_TIME_CHANGED));
-    }
+	@Test
+	public void timeSet_doesNotCrash() {
+		receiver.onReceive(context, new Intent(Intent.ACTION_TIME_CHANGED));
+	}
 
-    @Test
-    public void timezoneChanged_doesNotCrash() {
-        receiver.onReceive(context, new Intent(Intent.ACTION_TIMEZONE_CHANGED));
-    }
+	@Test
+	public void timezoneChanged_doesNotCrash() {
+		receiver.onReceive(context, new Intent(Intent.ACTION_TIMEZONE_CHANGED));
+	}
 
-    @Test
-    public void localeChanged_doesNotCrash() {
-        receiver.onReceive(context, new Intent(Intent.ACTION_LOCALE_CHANGED));
-    }
+	@Test
+	public void localeChanged_doesNotCrash() {
+		receiver.onReceive(context, new Intent(Intent.ACTION_LOCALE_CHANGED));
+	}
 
-    @Test
-    public void unrelatedAction_doesNotCrash() {
-        receiver.onReceive(context, new Intent(Intent.ACTION_BATTERY_LOW));
-    }
+	@Test
+	public void unrelatedAction_doesNotCrash() {
+		receiver.onReceive(context, new Intent(Intent.ACTION_BATTERY_LOW));
+	}
 }

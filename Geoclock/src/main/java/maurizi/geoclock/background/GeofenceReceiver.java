@@ -23,36 +23,36 @@ import static com.google.common.collect.Collections2.transform;
 import static maurizi.geoclock.GeoAlarm.getGeoAlarmForGeofenceFn;
 
 public class GeofenceReceiver extends BroadcastReceiver {
-    private static final String TAG = GeofenceReceiver.class.getSimpleName();
+	private static final String TAG = GeofenceReceiver.class.getSimpleName();
 
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        final ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(context);
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		final ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(context);
 
-        GeofencingEvent event = GeofencingEvent.fromIntent(intent);
-        if (event == null || event.hasError()) {
-            if (event != null) {
-                Log.e(TAG, GeofenceStatusCodes.getStatusCodeString(event.getErrorCode()));
-            }
-            return;
-        }
+		GeofencingEvent event = GeofencingEvent.fromIntent(intent);
+		if (event == null || event.hasError()) {
+			if (event != null) {
+				Log.e(TAG, GeofenceStatusCodes.getStatusCodeString(event.getErrorCode()));
+			}
+			return;
+		}
 
-        final int transition = event.getGeofenceTransition();
-        final List<Geofence> affectedGeofences = event.getTriggeringGeofences();
+		final int transition = event.getGeofenceTransition();
+		final List<Geofence> affectedGeofences = event.getTriggeringGeofences();
 
-        if (null != affectedGeofences && !affectedGeofences.isEmpty()) {
-            final Collection<GeoAlarm> affectedAlarms = filter(
-                    Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context)), a -> a != null);
-            ImmutableSet<UUID> affectedAlarmIds = ImmutableSet.copyOf(transform(affectedAlarms, alarm -> alarm.id));
-            if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                ImmutableSet<UUID> enabledAlarmIds = ImmutableSet.copyOf(
-                        transform(filter(affectedAlarms, alarm -> alarm.enabled), alarm -> alarm.id));
-                if (!enabledAlarmIds.isEmpty()) {
-                    activeAlarmManager.addActiveAlarms(enabledAlarmIds);
-                }
-            } else {
-                activeAlarmManager.removeActiveAlarms(affectedAlarmIds);
-            }
-        }
-    }
+		if (null != affectedGeofences && !affectedGeofences.isEmpty()) {
+			final Collection<GeoAlarm> affectedAlarms = filter(
+			        Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context)), a -> a != null);
+			ImmutableSet<UUID> affectedAlarmIds = ImmutableSet.copyOf(transform(affectedAlarms, alarm -> alarm.id));
+			if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+				ImmutableSet<UUID> enabledAlarmIds = ImmutableSet.copyOf(
+				        transform(filter(affectedAlarms, alarm -> alarm.enabled), alarm -> alarm.id));
+				if (!enabledAlarmIds.isEmpty()) {
+					activeAlarmManager.addActiveAlarms(enabledAlarmIds);
+				}
+			} else {
+				activeAlarmManager.removeActiveAlarms(affectedAlarmIds);
+			}
+		}
+	}
 }

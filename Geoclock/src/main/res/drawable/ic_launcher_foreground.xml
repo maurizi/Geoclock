@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Globe circle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30
+            a24,24 0 1,0 0,48
+            a24,24 0 1,0 0,-48z"/>
+
+    <!-- Globe horizontal lines -->
+    <path
+        android:strokeColor="@color/launcher_background"
+        android:strokeWidth="1.5"
+        android:pathData="M30,54 L78,54"/>
+    <path
+        android:strokeColor="@color/launcher_background"
+        android:strokeWidth="1.2"
+        android:pathData="M33,44 L75,44"/>
+    <path
+        android:strokeColor="@color/launcher_background"
+        android:strokeWidth="1.2"
+        android:pathData="M33,64 L75,64"/>
+
+    <!-- Globe vertical meridian (elliptical arc) -->
+    <path
+        android:strokeColor="@color/launcher_background"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,30
+            C44,30 38,42 38,54
+            C38,66 44,78 54,78
+            C64,78 70,66 70,54
+            C70,42 64,30 54,30z"/>
+
+    <!-- Globe outline -->
+    <path
+        android:strokeColor="@color/launcher_background"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M54,30
+            a24,24 0 1,0 0,48
+            a24,24 0 1,0 0,-48z"/>
+
+    <!-- Clock hand (minute) -->
+    <path
+        android:strokeColor="@color/launcher_background"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L54,38"/>
+
+    <!-- Clock hand (hour) -->
+    <path
+        android:strokeColor="@color/launcher_background"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L64,54"/>
+
+    <!-- Clock center dot -->
+    <path
+        android:fillColor="@color/launcher_background"
+        android:pathData="M54,54
+            a2.5,2.5 0 1,0 0,5
+            a2.5,2.5 0 1,0 0,-5z"/>
+</vector>
