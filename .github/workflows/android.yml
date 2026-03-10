@@ -29,18 +29,6 @@ jobs:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew test
 
-      - name: Generate coverage report
-        env:
-          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-        run: ./gradlew jacocoTestReport
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report-${{ github.sha }}
-          path: Geoclock/build/reports/jacoco/jacocoTestReport/html/
-          retention-days: 14
-
       - name: Build debug APK
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
@@ -94,15 +82,67 @@ jobs:
             ./gradlew installDebug installDebugAndroidTest --stacktrace
             adb shell appops set maurizi.geoclock.debug android:mock_location allow
             adb shell appops set maurizi.geoclock.debug SCHEDULE_EXACT_ALARM allow || true
-            adb shell am instrument -w -e package maurizi.geoclock maurizi.geoclock.debug.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tee test-output.txt
+            adb shell am instrument -w -e coverage true -e coverageFile /data/data/maurizi.geoclock.debug/files/coverage.ec -e package maurizi.geoclock maurizi.geoclock.debug.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tee test-output.txt
+            adb shell run-as maurizi.geoclock.debug cat files/coverage.ec > coverage-api${{ matrix.api-level }}.ec
             grep -q "^OK " test-output.txt
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+      - name: Upload instrumentation coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumentation-coverage-api${{ matrix.api-level }}
+          path: coverage-api${{ matrix.api-level }}.ec
+          if-no-files-found: error
+          retention-days: 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: instrumentation-test-results-api${{ matrix.api-level }}-${{ github.sha }}
           path: Geoclock/build/reports/androidTests/connected/
+          retention-days: 14
+
+  coverage-report:
+    name: Merged coverage report
+    if: github.event_name == 'pull_request'
+    needs: [build-debug, instrumentation-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Download instrumentation coverage
+        uses: actions/download-artifact@v4
+        with:
+          pattern: instrumentation-coverage-*
+          path: Geoclock/build/outputs/code_coverage/debugAndroidTest/connected/
+          merge-multiple: true
+
+      - name: Generate merged coverage report
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: ./gradlew test jacocoTestReport
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: Geoclock/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          format: jacoco
+          base-path: Geoclock/src/main/java
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: Geoclock/build/reports/jacoco/jacocoTestReport/html/
           retention-days: 14
 
   build-release:

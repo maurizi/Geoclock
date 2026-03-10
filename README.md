@@ -1,5 +1,5 @@
-[![Travis build status](https://travis-ci.org/maurizi/Geoclock.png?branch=master)](https://travis-ci.org/maurizi/Geoclock)
-[![Coverage Status](https://coveralls.io/repos/maurizi/Geoclock/badge.png?branch=master)](https://coveralls.io/r/maurizi/Geoclock?branch=master)
+[![Android CI](https://github.com/maurizi/Geoclock/actions/workflows/android.yml/badge.svg)](https://github.com/maurizi/Geoclock/actions/workflows/android.yml)
+[![Coverage Status](https://coveralls.io/repos/github/maurizi/Geoclock/badge.svg?branch=master)](https://coveralls.io/github/maurizi/Geoclock?branch=master)
 
 Geoclock
 ========
