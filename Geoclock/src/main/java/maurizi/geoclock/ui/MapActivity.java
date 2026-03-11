@@ -205,9 +205,45 @@ public class MapActivity extends AppCompatActivity {
 		if (locationService != null
 		        && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PERMISSION_GRANTED) {
 			centerCamera();
+			activateAlarmsInsideGeofence();
 		} else {
 			redrawGeoAlarms();
 		}
+	}
+
+	/**
+	 * When returning from the permission-grant flow the geofence may not have
+	 * been registered yet (background-location wasn't granted when completeSave
+	 * ran). Re-register geofences for enabled alarms and, if we're already
+	 * inside the radius, activate them so the notification appears immediately.
+	 */
+	private void activateAlarmsInsideGeofence() {
+		if (locationService == null) return;
+		locationService.getLastLocation(loc -> {
+			if (loc == null) return;
+			Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(this);
+			ImmutableSet.Builder<UUID> toActivate = ImmutableSet.builder();
+			for (GeoAlarm alarm : alarms) {
+				if (!alarm.enabled) continue;
+				locationService.addGeofence(alarm);
+				if (isInsideGeofence(loc, alarm)) {
+					toActivate.add(alarm.id);
+				}
+			}
+			ImmutableSet<UUID> ids = toActivate.build();
+			if (!ids.isEmpty()) {
+				new ActiveAlarmManager(this).addActiveAlarms(ids);
+			}
+		});
+	}
+
+	static boolean isInsideGeofence(LatLng location, GeoAlarm alarm) {
+		float[] results = new float[1];
+		android.location.Location.distanceBetween(
+		        location.latitude, location.longitude,
+		        alarm.location.latitude, alarm.location.longitude,
+		        results);
+		return results[0] <= alarm.radius;
 	}
 
 	public void onAddGeoAlarmFragmentClose() {
