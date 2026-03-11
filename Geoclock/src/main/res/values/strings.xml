@@ -64,6 +64,10 @@
     <string name="perm_denied_toast">Some permissions were denied. The alarm may not work correctly.</string>
     <string name="perm_rationale_title">Permission needed</string>
 
+    <string name="crash_dialog_title">Geoclock crashed</string>
+    <string name="crash_dialog_text">An unexpected error occurred. Would you like to send a crash report via email to help fix this?</string>
+    <string name="crash_dialog_comment">Add a comment about what you were doing (optional):</string>
+
     <!-- Empty string for attribution tag workaround (Play Services logs a warning otherwise) -->
     <string name="empty"></string>
 </resources>
