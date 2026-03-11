@@ -182,7 +182,7 @@ public class AlarmRingingServiceTest {
 		assertNotNull(n);
 		boolean hasSnooze = false;
 		for (Notification.Action action : n.actions) {
-			if ("Snooze".contentEquals(action.title)) {
+			if (action.title.toString().contains("Snooze")) {
 				hasSnooze = true;
 				break;
 			}

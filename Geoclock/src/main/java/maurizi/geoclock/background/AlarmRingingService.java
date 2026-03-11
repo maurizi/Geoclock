@@ -162,7 +162,7 @@ public class AlarmRingingService extends Service {
 
 		return new NotificationCompat.Builder(this, ALARM_RINGING_CHANNEL)
 		        .setSmallIcon(R.drawable.ic_alarm_black_24dp)
-		        .setContentTitle("Alarm")
+		        .setContentTitle(getString(R.string.alarm_title))
 		        .setContentText(alarm != null ? alarm.toString() : "")
 		        .setCategory(NotificationCompat.CATEGORY_ALARM)
 		        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -170,8 +170,8 @@ public class AlarmRingingService extends Service {
 		        .setFullScreenIntent(fullScreenPi, true)
 		        .setOngoing(true)
 		        .setAutoCancel(false)
-		        .addAction(0, "Snooze", snoozePi)
-		        .addAction(0, "Dismiss", dismissPi)
+		        .addAction(0, getString(R.string.snooze_5min), snoozePi)
+		        .addAction(0, getString(R.string.dismiss), dismissPi)
 		        .build();
 	}
 

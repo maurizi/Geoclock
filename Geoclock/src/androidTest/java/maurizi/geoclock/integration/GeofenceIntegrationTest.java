@@ -117,8 +117,13 @@ public class GeofenceIntegrationTest {
 
 		// Register geofences
 		LocationServiceGoogle locationService = new LocationServiceGoogle(context);
-		locationService.addGeofence(alarm);
-		Thread.sleep(2000);
+		CountDownLatch geofenceLatch = new CountDownLatch(1);
+		AtomicBoolean geofenceOk = new AtomicBoolean(false);
+		locationService.addGeofence(alarm)
+		        .addOnSuccessListener(v -> { geofenceOk.set(true); geofenceLatch.countDown(); })
+		        .addOnFailureListener(e -> geofenceLatch.countDown());
+		geofenceLatch.await(10, TimeUnit.SECONDS);
+		Assume.assumeTrue("Geofence registration failed (GEOFENCE_NOT_AVAILABLE on emulator)", geofenceOk.get());
 
 		// Poll for AlarmManager to receive the alarm (geofence ENTER → addActiveAlarms).
 		// Send repeated mock locations; newer API levels need sustained updates.
@@ -145,7 +150,13 @@ public class GeofenceIntegrationTest {
 
 		// Register geofence and simulate being inside
 		LocationServiceGoogle locationService = new LocationServiceGoogle(context);
-		locationService.addGeofence(alarm);
+		CountDownLatch geofenceLatch = new CountDownLatch(1);
+		AtomicBoolean geofenceOk = new AtomicBoolean(false);
+		locationService.addGeofence(alarm)
+		        .addOnSuccessListener(v -> { geofenceOk.set(true); geofenceLatch.countDown(); })
+		        .addOnFailureListener(e -> geofenceLatch.countDown());
+		geofenceLatch.await(10, TimeUnit.SECONDS);
+		Assume.assumeTrue("Geofence registration failed (GEOFENCE_NOT_AVAILABLE on emulator)", geofenceOk.get());
 		setMockLocation(alarmLocation.latitude, alarmLocation.longitude);
 		Thread.sleep(3000);
 
@@ -170,8 +181,13 @@ public class GeofenceIntegrationTest {
 		GeoAlarm alarm = saveAlarm(repeatingAlarmAt(alarmLocation).withEnabled(false));
 
 		LocationServiceGoogle locationService = new LocationServiceGoogle(context);
-		locationService.addGeofence(alarm);
-		Thread.sleep(2000);
+		CountDownLatch geofenceLatch = new CountDownLatch(1);
+		AtomicBoolean geofenceOk = new AtomicBoolean(false);
+		locationService.addGeofence(alarm)
+		        .addOnSuccessListener(v -> { geofenceOk.set(true); geofenceLatch.countDown(); })
+		        .addOnFailureListener(e -> geofenceLatch.countDown());
+		geofenceLatch.await(10, TimeUnit.SECONDS);
+		Assume.assumeTrue("Geofence registration failed (GEOFENCE_NOT_AVAILABLE on emulator)", geofenceOk.get());
 
 		setMockLocation(alarmLocation.latitude, alarmLocation.longitude);
 		Thread.sleep(5000); // short wait — disabled alarm should not trigger

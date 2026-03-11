@@ -77,7 +77,7 @@ public class NotificationActionsTest {
 		GeoAlarm alarm = saveAlarm(enabledAlarm());
 		startRingingService(alarm.id.toString());
 
-		Notification.Action snoozeAction = findRingingAction("Snooze");
+		Notification.Action snoozeAction = findRingingAction(context.getString(maurizi.geoclock.R.string.snooze_5min));
 		assertNotNull("Snooze action should be in ringing notification", snoozeAction);
 
 		snoozeAction.actionIntent.send(context, 0, null);
@@ -92,7 +92,7 @@ public class NotificationActionsTest {
 		GeoAlarm alarm = saveAlarm(enabledAlarm());
 		startRingingService(alarm.id.toString());
 
-		Notification.Action dismissAction = findRingingAction("Dismiss");
+		Notification.Action dismissAction = findRingingAction(context.getString(maurizi.geoclock.R.string.dismiss));
 		assertNotNull("Dismiss action should be in ringing notification", dismissAction);
 
 		dismissAction.actionIntent.send(context, 0, null);
@@ -112,7 +112,7 @@ public class NotificationActionsTest {
 		StatusBarNotification sbn = findNotification(NotificationReceiver.NOTIFICATION_ID);
 		assertNotNull("Upcoming notification should be posted", sbn);
 
-		Notification.Action cancelAction = findAction(sbn.getNotification().actions, "Cancel alarm");
+		Notification.Action cancelAction = findAction(sbn.getNotification().actions, context.getString(maurizi.geoclock.R.string.cancel_alarm));
 		assertNotNull("Cancel alarm action should be in upcoming notification", cancelAction);
 
 		cancelAction.actionIntent.send(context, 0, null);

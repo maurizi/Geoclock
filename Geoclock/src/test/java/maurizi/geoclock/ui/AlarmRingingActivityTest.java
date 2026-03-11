@@ -72,17 +72,6 @@ public class AlarmRingingActivityTest {
 	}
 
 	@Test
-	@Config(sdk = 26)
-	public void onCreate_setsWindowFlagsShowWhenLocked_preSdk27() {
-		// On SDK < 27, the activity uses window flags to show over lock screen
-		GeoAlarm alarm = saveAlarm(enabledAlarm());
-		AlarmRingingActivity activity = buildActivity(alarm.id.toString());
-		int flags = activity.getWindow().getAttributes().flags;
-		assertTrue("Window should have FLAG_SHOW_WHEN_LOCKED on SDK < 27",
-		        (flags & android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED) != 0);
-	}
-
-	@Test
 	public void dismissButton_stopsAlarmRingingService() {
 		GeoAlarm alarm = saveAlarm(enabledAlarm());
 		AlarmRingingActivity activity = buildActivity(alarm.id.toString());

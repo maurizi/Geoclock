@@ -1,6 +1,5 @@
 package maurizi.geoclock.ui;
 
-import android.app.KeyguardManager;
 import android.content.Context;
 import android.os.Build;
 import android.os.PowerManager;
@@ -81,10 +80,6 @@ public class GeoAlarmFragmentTest {
 		        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
 		        "geoclock:test");
 		wakeLock.acquire(60_000);
-		KeyguardManager km = (KeyguardManager) ctx.getSystemService(Context.KEYGUARD_SERVICE);
-		//noinspection deprecation
-		KeyguardManager.KeyguardLock kl = km.newKeyguardLock("geoclock:test");
-		kl.disableKeyguard();
 	}
 
 	@After
@@ -169,8 +164,13 @@ public class GeoAlarmFragmentTest {
 		// Check Monday
 		onView(withId(R.id.mon)).perform(scrollTo(), click());
 		onView(withId(R.id.add_geo_alarm_save)).perform(click());
-		Thread.sleep(1000);
-		Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(ApplicationProvider.getApplicationContext());
+		// Poll until the alarm appears in SharedPreferences (async geofence + save)
+		long deadline = System.currentTimeMillis() + 10_000;
+		Collection<GeoAlarm> alarms;
+		do {
+			Thread.sleep(200);
+			alarms = GeoAlarm.getGeoAlarms(ApplicationProvider.getApplicationContext());
+		} while (alarms.isEmpty() && System.currentTimeMillis() < deadline);
 		assertTrue("Should have created at least one alarm", alarms.size() >= 1);
 	}
 
@@ -250,16 +250,19 @@ public class GeoAlarmFragmentTest {
 		// Toggle Wednesday on
 		onView(withId(R.id.wed)).perform(scrollTo(), click());
 		onView(withId(R.id.add_geo_alarm_save)).perform(click());
-		Thread.sleep(1000);
-		// Verify alarm was updated — find the alarm with matching place
-		Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(ApplicationProvider.getApplicationContext());
+		// Poll until the updated alarm appears (async geofence + save)
+		long deadline = System.currentTimeMillis() + 10_000;
 		boolean found = false;
-		for (GeoAlarm a : alarms) {
-			if (a.days != null && a.days.contains(DayOfWeek.WEDNESDAY)
-			        && a.days.contains(DayOfWeek.MONDAY)
-			        && a.days.contains(DayOfWeek.FRIDAY)) {
-				found = true;
-				break;
+		while (!found && System.currentTimeMillis() < deadline) {
+			Thread.sleep(200);
+			Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(ApplicationProvider.getApplicationContext());
+			for (GeoAlarm a : alarms) {
+				if (a.days != null && a.days.contains(DayOfWeek.WEDNESDAY)
+				        && a.days.contains(DayOfWeek.MONDAY)
+				        && a.days.contains(DayOfWeek.FRIDAY)) {
+					found = true;
+					break;
+				}
 			}
 		}
 		assertTrue("Updated alarm should have MON, WED, FRI", found);

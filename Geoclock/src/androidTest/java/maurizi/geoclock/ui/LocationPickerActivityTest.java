@@ -1,6 +1,5 @@
 package maurizi.geoclock.ui;
 
-import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
@@ -46,10 +45,6 @@ public class LocationPickerActivityTest {
 		        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
 		        "geoclock:test");
 		wakeLock.acquire(60_000);
-		KeyguardManager km = (KeyguardManager) ctx.getSystemService(Context.KEYGUARD_SERVICE);
-		//noinspection deprecation
-		KeyguardManager.KeyguardLock kl = km.newKeyguardLock("geoclock:test");
-		kl.disableKeyguard();
 	}
 
 	@After
@@ -123,7 +118,11 @@ public class LocationPickerActivityTest {
 		onView(withId(R.id.toolbar)).check(matches(isDisplayed()));
 		onView(withContentDescription(androidx.appcompat.R.string.abc_action_bar_up_description))
 		        .perform(click());
-		Thread.sleep(500);
+		// Poll until the activity is destroyed
+		long deadline = System.currentTimeMillis() + 5_000;
+		while (scenario.getState() != Lifecycle.State.DESTROYED && System.currentTimeMillis() < deadline) {
+			Thread.sleep(100);
+		}
 		assertEquals("Activity should be destroyed after back",
 		        Lifecycle.State.DESTROYED, scenario.getState());
 	}

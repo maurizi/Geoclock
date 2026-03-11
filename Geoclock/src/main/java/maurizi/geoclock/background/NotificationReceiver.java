@@ -103,7 +103,7 @@ public class NotificationReceiver extends BroadcastReceiver {
 		        .setContentTitle(title)
 		        .setContentText(nextAlarm.toString())
 		        .setContentIntent(notificationPendingIntent)
-		        .addAction(0, "Cancel alarm", cancelPi)
+		        .addAction(0, context.getString(R.string.cancel_alarm), cancelPi)
 		        .build();
 
 		notificationManager.cancel(NOTIFICATION_ID);

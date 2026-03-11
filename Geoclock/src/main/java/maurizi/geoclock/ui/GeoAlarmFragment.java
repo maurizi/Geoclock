@@ -267,8 +267,11 @@ public class GeoAlarmFragment extends DialogFragment {
 		if (newAlarm.enabled && locationService != null) {
 			locationService.addGeofence(newAlarm)
 			        .addOnSuccessListener(aVoid -> finishSave(activity, dialog, newAlarm))
-			        .addOnFailureListener(e ->
-			                Toast.makeText(activity, R.string.fail_location, Toast.LENGTH_SHORT).show());
+			        .addOnFailureListener(e -> {
+				        // Save the alarm even if geofence registration fails —
+				        // it will be re-registered on next resume via activateAlarmsInsideGeofence
+				        finishSave(activity, dialog, newAlarm);
+			        });
 		} else {
 			finishSave(activity, dialog, newAlarm);
 		}

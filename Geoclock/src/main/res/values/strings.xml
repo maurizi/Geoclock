@@ -64,6 +64,13 @@
     <string name="perm_denied_toast">Some permissions were denied. The alarm may not work correctly.</string>
     <string name="perm_rationale_title">Permission needed</string>
 
+    <string name="radius_small_label">Small</string>
+    <string name="radius_large_label">Large</string>
+    <string name="confirm">Confirm</string>
+    <string name="pick_location">Pick location</string>
+    <string name="alarm_title">Alarm</string>
+    <string name="cancel_alarm">Cancel alarm</string>
+
     <string name="crash_dialog_title">Geoclock crashed</string>
     <string name="crash_dialog_text">An unexpected error occurred. Would you like to send a crash report via email to help fix this?</string>
     <string name="crash_dialog_comment">Add a comment about what you were doing (optional):</string>

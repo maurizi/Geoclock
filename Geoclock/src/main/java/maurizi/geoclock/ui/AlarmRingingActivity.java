@@ -1,7 +1,6 @@
 package maurizi.geoclock.ui;
 
 import android.app.KeyguardManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -27,20 +26,12 @@ public class AlarmRingingActivity extends AppCompatActivity {
 		super.onCreate(savedInstanceState);
 
 		// Show over the lock screen and dismiss keyguard so the activity gets full focus
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-			setShowWhenLocked(true);
-			setTurnScreenOn(true);
-			getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-			KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-			if (km != null) {
-				km.requestDismissKeyguard(this, new KeyguardManager.KeyguardDismissCallback() {});
-			}
-		} else {
-			getWindow().addFlags(
-			        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-			        | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-			        | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-			        | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+		setShowWhenLocked(true);
+		setTurnScreenOn(true);
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+		if (km != null) {
+			km.requestDismissKeyguard(this, new KeyguardManager.KeyguardDismissCallback() {});
 		}
 
 		setContentView(R.layout.activity_alarm_ringing);
@@ -59,7 +50,8 @@ public class AlarmRingingActivity extends AppCompatActivity {
 		if (alarm != null && alarm.place != null) {
 			nameView.setText(alarm.place);
 		}
-		timeView.setText(LocalTime.now().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)));
+		LocalTime alarmTime = alarm != null ? LocalTime.of(alarm.hour, alarm.minute) : LocalTime.now();
+		timeView.setText(alarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)));
 
 		final GeoAlarm finalAlarm = alarm;
 		dismissButton.setOnClickListener(v -> {

@@ -1,7 +1,6 @@
 package maurizi.geoclock.integration;
 
 import android.Manifest;
-import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -71,9 +70,6 @@ public class LockScreenAlarmTest {
 		        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
 		        "geoclock:test");
 		wakeLock.acquire(120_000);
-		KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
-		//noinspection deprecation
-		km.newKeyguardLock("geoclock:test").disableKeyguard();
 	}
 
 	@After

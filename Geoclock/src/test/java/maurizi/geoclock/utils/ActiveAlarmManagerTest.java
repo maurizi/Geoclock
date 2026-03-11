@@ -126,9 +126,11 @@ public class ActiveAlarmManagerTest {
 
 	@Test
 	public void addActiveAlarms_twoAlarms_schedulesSoonerOne() {
-		// Alarm A at 8:00, Alarm B at 10:00 — A should be the next scheduled alarm clock
-		GeoAlarm alarmA = saveAlarm(repeatingAlarmAt(8, 0));
-		GeoAlarm alarmB = saveAlarm(repeatingAlarmAt(10, 0));
+		// Use times relative to now so the sooner alarm is always in the future
+		java.time.LocalTime soonerTime = java.time.LocalTime.now().plusHours(1);
+		java.time.LocalTime laterTime = java.time.LocalTime.now().plusHours(3);
+		GeoAlarm alarmA = saveAlarm(repeatingAlarmAt(soonerTime.getHour(), soonerTime.getMinute()));
+		GeoAlarm alarmB = saveAlarm(repeatingAlarmAt(laterTime.getHour(), laterTime.getMinute()));
 
 		manager.addActiveAlarms(ImmutableSet.of(alarmA.id, alarmB.id));
 
@@ -136,7 +138,7 @@ public class ActiveAlarmManagerTest {
 		AlarmManager.AlarmClockInfo clockInfo = alarmManager.getNextAlarmClock();
 		assertNotNull(clockInfo);
 		long triggerMs = clockInfo.getTriggerTime();
-		// Verify it's closer to the 8:00 alarm's time than the 10:00 one
+		// Verify it's closer to alarm A's time (sooner) than alarm B's (later)
 		java.time.ZonedDateTime alarmATime = alarmA.calculateAlarmTime(java.time.LocalDateTime.now());
 		java.time.ZonedDateTime alarmBTime = alarmB.calculateAlarmTime(java.time.LocalDateTime.now());
 		assertNotNull(alarmATime);

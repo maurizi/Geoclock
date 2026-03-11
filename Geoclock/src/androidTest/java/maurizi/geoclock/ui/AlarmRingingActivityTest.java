@@ -1,6 +1,5 @@
 package maurizi.geoclock.ui;
 
-import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
@@ -57,10 +56,6 @@ public class AlarmRingingActivityTest {
 		        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
 		        "geoclock:test");
 		wakeLock.acquire(60_000);
-		KeyguardManager km = (KeyguardManager) ctx.getSystemService(Context.KEYGUARD_SERVICE);
-		//noinspection deprecation
-		KeyguardManager.KeyguardLock kl = km.newKeyguardLock("geoclock:test");
-		kl.disableKeyguard();
 
 		testAlarm = GeoAlarm.builder()
 		        .id(UUID.randomUUID())
