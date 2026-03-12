@@ -7,9 +7,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
+import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
@@ -374,8 +377,9 @@ public class GeoAlarmFragment extends DialogFragment {
 	}
 
 	private void showRingtonePicker() {
-		if (getContext() == null) return;
-		RingtoneManager rm = new RingtoneManager(getContext());
+		Context context = getContext();
+		if (context == null) return;
+		RingtoneManager rm = new RingtoneManager(context);
 		rm.setType(RingtoneManager.TYPE_ALARM);
 		Cursor cursor = rm.getCursor();
 
@@ -411,17 +415,57 @@ public class GeoAlarmFragment extends DialogFragment {
 			}
 		}
 
+		// Save current state so cancel can restore it
+		final String prevUri = selectedRingtoneUri;
+		final boolean prevUriSet = ringtoneUriSet;
+		final Ringtone[] preview = { null };
+
 		String[] items = names.toArray(new String[0]);
-		new AlertDialog.Builder(getContext())
+		AlertDialog dialog = new AlertDialog.Builder(context)
 		        .setTitle(R.string.ringtone_label)
-		        .setSingleChoiceItems(items, checkedItem, (dialog, which) -> {
+		        .setSingleChoiceItems(items, checkedItem, (dlg, which) -> {
+			        // Stop any current preview
+			        if (preview[0] != null) {
+				        preview[0].stop();
+				        preview[0] = null;
+			        }
+
 			        selectedRingtoneUri = uris.get(which);
 			        ringtoneUriSet = true;
-			        updateRingtoneLabel();
-			        dialog.dismiss();
+
+			        // Play preview
+			        if (selectedRingtoneUri == null) {
+				        // Vibrate only — buzz preview
+				        Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+				        if (vibrator != null) {
+					        vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+				        }
+			        } else {
+				        Ringtone ringtone = RingtoneManager.getRingtone(context, Uri.parse(selectedRingtoneUri));
+				        if (ringtone != null) {
+					        ringtone.play();
+					        preview[0] = ringtone;
+				        }
+			        }
 		        })
-		        .setNegativeButton(R.string.add_geo_alarm_cancel, null)
-		        .show();
+		        .setPositiveButton(android.R.string.ok, (dlg, which) -> {
+			        updateRingtoneLabel();
+		        })
+		        .setNegativeButton(R.string.add_geo_alarm_cancel, (dlg, which) -> {
+			        // Restore previous selection
+			        selectedRingtoneUri = prevUri;
+			        ringtoneUriSet = prevUriSet;
+		        })
+		        .create();
+
+		dialog.setOnDismissListener(dlg -> {
+			if (preview[0] != null) {
+				preview[0].stop();
+				preview[0] = null;
+			}
+		});
+
+		dialog.show();
 	}
 
 	@Override
