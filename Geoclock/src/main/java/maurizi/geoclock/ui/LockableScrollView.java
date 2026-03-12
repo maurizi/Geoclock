@@ -30,12 +30,14 @@ public class LockableScrollView extends ScrollView {
 		super(context);
 	}
 
-	@SuppressWarnings("ClickableViewAccessibility") // ScrollView; not clickable
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
 		switch (ev.getAction()) {
 			case MotionEvent.ACTION_DOWN:
 				return mScrollable && super.onTouchEvent(ev);
+			case MotionEvent.ACTION_UP:
+				performClick();
+				return super.onTouchEvent(ev);
 			default:
 				return super.onTouchEvent(ev);
 		}
