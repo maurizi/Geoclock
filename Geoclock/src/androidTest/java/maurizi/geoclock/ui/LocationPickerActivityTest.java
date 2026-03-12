@@ -107,7 +107,10 @@ public class LocationPickerActivityTest {
 		intent.putExtra(LocationPickerActivity.EXTRA_PLACE, "Googleplex");
 		scenario = ActivityScenario.launch(intent);
 		onView(withId(R.id.confirm_button)).perform(click());
-		Thread.sleep(500);
+		long deadline = System.currentTimeMillis() + 5_000;
+		while (scenario.getState() != Lifecycle.State.DESTROYED && System.currentTimeMillis() < deadline) {
+			Thread.sleep(100);
+		}
 		assertEquals("Activity should be destroyed after confirm",
 		        Lifecycle.State.DESTROYED, scenario.getState());
 	}
