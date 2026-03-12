@@ -2,11 +2,8 @@
 <resources>
 
     <string name="app_name">Geoclock</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="action_settings">Settings</string>
     <string name="add_geo_alarm_title">Add alarm area</string>
-    <string name="add_geo_alarm_name_label">Name</string>
     <string name="add_geo_alarm_cancel">Cancel</string>
     <string name="add_geo_alarm_continue">Save</string>
     <string name="add_geo_alarm_radius_label">Size</string>
@@ -21,14 +18,63 @@
     <string name="monday">M</string>
     <string name="sunday">S</string>
     <string name="add_geo_alarm_time_label">Time</string>
-    <string name="add_geo_alarm_validation">That name is blank</string>
     <string name="add_geo_alarm_delete">Delete</string>
     <string name="lost_location">Lost location</string>
     <string name="fail_location">Failed to get location</string>
     <string name="fail_map">Failed to load map</string>
-    <string name="add_geo_alarm_name_hint">alarm name</string>
     <string name="add_geo_alarm_enabled_label">Enabled</string>
     <string name="alarm_notification_text">Upcoming alarm at %s</string>
     <string name="edit_title">Edit alarm area</string>
+    <string name="snooze_5min">Snooze (5 min)</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="location_permission_rationale">Location permission is needed to detect when you enter your alarm areas.</string>
 
+    <string name="empty_state_title">No alarms yet</string>
+    <string name="empty_state_body">Tap + to add your first location alarm</string>
+    <string name="change_location">Change</string>
+    <string name="rename_place">Rename place</string>
+    <string name="rename_place_hint">Place name</string>
+    <string name="radius_label">%1$dm radius</string>
+    <string name="radius_nearby">Nearby</string>
+    <string name="radius_small">Small area</string>
+    <string name="radius_medium">Medium area</string>
+    <string name="radius_large">Large area</string>
+    <string name="radius_wide">Wide area</string>
+    <string name="choose_sound">Choose</string>
+    <string name="days_weekdays">Weekdays</string>
+    <string name="days_weekends">Weekends</string>
+    <string name="place_name_hint">Place name</string>
+    <string name="days_once">Once</string>
+    <string name="days_every_day">Every day</string>
+    <string name="delete_confirm_title">Delete alarm?</string>
+    <string name="delete_confirm_message">This alarm will be permanently removed.</string>
+
+    <string name="inside_geofence">Within area</string>
+    <string name="section_in_range">Within range</string>
+    <string name="section_out_of_range">Out of range</string>
+    <string name="distance_edge_meters">%1$dm away</string>
+    <string name="distance_edge_km">%1$.1fkm away</string>
+    <string name="ringtone_label">Alarm sound</string>
+    <string name="ringtone_vibrate_only">Vibrate only</string>
+    <string name="ringtone_default">Default alarm sound</string>
+    <string name="perm_background_location">Geoclock needs location access in the background to detect when you enter an alarm\'s geofence area.</string>
+    <string name="perm_notifications">Geoclock needs notification permission to alert you when your alarm goes off.</string>
+    <string name="perm_exact_alarm">Geoclock needs permission to schedule exact alarms so your alarm fires at the right time.</string>
+    <string name="perm_full_screen_intent">Grant \"Display over other apps\" so your alarm can show on the lock screen.</string>
+    <string name="perm_denied_toast">Some permissions were denied. The alarm may not work correctly.</string>
+    <string name="perm_rationale_title">Permission needed</string>
+
+    <string name="radius_small_label">Small</string>
+    <string name="radius_large_label">Large</string>
+    <string name="confirm">Confirm</string>
+    <string name="pick_location">Pick location</string>
+    <string name="alarm_title">Alarm</string>
+    <string name="cancel_alarm">Cancel alarm</string>
+
+    <string name="crash_dialog_title">Geoclock crashed</string>
+    <string name="crash_dialog_text">An unexpected error occurred. Would you like to send a crash report via email to help fix this?</string>
+    <string name="crash_dialog_comment">Add a comment about what you were doing (optional):</string>
+
+    <!-- Empty string for attribution tag workaround (Play Services logs a warning otherwise) -->
+    <string name="empty"></string>
 </resources>

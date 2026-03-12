@@ -1,55 +1,65 @@
 package maurizi.geoclock.ui;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
+import android.content.Intent;
+import android.location.Address;
+import android.location.Geocoder;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.os.Build;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
-import android.support.v7.widget.SwitchCompat;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.SeekBar;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.Circle;
-import com.google.android.gms.maps.model.CircleOptions;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
+
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 
-import org.threeten.bp.DayOfWeek;
-
+import java.io.IOException;
+import java.time.DayOfWeek;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import butterknife.ButterKnife;
-import butterknife.InjectView;
-import lombok.Getter;
+import lombok.Setter;
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
 import maurizi.geoclock.utils.ActiveAlarmManager;
+import maurizi.geoclock.utils.AddressFormatter;
 import maurizi.geoclock.utils.LocationServiceGoogle;
+import maurizi.geoclock.utils.PermissionHelper;
 
 import static com.google.common.collect.ImmutableSet.copyOf;
 import static com.google.common.collect.Maps.filterValues;
 
-@Getter
 public class GeoAlarmFragment extends DialogFragment {
 
-	private SupportMapFragment mapFragment;
-	private LocationServiceGoogle locationService;
-
+	@Setter private LocationServiceGoogle locationService;
 	private static final Gson gson = new Gson();
 
 	public final static String INITIAL_LATLNG = "INITIAL_LATLNG";
@@ -57,213 +67,440 @@ public class GeoAlarmFragment extends DialogFragment {
 	public static final String EXISTING_ALARM = "ALARM";
 
 	private final static int INITIAL_RADIUS = 20;
-	private final static int MAX_RADIUS = 200;
 
+	private EditText locationPreview;
+	private TextView radiusPreview;
+	private TimePicker timePicker;
+	private Button cancelButton;
+	private Button deleteButton;
+	private Button saveButton;
+	private TextView ringtoneNameView;
 
-	@InjectView(R.id.scrollView) LockableScrollView scrollView;
-	@InjectView(R.id.add_geo_alarm_name) TextView nameTextBox;
-	@InjectView(R.id.add_geo_alarm_radius) SeekBar radiusBar;
-	@InjectView(R.id.add_geo_alarm_time) TimePicker timePicker;
-	@InjectView(R.id.add_geo_alarm_enabled) SwitchCompat enabledSwitch;
+	private LatLng currentLatLng;
+	private int currentRadius = INITIAL_RADIUS;
+	@Nullable private String currentPlaceName;
+	private boolean locationChanged = false;
+	private boolean setupDone = false;
+	@Nullable private String selectedRingtoneUri;
+	private boolean ringtoneUriSet = false;
 
-	@InjectView(R.id.add_geo_alarm_cancel) Button cancelButton;
-	@InjectView(R.id.add_geo_alarm_delete) Button deleteButton;
-	@InjectView(R.id.add_geo_alarm_save) Button saveButton;
+	private final ExecutorService executor = Executors.newSingleThreadExecutor();
+	private ActivityResultLauncher<Intent> locationPickerLauncher;
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		locationPickerLauncher = registerForActivityResult(
+		        new ActivityResultContracts.StartActivityForResult(),
+		        result -> {
+			        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+				        double lat = result.getData().getDoubleExtra(LocationPickerActivity.EXTRA_LAT, 0);
+				        double lng = result.getData().getDoubleExtra(LocationPickerActivity.EXTRA_LNG, 0);
+				        currentLatLng = new LatLng(lat, lng);
+				        currentRadius = result.getData().getIntExtra(LocationPickerActivity.EXTRA_RADIUS, currentRadius);
+				        currentPlaceName = result.getData().getStringExtra(LocationPickerActivity.EXTRA_PLACE);
+				        locationChanged = true;
+				        updateLocationPreview();
+			        }
+		        }
+		);
+	}
+
+	@Override
+	public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		final View dialogView = inflater.inflate(R.layout.fragment_add_geo_alarm_dialog, container, false);
+		locationPreview = dialogView.findViewById(R.id.location_preview);
+		radiusPreview = dialogView.findViewById(R.id.radius_preview);
+		timePicker = dialogView.findViewById(R.id.add_geo_alarm_time);
+		cancelButton = dialogView.findViewById(R.id.add_geo_alarm_cancel);
+		deleteButton = dialogView.findViewById(R.id.add_geo_alarm_delete);
+		saveButton = dialogView.findViewById(R.id.add_geo_alarm_save);
+		ringtoneNameView = dialogView.findViewById(R.id.ringtone_name);
+		hideTimePickerToggle(timePicker);
+		return dialogView;
+	}
 
 	@Override
 	public void onResume() {
 		super.onResume();
+		if (setupDone) return;
+		setupDone = true;
 
 		final MapActivity activity = (MapActivity) getActivity();
-		final GoogleMap map = mapFragment.getMap();
-		final View dialogView = getView();
-
-		if (map == null) {
-			Toast.makeText(activity, R.string.fail_map, Toast.LENGTH_SHORT).show();
-			return;
-		}
+		if (activity == null) return;
 
 		final Bundle args = getArguments();
+		if (args == null) return;
+
 		final boolean isEdit = args.containsKey(GeoAlarmFragment.EXISTING_ALARM);
-		final LatLng initalPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG);
-		final float initalZoom = args.getFloat(GeoAlarmFragment.INITIAL_ZOOM);
-		final GeoAlarm alarm = getEffectiveGeoAlarm(args, isEdit, initalPoint);
+		final GeoAlarm alarm = getEffectiveGeoAlarm(args, isEdit);
 		final Dialog dialog = getDialog();
 
-		final Map<DayOfWeek, CheckBox> checkboxes = getWeekdaysCheckBoxMap(dialogView);
+		if (currentLatLng == null) {
+			currentLatLng = alarm.location;
+		}
+		currentRadius = alarm.radius;
+		if (currentPlaceName == null) {
+			currentPlaceName = alarm.place;
+		}
+		updateLocationPreview();
 
-		radiusBar.setMax(MAX_RADIUS);
-		radiusBar.setProgress(alarm.radius);
-		enabledSwitch.setChecked(alarm.enabled);
+		final Map<DayOfWeek, CheckBox> checkboxes = getWeekdaysCheckBoxMap(getView());
 
-		map.moveCamera(CameraUpdateFactory.newLatLngZoom(alarm.location, initalZoom));
-		final Marker marker = map.addMarker(new MarkerOptions().position(alarm.location).draggable(true));
-
-		final Circle circle = map.addCircle(new CircleOptions().center(alarm.location)
-		                                                       .radius(alarm.radius)
-		                                                       .fillColor(R.color.geofence_fill_color));
+		// Initialize ringtone from alarm
+		if (isEdit) {
+			selectedRingtoneUri = alarm.ringtoneUri;
+		} else {
+			selectedRingtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString();
+		}
+		ringtoneUriSet = true;
+		updateRingtoneLabel();
 
 		if (isEdit) {
-			nameTextBox.setText(alarm.name);
-			if (alarm.hour != null) {
-				timePicker.setCurrentHour(alarm.hour);
-			}
-			if (alarm.minute != null) {
-				timePicker.setCurrentMinute(alarm.minute);
-			}
+			if (alarm.hour != null) setTimePickerHour(timePicker, alarm.hour);
+			if (alarm.minute != null) setTimePickerMinute(timePicker, alarm.minute);
 			if (alarm.days != null) {
 				for (DayOfWeek day : alarm.days) {
-					checkboxes.get(day).setChecked(true);
+					CheckBox cb = checkboxes.get(day);
+					if (cb != null) cb.setChecked(true);
 				}
 			}
 		}
 
-		map.getUiSettings().setAllGesturesEnabled(false);
-		map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
-			@Override
-			public void onMarkerDragStart(Marker marker) {
-				circle.setCenter(marker.getPosition());
-				map.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
-				scrollView.setScrollingEnabled(false);
+		if (dialog != null) {
+			if (isEdit) {
+				dialog.setTitle("Edit · " + (alarm.enabled ? "Active" : "Paused"));
+			} else {
+				dialog.setTitle(R.string.add_geo_alarm_title);
 			}
-
-			@Override
-			public void onMarkerDrag(Marker marker) {
-				circle.setCenter(marker.getPosition());
-				map.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
-			}
-
-			@Override
-			public void onMarkerDragEnd(Marker marker) {
-				scrollView.setScrollingEnabled(true);
-			}
-		});
-
-		radiusBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-			@Override
-			public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-				circle.setRadius(progress);
-			}
-
-			@Override
-			public void onStartTrackingTouch(SeekBar bar) {
-			}
-
-			@Override
-			public void onStopTrackingTouch(SeekBar bar) {
-			}
-		});
-
-		cancelButton.setOnClickListener(view -> dialog.cancel());
-
-		dialog.setTitle(R.string.add_geo_alarm_title);
-		if (isEdit) {
-			dialog.setTitle(R.string.edit_title);
-			deleteButton.setOnClickListener(view -> {
-				GeoAlarm.remove(activity, alarm);
-				ActiveAlarmManager alarmManager = new ActiveAlarmManager(activity);
-				alarmManager.removeActiveAlarms(ImmutableSet.of(alarm.id));
-
-				locationService.removeGeofence(alarm);
-				activity.onAddGeoAlarmFragmentClose();
-				dialog.dismiss();
-			});
-		} else {
-			deleteButton.setVisibility(View.GONE);
 		}
 
-		saveButton.setOnClickListener(view -> {
-			final String name = nameTextBox.getText().toString();
+		View changeLocationButton = getView() != null ? getView().findViewById(R.id.change_location_button) : null;
+		if (changeLocationButton != null) {
+			changeLocationButton.setOnClickListener(v -> {
+				Intent intent = new Intent(activity, LocationPickerActivity.class);
+				if (currentLatLng != null) {
+					intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, currentLatLng.latitude);
+					intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, currentLatLng.longitude);
+				}
+				intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, currentRadius);
+				if (currentPlaceName != null) {
+					intent.putExtra(LocationPickerActivity.EXTRA_PLACE, currentPlaceName);
+				}
+				locationPickerLauncher.launch(intent);
+			});
+		}
 
-			if (name.isEmpty()) {
-				Toast.makeText(activity, R.string.add_geo_alarm_validation, Toast.LENGTH_SHORT).show();
+		// Ringtone picker button
+		View ringtonePickButton = getView() != null ? getView().findViewById(R.id.ringtone_pick_button) : null;
+		if (ringtonePickButton != null) {
+			ringtonePickButton.setOnClickListener(v -> showRingtonePicker());
+		}
+
+		cancelButton.setOnClickListener(v -> { if (dialog != null) dialog.cancel(); });
+
+		if (isEdit) {
+			deleteButton.setVisibility(View.VISIBLE);
+			deleteButton.setOnClickListener(v ->
+			    new AlertDialog.Builder(activity)
+			        .setTitle(R.string.delete_confirm_title)
+			        .setMessage(R.string.delete_confirm_message)
+			        .setPositiveButton(R.string.add_geo_alarm_delete, (d, w) -> {
+				        GeoAlarm.remove(activity, alarm);
+				        ActiveAlarmManager alarmManager = new ActiveAlarmManager(activity);
+				        alarmManager.removeActiveAlarms(ImmutableSet.of(alarm.id));
+				        if (locationService != null) locationService.removeGeofence(alarm);
+				        activity.onAddGeoAlarmFragmentClose();
+				        if (dialog != null) dialog.dismiss();
+			        })
+			        .setNegativeButton(R.string.add_geo_alarm_cancel, null)
+			        .show());
+		}
+
+		saveButton.setOnClickListener(v -> {
+			if (currentLatLng == null) {
+				Toast.makeText(activity, R.string.fail_location, Toast.LENGTH_SHORT).show();
 				return;
 			}
-
 			final Set<DayOfWeek> days = copyOf(filterValues(checkboxes, CompoundButton::isChecked).keySet());
+			// Read place from the editable location preview
+			String placeText = locationPreview.getText().toString().trim();
+			String place = placeText.isEmpty() ? null : placeText;
+
+			// For new alarms, always enabled. For edits, preserve current state.
+			boolean enabled = isEdit ? alarm.enabled : true;
+
+			// Ringtone: use selected if explicitly set, otherwise preserve alarm's value
+			String ringtone = ringtoneUriSet ? selectedRingtoneUri : alarm.ringtoneUri;
+
 			final GeoAlarm newAlarm = GeoAlarm.builder()
-			                                  .location(marker.getPosition())
-			                                  .name(name)
-			                                  .radius(radiusBar.getProgress())
-			                                  .days(days)
-			                                  .hour(timePicker.getCurrentHour())
-			                                  .minute(timePicker.getCurrentMinute())
-			                                  .enabled(enabledSwitch.isChecked())
-			                                  .id(alarm.id)
-			                                  .build();
+			        .location(currentLatLng)
+			        .place(place)
+			        .radius(currentRadius)
+			        .days(days)
+			        .hour(getTimePickerHour(timePicker))
+			        .minute(getTimePickerMinute(timePicker))
+			        .enabled(enabled)
+			        .ringtoneUri(ringtone)
+			        .id(alarm.id)
+			        .build();
 
 			if (isEdit) {
 				GeoAlarm.remove(activity, alarm);
-				if (alarm.enabled) {
+				if (alarm.enabled && locationService != null) {
 					locationService.removeGeofence(alarm);
 				}
 			}
-			if (newAlarm.enabled) {
-				locationService.addGeofence(newAlarm).setResultCallback(status -> {
-					if (status.isSuccess()) {
-						finish(activity, dialog, newAlarm);
-					} else {
-						// TODO: toast
-					}
-				});
+
+			// Request permissions just-in-time when saving an enabled alarm
+			if (newAlarm.enabled && !PermissionHelper.hasAllAlarmPermissions(activity)) {
+				PermissionHelper.requestAlarmPermissions(activity, () ->
+				        completeSave(activity, dialog, newAlarm, isEdit));
 			} else {
-				finish(activity, dialog, newAlarm);
+				completeSave(activity, dialog, newAlarm, isEdit);
 			}
 		});
 	}
 
-	private void finish(MapActivity activity, Dialog dialog, GeoAlarm newAlarm) {
-		GeoAlarm.save(activity, newAlarm);
-		activity.onAddGeoAlarmFragmentClose();
-
-		dialog.dismiss();
+	private void completeSave(MapActivity activity, @Nullable Dialog dialog,
+	                           GeoAlarm newAlarm, boolean isEdit) {
+		if (newAlarm.enabled && locationService != null) {
+			locationService.addGeofence(newAlarm)
+			        .addOnSuccessListener(aVoid -> finishSave(activity, dialog, newAlarm))
+			        .addOnFailureListener(e -> {
+				        // Save the alarm even if geofence registration fails —
+				        // it will be re-registered on next resume via activateAlarmsInsideGeofence
+				        finishSave(activity, dialog, newAlarm);
+			        });
+		} else {
+			finishSave(activity, dialog, newAlarm);
+		}
 	}
 
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		final View dialogView = inflater.inflate(R.layout.fragment_add_geo_alarm_dialog, container, false);
-		ButterKnife.inject(this, dialogView);
-		return dialogView;
+	private void updateRingtoneLabel() {
+		if (ringtoneNameView == null) return;
+		if (!ringtoneUriSet) {
+			ringtoneNameView.setText(R.string.ringtone_default);
+		} else if (selectedRingtoneUri == null) {
+			ringtoneNameView.setText(R.string.ringtone_vibrate_only);
+		} else {
+			android.media.Ringtone r = RingtoneManager.getRingtone(
+			        ringtoneNameView.getContext(), Uri.parse(selectedRingtoneUri));
+			if (r != null) {
+				ringtoneNameView.setText(r.getTitle(ringtoneNameView.getContext()));
+			} else {
+				ringtoneNameView.setText(R.string.ringtone_default);
+			}
+		}
+	}
+
+	private void updateLocationPreview() {
+		if (locationPreview == null || currentLatLng == null) return;
+		if (currentPlaceName != null && !currentPlaceName.isEmpty()) {
+			locationPreview.setText(currentPlaceName);
+		} else {
+			locationPreview.setText(String.format(Locale.US, "%.4f, %.4f",
+			        currentLatLng.latitude, currentLatLng.longitude));
+			reverseGeocodeForPreview();
+		}
+		if (radiusPreview != null && getContext() != null) {
+			radiusPreview.setText(GeoAlarm.getRadiusSizeLabel(getContext(), currentRadius));
+		}
+	}
+
+	private void reverseGeocodeForPreview() {
+		Context ctx = getContext();
+		if (ctx == null || !Geocoder.isPresent() || currentLatLng == null) return;
+		final LatLng target = currentLatLng;
+		executor.execute(() -> {
+			try {
+				Geocoder geocoder = new Geocoder(ctx, Locale.getDefault());
+				List<Address> addresses = geocoder.getFromLocation(
+				        target.latitude, target.longitude, 1);
+				if (addresses != null && !addresses.isEmpty()) {
+					Address addr = addresses.get(0);
+					String place = AddressFormatter.shortAddress(addr);
+					if (place != null) {
+						new Handler(Looper.getMainLooper()).post(() -> {
+							if (locationPreview != null && target.equals(currentLatLng)) {
+								currentPlaceName = place;
+								locationPreview.setText(place);
+							}
+						});
+					}
+				}
+			} catch (IOException e) {
+				// best-effort
+			}
+		});
+	}
+
+
+	private void finishSave(MapActivity activity, @Nullable Dialog dialog, GeoAlarm newAlarm) {
+		GeoAlarm.save(activity, newAlarm);
+		if (newAlarm.place == null) {
+			geocodeAsync(activity, newAlarm);
+		}
+		activity.onAddGeoAlarmFragmentClose();
+		if (dialog != null) dialog.dismiss();
+	}
+
+	private void geocodeAsync(MapActivity activity, GeoAlarm alarm) {
+		if (!Geocoder.isPresent()) return;
+		Context appContext = activity.getApplicationContext();
+		Geocoder geocoder = new Geocoder(appContext, Locale.getDefault());
+		executor.execute(() -> {
+			try {
+				List<Address> addresses = geocoder.getFromLocation(
+					        alarm.location.latitude, alarm.location.longitude, 1);
+				if (addresses != null && !addresses.isEmpty()) {
+					Address addr = addresses.get(0);
+					String place = addr.getLocality() != null ? addr.getLocality()
+					        : addr.getSubAdminArea() != null ? addr.getSubAdminArea()
+					        : addr.getAddressLine(0);
+					if (place != null) {
+						GeoAlarm.save(appContext, alarm.withPlace(place));
+						new Handler(Looper.getMainLooper()).post(() -> {
+							if (!activity.isFinishing()) {
+								activity.onAddGeoAlarmFragmentClose();
+							}
+						});
+					}
+				}
+			} catch (IOException e) {
+				// no-op — geocoding is best-effort
+			}
+		});
+	}
+
+	private void showRingtonePicker() {
+		if (getContext() == null) return;
+		RingtoneManager rm = new RingtoneManager(getContext());
+		rm.setType(RingtoneManager.TYPE_ALARM);
+		Cursor cursor = rm.getCursor();
+
+		java.util.List<String> names = new java.util.ArrayList<>();
+		java.util.List<String> uris = new java.util.ArrayList<>();
+
+		// Prepend special entries
+		names.add(getString(R.string.ringtone_vibrate_only));
+		uris.add(null);
+		names.add(getString(R.string.ringtone_default));
+		uris.add(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
+
+		while (cursor.moveToNext()) {
+			String title = cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX);
+			Uri ringtoneUri = rm.getRingtoneUri(cursor.getPosition());
+			names.add(title);
+			uris.add(ringtoneUri != null ? ringtoneUri.toString() : null);
+		}
+		cursor.close();
+
+		// Find currently selected index
+		int checkedItem = -1;
+		if (!ringtoneUriSet) {
+			checkedItem = 1; // default
+		} else if (selectedRingtoneUri == null) {
+			checkedItem = 0; // vibrate only
+		} else {
+			for (int i = 0; i < uris.size(); i++) {
+				if (selectedRingtoneUri.equals(uris.get(i))) {
+					checkedItem = i;
+					break;
+				}
+			}
+		}
+
+		String[] items = names.toArray(new String[0]);
+		new AlertDialog.Builder(getContext())
+		        .setTitle(R.string.ringtone_label)
+		        .setSingleChoiceItems(items, checkedItem, (dialog, which) -> {
+			        selectedRingtoneUri = uris.get(which);
+			        ringtoneUriSet = true;
+			        updateRingtoneLabel();
+			        dialog.dismiss();
+		        })
+		        .setNegativeButton(R.string.add_geo_alarm_cancel, null)
+		        .show();
 	}
 
 	@Override
 	public void onDestroyView() {
 		super.onDestroyView();
-		ButterKnife.reset(this);
+		executor.shutdownNow();
 	}
 
-	@Override
-	public void onStart() {
-		super.onStart();
-		mapFragment = SupportMapFragment.newInstance();
-		getChildFragmentManager().beginTransaction().replace(R.id.add_geo_alarm_map_container, mapFragment).commit();
+	private void hideTimePickerToggle(TimePicker tp) {
+		try {
+			int id = tp.getResources().getIdentifier("toggle_mode", "id", "android");
+			if (id != 0) {
+				View toggle = tp.findViewById(id);
+				if (toggle != null) {
+					toggle.setVisibility(View.GONE);
+				}
+			}
+		} catch (Exception ignored) {
+			// Not all devices have this view
+		}
 	}
 
-	public void setLocationService(LocationServiceGoogle ls) {
-		this.locationService = ls;
-	}
-
-	private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit, final LatLng initalPoint) {
-		return isEdit
-		       ? gson.fromJson(args.getString(GeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class)
-		       : GeoAlarm.builder()
-		                 .location(initalPoint)
-		                 .radius(INITIAL_RADIUS)
-		                 .name("")
-		                 .id(UUID.randomUUID())
-		                 .enabled(true)
-		                 .build();
+	private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit) {
+		if (isEdit) {
+			return gson.fromJson(args.getString(GeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class);
+		}
+		LatLng initialPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG);
+		return GeoAlarm.builder()
+		        .location(initialPoint != null ? initialPoint : new LatLng(0, 0))
+		        .radius(INITIAL_RADIUS)
+		        .id(UUID.randomUUID())
+		        .enabled(true)
+		        .build();
 	}
 
 	private Map<DayOfWeek, CheckBox> getWeekdaysCheckBoxMap(final View dialogView) {
+		if (dialogView == null) return ImmutableMap.of();
 		return ImmutableMap.<DayOfWeek, CheckBox>builder()
-		                   .put(DayOfWeek.SUNDAY, (CheckBox) dialogView.findViewById(R.id.sun))
-		                   .put(DayOfWeek.MONDAY, (CheckBox) dialogView.findViewById(R.id.mon))
-		                   .put(DayOfWeek.TUESDAY, (CheckBox) dialogView.findViewById(R.id.tues))
-		                   .put(DayOfWeek.WEDNESDAY, (CheckBox) dialogView.findViewById(R.id.wed))
-		                   .put(DayOfWeek.THURSDAY, (CheckBox) dialogView.findViewById(R.id.thu))
-		                   .put(DayOfWeek.FRIDAY, (CheckBox) dialogView.findViewById(R.id.fri))
-		                   .put(DayOfWeek.SATURDAY, (CheckBox) dialogView.findViewById(R.id.sat))
-		                   .build();
+		        .put(DayOfWeek.SUNDAY, (CheckBox) dialogView.findViewById(R.id.sun))
+		        .put(DayOfWeek.MONDAY, (CheckBox) dialogView.findViewById(R.id.mon))
+		        .put(DayOfWeek.TUESDAY, (CheckBox) dialogView.findViewById(R.id.tues))
+		        .put(DayOfWeek.WEDNESDAY, (CheckBox) dialogView.findViewById(R.id.wed))
+		        .put(DayOfWeek.THURSDAY, (CheckBox) dialogView.findViewById(R.id.thu))
+		        .put(DayOfWeek.FRIDAY, (CheckBox) dialogView.findViewById(R.id.fri))
+		        .put(DayOfWeek.SATURDAY, (CheckBox) dialogView.findViewById(R.id.sat))
+		        .build();
+	}
+
+	private void setTimePickerHour(TimePicker tp, int hour) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			tp.setHour(hour);
+		} else {
+			tp.setCurrentHour(hour);
+		}
+	}
+
+	private void setTimePickerMinute(TimePicker tp, int minute) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			tp.setMinute(minute);
+		} else {
+			tp.setCurrentMinute(minute);
+		}
+	}
+
+	@SuppressWarnings("deprecation")
+	private int getTimePickerHour(TimePicker tp) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			return tp.getHour();
+		} else {
+			return tp.getCurrentHour();
+		}
+	}
+
+	@SuppressWarnings("deprecation")
+	private int getTimePickerMinute(TimePicker tp) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			return tp.getMinute();
+		} else {
+			return tp.getCurrentMinute();
+		}
 	}
 }

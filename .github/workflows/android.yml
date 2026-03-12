@@ -1,0 +1,205 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-debug:
+    name: Build debug APK (PR)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run unit tests
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: ./gradlew test
+
+      - name: Build debug APK
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: ./gradlew assembleDebug
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.sha }}
+          path: Geoclock/build/reports/tests/
+          retention-days: 14
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: geoclock-debug-${{ github.sha }}
+          path: Geoclock/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  instrumentation-tests:
+    name: Instrumentation Tests (API ${{ matrix.api-level }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [28, 31, 34]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+      - name: Run instrumentation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          target: google_apis
+          ram-size: 4096M
+          script: |
+            adb shell settings put global location_mode 3
+            adb shell wm dismiss-keyguard
+            ./gradlew installDebug installDebugAndroidTest --stacktrace
+            adb shell appops set maurizi.geoclock.debug android:mock_location allow
+            adb shell appops set maurizi.geoclock.debug SCHEDULE_EXACT_ALARM allow || true
+            adb shell am instrument -w -e coverage true -e coverageFile /data/data/maurizi.geoclock.debug/files/coverage.ec -e package maurizi.geoclock maurizi.geoclock.debug.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tee test-output.txt
+            adb shell run-as maurizi.geoclock.debug cat files/coverage.ec > coverage-api${{ matrix.api-level }}.ec
+            grep -q "^OK " test-output.txt
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+      - name: Upload instrumentation coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumentation-coverage-api${{ matrix.api-level }}
+          path: coverage-api${{ matrix.api-level }}.ec
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: instrumentation-test-results-api${{ matrix.api-level }}-${{ github.sha }}
+          path: Geoclock/build/reports/androidTests/connected/
+          retention-days: 14
+
+  coverage-report:
+    name: Merged coverage report
+    if: github.event_name == 'pull_request'
+    needs: [build-debug, instrumentation-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Download instrumentation coverage
+        uses: actions/download-artifact@v4
+        with:
+          pattern: instrumentation-coverage-*
+          path: Geoclock/build/outputs/code_coverage/debugAndroidTest/connected/
+          merge-multiple: true
+
+      - name: Generate merged coverage report
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: ./gradlew test jacocoTestReport
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: Geoclock/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          format: jacoco
+          base-path: Geoclock/src/main/java
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: Geoclock/build/reports/jacoco/jacocoTestReport/html/
+          retention-days: 14
+
+  build-release:
+    name: Build release APK (master)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Decode release keystore
+        # Required GitHub Secrets:
+        #   KEYSTORE_BASE64  — base64-encoded keystore file: base64 -w0 release.keystore
+        #   STORE_PASSWORD   — keystore password
+        #   KEY_ALIAS        — key alias within the keystore
+        #   KEY_PASSWORD     — key password
+        #
+        # If secrets are not configured, the build falls back to the debug keystore.
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > /tmp/release.keystore
+          fi
+
+      - name: Build release APK
+        env:
+          KEYSTORE_PATH: ${{ secrets.KEYSTORE_BASE64 != '' && '/tmp/release.keystore' || '' }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: ./gradlew assembleRelease
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: geoclock-release-${{ github.sha }}
+          path: Geoclock/build/outputs/apk/release/*.apk
+          retention-days: 90
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
+          body: |
+            Automated release from commit ${{ github.sha }}
+          files: Geoclock/build/outputs/apk/release/*.apk
+          make_latest: true

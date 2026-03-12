@@ -30,9 +30,10 @@ public class GeofenceReceiver extends BroadcastReceiver {
 		final ActiveAlarmManager activeAlarmManager = new ActiveAlarmManager(context);
 
 		GeofencingEvent event = GeofencingEvent.fromIntent(intent);
-		if (event.hasError()) {
-			final String errorMessage = GeofenceStatusCodes.getStatusCodeString(event.getErrorCode());
-			Log.e(TAG, errorMessage);
+		if (event == null || event.hasError()) {
+			if (event != null) {
+				Log.e(TAG, GeofenceStatusCodes.getStatusCodeString(event.getErrorCode()));
+			}
 			return;
 		}
 
@@ -41,10 +42,14 @@ public class GeofenceReceiver extends BroadcastReceiver {
 
 		if (null != affectedGeofences && !affectedGeofences.isEmpty()) {
 			final Collection<GeoAlarm> affectedAlarms = filter(
-					Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context)), a -> a != null);
+			        Lists.transform(affectedGeofences, getGeoAlarmForGeofenceFn(context)), a -> a != null);
 			ImmutableSet<UUID> affectedAlarmIds = ImmutableSet.copyOf(transform(affectedAlarms, alarm -> alarm.id));
 			if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-				activeAlarmManager.addActiveAlarms(affectedAlarmIds);
+				ImmutableSet<UUID> enabledAlarmIds = ImmutableSet.copyOf(
+				        transform(filter(affectedAlarms, alarm -> alarm.enabled), alarm -> alarm.id));
+				if (!enabledAlarmIds.isEmpty()) {
+					activeAlarmManager.addActiveAlarms(enabledAlarmIds);
+				}
 			} else {
 				activeAlarmManager.removeActiveAlarms(affectedAlarmIds);
 			}
