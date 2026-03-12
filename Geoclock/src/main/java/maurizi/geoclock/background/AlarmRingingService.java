@@ -50,11 +50,7 @@ public class AlarmRingingService extends Service {
 	public static void start(Context context, String alarmId) {
 		Intent intent = new Intent(context, AlarmRingingService.class);
 		intent.putExtra(EXTRA_ALARM_ID, alarmId);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			context.startForegroundService(intent);
-		} else {
-			context.startService(intent);
-		}
+		context.startForegroundService(intent);
 	}
 
 	public static void stop(Context context) {
@@ -128,12 +124,10 @@ public class AlarmRingingService extends Service {
 	}
 
 	private void ensureNotificationChannel() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			NotificationChannel ch = new NotificationChannel(
-			        ALARM_RINGING_CHANNEL, "Alarm ringing", NotificationManager.IMPORTANCE_HIGH);
-			ch.setDescription("Full-screen alarm");
-			((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(ch);
-		}
+		NotificationChannel ch = new NotificationChannel(
+		        ALARM_RINGING_CHANNEL, "Alarm ringing", NotificationManager.IMPORTANCE_HIGH);
+		ch.setDescription("Full-screen alarm");
+		((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(ch);
 	}
 
 	private Notification buildNotification(GeoAlarm alarm) {
@@ -200,11 +194,7 @@ public class AlarmRingingService extends Service {
 		}
 		if (vibrator != null) {
 			long[] pattern = {0, 500, 1000};
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-				vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0));
-			} else {
-				vibrator.vibrate(pattern, 0);
-			}
+			vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0));
 		}
 	}
 

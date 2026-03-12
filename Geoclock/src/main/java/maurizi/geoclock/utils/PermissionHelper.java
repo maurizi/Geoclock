@@ -143,6 +143,7 @@ public class PermissionHelper {
 		        .show();
 	}
 
+	@android.annotation.SuppressLint("InlinedApi") // Guarded by needsFullScreenIntentPermission (API 34+)
 	private static void requestFullScreenIntent(@NonNull FragmentActivity activity,
 	                                             @NonNull Runnable next) {
 		if (!needsFullScreenIntentPermission(activity)) {

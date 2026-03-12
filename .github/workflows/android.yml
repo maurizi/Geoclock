@@ -29,6 +29,11 @@ jobs:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew test
 
+      - name: Run lint
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: ./gradlew lintDebug
+
       - name: Build debug APK
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}

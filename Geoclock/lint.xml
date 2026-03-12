@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- PNG fallbacks alongside adaptive-icon XML are intentional for older launchers -->
+    <issue id="IconXmlAndPng" severity="ignore" />
+    <!-- Monochrome icon requires new artwork; track separately -->
+    <issue id="MonochromeLauncherIcon" severity="ignore" />
+</lint>

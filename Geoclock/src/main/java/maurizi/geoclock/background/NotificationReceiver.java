@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -66,14 +65,12 @@ public class NotificationReceiver extends BroadcastReceiver {
 	}
 
 	private void createNotificationChannel() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			NotificationChannel channel = new NotificationChannel(
-			        CHANNEL_ID,
-			        "Upcoming Alarms",
-			        NotificationManager.IMPORTANCE_DEFAULT);
-			channel.setDescription("Notifications for upcoming Geoclock alarms");
-			notificationManager.createNotificationChannel(channel);
-		}
+		NotificationChannel channel = new NotificationChannel(
+		        CHANNEL_ID,
+		        "Upcoming Alarms",
+		        NotificationManager.IMPORTANCE_DEFAULT);
+		channel.setDescription("Notifications for upcoming Geoclock alarms");
+		notificationManager.createNotificationChannel(channel);
 	}
 
 	private void setNotification(@NonNull final GeoAlarm nextAlarm) {
@@ -96,7 +93,7 @@ public class NotificationReceiver extends BroadcastReceiver {
 		PendingIntent cancelPi = PendingIntent.getBroadcast(context, nextAlarm.id.hashCode(),
 		        cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-		Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
+		Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher);
 		Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
 		        .setSmallIcon(R.drawable.ic_alarm_black_24dp)
 		        .setLargeIcon(icon)
