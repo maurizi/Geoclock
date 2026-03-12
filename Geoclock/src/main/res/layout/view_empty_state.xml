@@ -12,7 +12,7 @@
         android:layout_height="80dp"
         android:src="@android:drawable/ic_menu_mylocation"
         android:alpha="0.5"
-        android:contentDescription="No alarms"/>
+        android:contentDescription="@string/empty_state_title"/>
 
     <TextView
         android:layout_width="wrap_content"

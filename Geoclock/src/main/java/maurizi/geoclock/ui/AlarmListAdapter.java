@@ -62,6 +62,7 @@ public class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 		rebuildItems();
 	}
 
+	@android.annotation.SuppressLint("NotifyDataSetChanged") // Full list replacement with re-sort
 	public void updateAlarms(List<GeoAlarm> newAlarms, @Nullable Location location) {
 		this.alarms.clear();
 		this.alarms.addAll(newAlarms);
@@ -162,7 +163,7 @@ public class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 			LocalTime t = LocalTime.of(alarm.hour, alarm.minute);
 			holder.timeView.setText(t.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)));
 		} else {
-			holder.timeView.setText("—");
+			holder.timeView.setText(ctx.getString(R.string.time_placeholder));
 		}
 
 		// Days
@@ -173,7 +174,7 @@ public class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 		boolean inside = centerDist <= alarm.radius;
 		if (currentLocation != null && !inside) {
 			float edgeDist = Math.max(0, centerDist - alarm.radius);
-			holder.distanceView.setText(" \u00B7 " + formatEdgeDistance(ctx, edgeDist));
+			holder.distanceView.setText(ctx.getString(R.string.distance_separator, formatEdgeDistance(ctx, edgeDist)));
 			holder.distanceView.setVisibility(View.VISIBLE);
 		} else {
 			holder.distanceView.setVisibility(View.GONE);

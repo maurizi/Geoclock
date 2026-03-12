@@ -33,6 +33,7 @@
         android:maxLines="1"
         android:ellipsize="end"
         android:hint="@string/place_name_hint"
+        android:importantForAutofill="no"
         android:background="@android:color/transparent"
         android:textSize="16sp"
         android:paddingStart="16dp"

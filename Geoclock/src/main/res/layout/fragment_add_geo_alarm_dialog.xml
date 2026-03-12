@@ -40,6 +40,7 @@
                         android:inputType="text"
                         android:singleLine="true"
                         android:hint="@string/place_name_hint"
+                        android:importantForAutofill="no"
                         android:text=""/>
 
                     <TextView
@@ -151,16 +152,24 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Button row: Delete (text, red, left) | Space | Cancel (outlined) | Save (filled) -->
+    <!-- Button row: Cancel (outlined, left) | Delete (text, red) | Space | Save (filled) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="8dp">
+        android:padding="8dp"
+        style="?android:attr/buttonBarStyle">
+
+        <Button
+            android:id="@+id/add_geo_alarm_cancel"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/add_geo_alarm_cancel"/>
 
         <Button
             android:id="@+id/add_geo_alarm_delete"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
+            style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/add_geo_alarm_delete"
@@ -173,16 +182,8 @@
             android:layout_weight="1"/>
 
         <Button
-            android:id="@+id/add_geo_alarm_cancel"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:text="@string/add_geo_alarm_cancel"/>
-
-        <Button
             android:id="@+id/add_geo_alarm_save"
-            style="@style/Widget.MaterialComponents.Button"
+            style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/add_geo_alarm_continue"/>

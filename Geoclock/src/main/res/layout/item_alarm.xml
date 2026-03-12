@@ -30,7 +30,7 @@
                 android:layout_height="24dp"
                 android:src="@drawable/ic_alarm_black_24dp"
                 android:layout_marginEnd="8dp"
-                android:contentDescription="Alarm"/>
+                android:contentDescription="@string/alarm_title"/>
 
             <TextView
                 android:id="@+id/alarm_time"
@@ -39,14 +39,14 @@
                 android:layout_weight="1"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:text="—"/>
+                android:text="@string/time_placeholder"/>
 
             <TextView
                 android:id="@+id/alarm_days"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
-                android:text="Once"/>
+                android:text="@string/days_once"/>
 
             <TextView
                 android:id="@+id/alarm_distance"

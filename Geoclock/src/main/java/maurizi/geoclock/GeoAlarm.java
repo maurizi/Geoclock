@@ -175,12 +175,12 @@ public class GeoAlarm {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
 		Editor editor = prefs.edit();
 		editor.putString(newAlarm.id.toString(), gson.toJson(newAlarm, GeoAlarm.class))
-		        .commit();
+		        .apply();
 	}
 
 	public static void remove(Context context, GeoAlarm oldAlarm) {
 		SharedPreferences prefs = getSharedAlarmPreferences(context);
-		prefs.edit().remove(oldAlarm.id.toString()).commit();
+		prefs.edit().remove(oldAlarm.id.toString()).apply();
 	}
 
 	private static GeoAlarm parse(Object json) {

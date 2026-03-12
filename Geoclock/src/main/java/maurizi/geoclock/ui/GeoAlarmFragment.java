@@ -10,7 +10,6 @@ import android.location.Geocoder;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.database.Cursor;
@@ -474,6 +473,7 @@ public class GeoAlarmFragment extends DialogFragment {
 		executor.shutdownNow();
 	}
 
+	@android.annotation.SuppressLint("DiscouragedApi") // No non-reflective way to hide the toggle
 	private void hideTimePickerToggle(TimePicker tp) {
 		try {
 			int id = tp.getResources().getIdentifier("toggle_mode", "id", "android");
@@ -515,36 +515,18 @@ public class GeoAlarmFragment extends DialogFragment {
 	}
 
 	private void setTimePickerHour(TimePicker tp, int hour) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			tp.setHour(hour);
-		} else {
-			tp.setCurrentHour(hour);
-		}
+		tp.setHour(hour);
 	}
 
 	private void setTimePickerMinute(TimePicker tp, int minute) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			tp.setMinute(minute);
-		} else {
-			tp.setCurrentMinute(minute);
-		}
+		tp.setMinute(minute);
 	}
 
-	@SuppressWarnings("deprecation")
 	private int getTimePickerHour(TimePicker tp) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			return tp.getHour();
-		} else {
-			return tp.getCurrentHour();
-		}
+		return tp.getHour();
 	}
 
-	@SuppressWarnings("deprecation")
 	private int getTimePickerMinute(TimePicker tp) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			return tp.getMinute();
-		} else {
-			return tp.getCurrentMinute();
-		}
+		return tp.getMinute();
 	}
 }
