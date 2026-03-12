@@ -178,6 +178,41 @@ public class ActiveAlarmManagerTest {
 		        shadowAlarmManager.getNextScheduledAlarm());
 	}
 
+	// ---- re-add after time change reschedules ----
+
+	@Test
+	public void addActiveAlarms_afterTimeChange_reschedulesToNewTime() {
+		// Simulate: alarm is active, user edits time, saves, then re-adds to active set
+		java.time.LocalTime originalTime = java.time.LocalTime.now().plusHours(3);
+		java.time.LocalTime updatedTime = java.time.LocalTime.now().plusHours(1);
+		UUID alarmId = UUID.randomUUID();
+
+		GeoAlarm original = GeoAlarm.builder()
+		        .id(alarmId)
+		        .location(new LatLng(37.4, -122.0))
+		        .radius(100)
+		        .enabled(true)
+		        .hour(originalTime.getHour())
+		        .minute(originalTime.getMinute())
+		        .days(ImmutableSet.copyOf(DayOfWeek.values()))
+		        .build();
+		saveAlarm(original);
+		manager.addActiveAlarms(ImmutableSet.of(alarmId));
+
+		AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+		long originalTrigger = am.getNextAlarmClock().getTriggerTime();
+
+		// Now save the alarm with a new (earlier) time and re-add
+		GeoAlarm updated = original.withHour(updatedTime.getHour())
+		        .withMinute(updatedTime.getMinute());
+		saveAlarm(updated);
+		manager.addActiveAlarms(ImmutableSet.of(alarmId));
+
+		long newTrigger = am.getNextAlarmClock().getTriggerTime();
+		assertTrue("Alarm should be rescheduled to earlier time",
+		        newTrigger < originalTrigger);
+	}
+
 	// ---- helpers ----
 
 	private GeoAlarm repeatingAlarmAt(int hour, int minute) {

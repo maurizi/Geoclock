@@ -340,6 +340,12 @@ public class GeoAlarmFragment extends DialogFragment {
 
 	private void finishSave(MapActivity activity, @Nullable Dialog dialog, GeoAlarm newAlarm) {
 		GeoAlarm.save(activity, newAlarm);
+		ActiveAlarmManager aam = new ActiveAlarmManager(activity);
+		if (newAlarm.enabled) {
+			aam.addActiveAlarms(ImmutableSet.of(newAlarm.id));
+		} else {
+			aam.removeActiveAlarms(ImmutableSet.of(newAlarm.id));
+		}
 		if (newAlarm.place == null) {
 			geocodeAsync(activity, newAlarm);
 		}
