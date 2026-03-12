@@ -71,10 +71,10 @@ public class GeoAlarm {
 	}
 
 	public static String getRadiusSizeLabel(Context context, int radius) {
-		if (radius <= 50) return context.getString(R.string.radius_nearby);
-		if (radius <= 80) return context.getString(R.string.radius_small);
-		if (radius <= 130) return context.getString(R.string.radius_medium);
-		if (radius <= 170) return context.getString(R.string.radius_large);
+		if (radius <= 100) return context.getString(R.string.radius_nearby);
+		if (radius <= 200) return context.getString(R.string.radius_small);
+		if (radius <= 300) return context.getString(R.string.radius_medium);
+		if (radius <= 400) return context.getString(R.string.radius_large);
 		return context.getString(R.string.radius_wide);
 	}
 

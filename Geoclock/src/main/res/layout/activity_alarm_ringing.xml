@@ -28,39 +28,33 @@
         android:layout_marginTop="16dp"
         android:textColor="#CCCCCC"
         android:textSize="20sp"
-        app:layout_constraintBottom_toTopOf="@+id/button_row"
+        app:layout_constraintBottom_toTopOf="@+id/alarm_ringing_dismiss"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/alarm_ringing_name"/>
 
-    <LinearLayout
-        android:id="@+id/button_row"
-        android:layout_width="0dp"
+    <Button
+        android:id="@+id/alarm_ringing_dismiss"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:layout_marginTop="32dp"
-        tools:ignore="ButtonStyle"
-        app:layout_constraintTop_toBottomOf="@id/alarm_ringing_time"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:minWidth="200dp"
+        android:text="@string/dismiss"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/alarm_ringing_time"
+        app:layout_constraintBottom_toTopOf="@+id/alarm_ringing_snooze"/>
 
-        <Button
-            android:id="@+id/alarm_ringing_snooze"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="@string/snooze_5min"/>
-
-        <Button
-            android:id="@+id/alarm_ringing_dismiss"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="@string/dismiss"/>
-
-    </LinearLayout>
+    <Button
+        android:id="@+id/alarm_ringing_snooze"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:minWidth="200dp"
+        android:text="@string/snooze_5min"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/alarm_ringing_dismiss"
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

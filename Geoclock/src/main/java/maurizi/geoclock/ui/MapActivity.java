@@ -112,6 +112,7 @@ public class MapActivity extends AppCompatActivity {
 			locationService = new LocationServiceGoogle(MapActivity.this);
 			map.getUiSettings().setAllGesturesEnabled(false);
 			map.getUiSettings().setMyLocationButtonEnabled(false);
+			map.setOnMarkerClickListener(marker -> true);
 			redrawGeoAlarms();
 			requestLocationPermissions();
 		});
@@ -347,12 +348,7 @@ public class MapActivity extends AppCompatActivity {
 		showPopup(args);
 	}
 
-	void showEditPopupForMarker(Marker marker) {
-		UUID id = markers.inverse().get(marker);
-		if (id != null) showEditPopup(id);
-	}
-
-	void showEditPopup(UUID id) {
+void showEditPopup(UUID id) {
 		GeoAlarm alarm = GeoAlarm.getGeoAlarm(this, id);
 		if (alarm != null) {
 			Bundle args = new Bundle();

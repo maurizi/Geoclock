@@ -68,7 +68,7 @@ public class GeoAlarmFragment extends DialogFragment {
 	public final static String INITIAL_ZOOM = "INITIAL_ZOOM";
 	public static final String EXISTING_ALARM = "ALARM";
 
-	private final static int INITIAL_RADIUS = 20;
+	private final static int INITIAL_RADIUS = 100;
 
 	private EditText locationPreview;
 	private TextView radiusPreview;
