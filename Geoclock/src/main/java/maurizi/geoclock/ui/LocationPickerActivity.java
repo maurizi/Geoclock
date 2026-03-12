@@ -7,13 +7,19 @@ import android.location.Geocoder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.EditText;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.SeekBar;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +33,9 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.Autocomplete;
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 
 import maurizi.geoclock.R;
 import maurizi.geoclock.utils.AddressFormatter;
@@ -46,11 +55,23 @@ public class LocationPickerActivity extends AppCompatActivity {
 
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+	private GoogleMap googleMap;
 	private Marker marker;
 	private Circle circle;
 	private LatLng selectedLatLng;
 	private int selectedRadius;
-	private EditText placeInput;
+	@Nullable private String placeName;
+
+	private final ActivityResultLauncher<Intent> autocompleteLauncher =
+		registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+			if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+				Place place = Autocomplete.getPlaceFromIntent(result.getData());
+				if (place.getLocation() != null) {
+					moveToLocation(place.getLocation());
+				}
+				placeName = place.getDisplayName();
+			}
+		});
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -71,12 +92,7 @@ public class LocationPickerActivity extends AppCompatActivity {
 		double initialLng = getIntent().getDoubleExtra(EXTRA_INITIAL_LNG, 0);
 		selectedLatLng = new LatLng(initialLat, initialLng);
 		selectedRadius = getIntent().getIntExtra(EXTRA_INITIAL_RADIUS, MIN_RADIUS);
-
-		placeInput = findViewById(R.id.place_input);
-		String initialPlace = getIntent().getStringExtra(EXTRA_PLACE);
-		if (initialPlace != null) {
-			placeInput.setText(initialPlace);
-		}
+		placeName = getIntent().getStringExtra(EXTRA_PLACE);
 
 		SeekBar radiusBar = findViewById(R.id.radius_bar);
 		radiusBar.setMax(MAX_RADIUS - MIN_RADIUS);
@@ -102,9 +118,8 @@ public class LocationPickerActivity extends AppCompatActivity {
 			result.putExtra(EXTRA_LAT, selectedLatLng.latitude);
 			result.putExtra(EXTRA_LNG, selectedLatLng.longitude);
 			result.putExtra(EXTRA_RADIUS, selectedRadius);
-			String place = placeInput.getText().toString().trim();
-			if (!place.isEmpty()) {
-				result.putExtra(EXTRA_PLACE, place);
+			if (placeName != null && !placeName.isEmpty()) {
+				result.putExtra(EXTRA_PLACE, placeName);
 			}
 			setResult(Activity.RESULT_OK, result);
 			finish();
@@ -112,9 +127,40 @@ public class LocationPickerActivity extends AppCompatActivity {
 	}
 
 	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.location_picker, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+		if (item.getItemId() == R.id.action_search) {
+			launchAutocomplete();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		executor.shutdownNow();
+	}
+
+	private void launchAutocomplete() {
+		Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY,
+			Arrays.asList(Place.Field.LOCATION, Place.Field.DISPLAY_NAME))
+			.build(this);
+		autocompleteLauncher.launch(intent);
+	}
+
+	private void moveToLocation(LatLng latLng) {
+		selectedLatLng = latLng;
+		if (marker != null) marker.setPosition(latLng);
+		if (circle != null) circle.setCenter(latLng);
+		if (googleMap != null) {
+			googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14));
+		}
 	}
 
 	private void reverseGeocodePlace(LatLng latLng) {
@@ -129,7 +175,7 @@ public class LocationPickerActivity extends AppCompatActivity {
 					Address addr = addresses.get(0);
 					String place = AddressFormatter.shortAddress(addr);
 					if (place != null) {
-						handler.post(() -> placeInput.setText(place));
+						handler.post(() -> placeName = place);
 					}
 				}
 			} catch (IOException e) {
@@ -138,8 +184,15 @@ public class LocationPickerActivity extends AppCompatActivity {
 		});
 	}
 
-
 	private void setupMap(GoogleMap map, LatLng initial, int initialRadius) {
+		googleMap = map;
+		map.getUiSettings().setZoomControlsEnabled(true);
+		map.getUiSettings().setMapToolbarEnabled(false);
+		try {
+			map.setMyLocationEnabled(true);
+		} catch (SecurityException e) {
+			// Location permission not granted — skip my-location layer
+		}
 		map.moveCamera(CameraUpdateFactory.newLatLngZoom(initial, 14));
 		marker = map.addMarker(new MarkerOptions().position(initial).draggable(true));
 

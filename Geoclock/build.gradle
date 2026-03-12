@@ -114,6 +114,7 @@ dependencies {
     implementation 'androidx.core:core:1.13.1'
     implementation 'com.google.android.gms:play-services-maps:19.0.0'
     implementation 'com.google.android.gms:play-services-location:21.3.0'
+    implementation 'com.google.android.libraries.places:places:5.0.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.google.guava:guava:33.2.1-android'
 

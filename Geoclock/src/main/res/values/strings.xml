@@ -56,6 +56,7 @@
     <string name="pick_location">Pick location</string>
     <string name="alarm_title">Alarm</string>
     <string name="cancel_alarm">Cancel alarm</string>
+    <string name="search_location">Search</string>
     <string name="add_alarm">Add alarm</string>
     <string name="distance_separator">" · %1$s"</string>
     <string name="time_placeholder">—</string>
