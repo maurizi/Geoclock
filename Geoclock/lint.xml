@@ -4,4 +4,6 @@
     <issue id="IconXmlAndPng" severity="ignore" />
     <!-- Monochrome icon requires new artwork; track separately -->
     <issue id="MonochromeLauncherIcon" severity="ignore" />
+    <!-- English-only app; no RTL support needed -->
+    <issue id="RtlEnabled" severity="ignore" />
 </lint>
