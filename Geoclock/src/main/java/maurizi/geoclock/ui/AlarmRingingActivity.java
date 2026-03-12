@@ -6,6 +6,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.time.LocalTime;
@@ -33,6 +34,14 @@ public class AlarmRingingActivity extends AppCompatActivity {
 		if (km != null) {
 			km.requestDismissKeyguard(this, new KeyguardManager.KeyguardDismissCallback() {});
 		}
+
+		getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+			@Override
+			public void handleOnBackPressed() {
+				AlarmRingingService.stop(AlarmRingingActivity.this);
+				finish();
+			}
+		});
 
 		setContentView(R.layout.activity_alarm_ringing);
 
@@ -66,5 +75,11 @@ public class AlarmRingingActivity extends AppCompatActivity {
 			}
 			finish();
 		});
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		AlarmRingingService.stop(this);
 	}
 }
