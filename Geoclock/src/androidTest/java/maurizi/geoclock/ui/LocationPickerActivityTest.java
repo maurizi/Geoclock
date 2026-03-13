@@ -108,8 +108,8 @@ public class LocationPickerActivityTest {
 		scenario = ActivityScenario.launch(intent);
 		scenario.onActivity(activity -> {
 			android.widget.SeekBar bar = activity.findViewById(R.id.radius_bar);
-			// SeekBar progress = radius - MIN_RADIUS (20), so 100 - 20 = 80
-			assertEquals("SeekBar progress should reflect initial radius", 80, bar.getProgress());
+			// SeekBar progress = radius - MIN_RADIUS (50), so 100 - 50 = 50
+			assertEquals("SeekBar progress should reflect initial radius", 50, bar.getProgress());
 		});
 	}
 

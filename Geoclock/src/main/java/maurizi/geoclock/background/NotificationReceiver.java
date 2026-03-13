@@ -7,8 +7,6 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -93,10 +91,8 @@ public class NotificationReceiver extends BroadcastReceiver {
 		PendingIntent cancelPi = PendingIntent.getBroadcast(context, nextAlarm.id.hashCode(),
 		        cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-		Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher);
 		Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
 		        .setSmallIcon(R.drawable.ic_alarm_black_24dp)
-		        .setLargeIcon(icon)
 		        .setContentTitle(title)
 		        .setContentText(nextAlarm.toString())
 		        .setContentIntent(notificationPendingIntent)

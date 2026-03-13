@@ -233,61 +233,61 @@ public class GeoAlarmTest {
 	@Test
 	public void getRadiusSizeLabel_nearby_atBoundary() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Nearby", GeoAlarm.getRadiusSizeLabel(context, 50));
+		assertEquals("Nearby", GeoAlarm.getRadiusSizeLabel(context, 100));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_nearby_belowBoundary() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Nearby", GeoAlarm.getRadiusSizeLabel(context, 20));
+		assertEquals("Nearby", GeoAlarm.getRadiusSizeLabel(context, 50));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_small_atLowerBoundary() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Small area", GeoAlarm.getRadiusSizeLabel(context, 51));
+		assertEquals("Small area", GeoAlarm.getRadiusSizeLabel(context, 101));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_small_atUpperBoundary() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Small area", GeoAlarm.getRadiusSizeLabel(context, 80));
+		assertEquals("Small area", GeoAlarm.getRadiusSizeLabel(context, 200));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_medium_atLowerBoundary() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Medium area", GeoAlarm.getRadiusSizeLabel(context, 81));
+		assertEquals("Medium area", GeoAlarm.getRadiusSizeLabel(context, 201));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_medium_atUpperBoundary() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Medium area", GeoAlarm.getRadiusSizeLabel(context, 130));
+		assertEquals("Medium area", GeoAlarm.getRadiusSizeLabel(context, 300));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_large() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Large area", GeoAlarm.getRadiusSizeLabel(context, 131));
+		assertEquals("Large area", GeoAlarm.getRadiusSizeLabel(context, 301));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_large_atUpperBoundary() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Large area", GeoAlarm.getRadiusSizeLabel(context, 170));
+		assertEquals("Large area", GeoAlarm.getRadiusSizeLabel(context, 400));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_wide() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Wide area", GeoAlarm.getRadiusSizeLabel(context, 171));
+		assertEquals("Wide area", GeoAlarm.getRadiusSizeLabel(context, 401));
 	}
 
 	@Test
 	public void getRadiusSizeLabel_wide_largeValue() {
 		Context context = ApplicationProvider.getApplicationContext();
-		assertEquals("Wide area", GeoAlarm.getRadiusSizeLabel(context, 200));
+		assertEquals("Wide area", GeoAlarm.getRadiusSizeLabel(context, 500));
 	}
 
 	// ---- Helpers ----

@@ -50,8 +50,8 @@ public class LocationPickerActivity extends AppCompatActivity {
 	public static final String EXTRA_RADIUS = "radius";
 	public static final String EXTRA_PLACE = "place";
 
-	private static final int MIN_RADIUS = 20;
-	private static final int MAX_RADIUS = 200;
+	private static final int MIN_RADIUS = 50;
+	private static final int MAX_RADIUS = 500;
 
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 

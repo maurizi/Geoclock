@@ -8,8 +8,7 @@ on:
 
 jobs:
   build-debug:
-    name: Build debug APK (PR)
-    if: github.event_name == 'pull_request'
+    name: Build debug APK
     runs-on: ubuntu-latest
 
     steps:
@@ -57,7 +56,6 @@ jobs:
   instrumentation-tests:
     name: Instrumentation Tests (API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +108,6 @@ jobs:
 
   coverage-report:
     name: Merged coverage report
-    if: github.event_name == 'pull_request'
     needs: [build-debug, instrumentation-tests]
     runs-on: ubuntu-latest
     steps:
@@ -154,6 +151,7 @@ jobs:
   build-release:
     name: Build release APK (master)
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [build-debug, instrumentation-tests]
     runs-on: ubuntu-latest
 
     steps:
