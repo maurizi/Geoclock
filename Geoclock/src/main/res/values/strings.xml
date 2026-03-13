@@ -41,6 +41,8 @@
     <string name="section_out_of_range">Out of range</string>
     <string name="distance_edge_meters">%1$dm away</string>
     <string name="distance_edge_km">%1$.1fkm away</string>
+    <string name="distance_edge_feet">%1$dft away</string>
+    <string name="distance_edge_miles">%1$.1fmi away</string>
     <string name="ringtone_label">Alarm sound</string>
     <string name="ringtone_vibrate_only">Vibrate only</string>
     <string name="ringtone_default">Default alarm sound</string>
