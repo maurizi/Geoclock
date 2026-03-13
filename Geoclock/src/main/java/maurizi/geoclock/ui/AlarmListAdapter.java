@@ -17,6 +17,9 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.icu.util.LocaleData;
+import android.icu.util.ULocale;
+
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -241,7 +244,21 @@ public class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 		return sb.toString();
 	}
 
+	private static boolean useImperial(Context ctx) {
+		LocaleData.MeasurementSystem ms = LocaleData.getMeasurementSystem(
+		        ULocale.forLocale(ctx.getResources().getConfiguration().getLocales().get(0)));
+		return ms != LocaleData.MeasurementSystem.SI;
+	}
+
 	private String formatEdgeDistance(Context ctx, float meters) {
+		if (useImperial(ctx)) {
+			float feet = meters * 3.28084f;
+			if (feet < 5280) {
+				return ctx.getString(R.string.distance_edge_feet, (int) feet);
+			} else {
+				return ctx.getString(R.string.distance_edge_miles, feet / 5280f);
+			}
+		}
 		if (meters < 1000) {
 			return ctx.getString(R.string.distance_edge_meters, (int) meters);
 		} else {
