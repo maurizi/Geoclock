@@ -4,7 +4,11 @@
 Geoclock
 ========
 
-An Android app to change your alarm clock settings based on your location
+An Android app to change your alarm clock settings based on your location.
+
+**Why?**
+- Don't worry about your alarms annoying you if you're up earlier than normal and already away from home
+- Spending the night with a partner who lives closer to your work? Set a different alarm for their apartment and sleep in longer
 
 Development
 -----------
