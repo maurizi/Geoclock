@@ -397,8 +397,10 @@ public class GeoAlarmFragment extends DialogFragment {
 		names.add(getString(R.string.ringtone_default));
 		uris.add(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
 
+		java.util.Set<String> seenTitles = new java.util.HashSet<>();
 		while (cursor.moveToNext()) {
 			String title = cursor.getString(RingtoneManager.TITLE_COLUMN_INDEX);
+			if (!seenTitles.add(title)) continue;
 			Uri ringtoneUri = rm.getRingtoneUri(cursor.getPosition());
 			names.add(title);
 			uris.add(ringtoneUri != null ? ringtoneUri.toString() : null);
