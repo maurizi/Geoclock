@@ -209,6 +209,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          VERSION_CODE: ${{ github.run_number }}
         run: ./gradlew assembleRelease bundleRelease
 
       - name: Upload release APK artifact

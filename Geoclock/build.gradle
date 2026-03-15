@@ -15,7 +15,7 @@ android {
     defaultConfig {
         minSdk 28
         targetSdk 34
-        versionCode 1
+        versionCode (System.getenv("VERSION_CODE") ?: "1").toInteger()
         versionName "1.0"
         applicationId "maurizi.geoclock"
         manifestPlaceholders = [MAPS_API_KEY: mapsApiKey]
