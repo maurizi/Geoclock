@@ -10,11 +10,11 @@ def mapsApiKey = localProperties.getProperty('MAPS_API_KEY') ?: System.getenv('M
 
 android {
     namespace 'maurizi.geoclock'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         minSdk 28
-        targetSdk 34
+        targetSdk 35
         def code = System.getenv("VERSION_CODE") ?: "1"
         versionCode code.toInteger()
         versionName "1.0"
