@@ -183,20 +183,27 @@ jobs:
             echo "$KEYSTORE_BASE64" | base64 -d > /tmp/release.keystore
           fi
 
-      - name: Build release APK
+      - name: Build release APK and AAB
         env:
           KEYSTORE_PATH: ${{ secrets.KEYSTORE_BASE64 != '' && '/tmp/release.keystore' || '' }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease bundleRelease
 
       - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: geoclock-release-${{ github.sha }}
           path: Geoclock/build/outputs/apk/release/*.apk
+          retention-days: 90
+
+      - name: Upload release AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: geoclock-release-aab-${{ github.sha }}
+          path: Geoclock/build/outputs/bundle/release/*.aab
           retention-days: 90
 
       - name: Create GitHub Release
