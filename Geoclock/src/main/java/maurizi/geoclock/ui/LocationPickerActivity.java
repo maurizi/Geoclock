@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.SeekBar;
 
+import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -75,6 +76,7 @@ public class LocationPickerActivity extends AppCompatActivity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		EdgeToEdge.enable(this);
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_location_picker);
 
