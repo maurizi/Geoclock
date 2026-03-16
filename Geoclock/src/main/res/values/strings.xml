@@ -46,7 +46,7 @@
     <string name="ringtone_label">Alarm sound</string>
     <string name="ringtone_vibrate_only">Vibrate only</string>
     <string name="ringtone_default">Default alarm sound</string>
-    <string name="perm_background_location">Geoclock needs location access in the background to detect when you enter an alarm\'s geofence area.</string>
+    <string name="perm_background_location">Geoclock needs location access in the background to detect when you enter an alarm\'s area.</string>
     <string name="perm_notifications">Geoclock needs notification permission to alert you when your alarm goes off.</string>
     <string name="perm_exact_alarm">Geoclock needs permission to schedule exact alarms so your alarm fires at the right time.</string>
     <string name="perm_full_screen_intent">Grant \"Display over other apps\" so your alarm can show on the lock screen.</string>

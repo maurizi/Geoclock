@@ -75,6 +75,7 @@ public class ActiveAlarmManager {
 
 		alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
 		alarmManager.cancel(NotificationReceiver.getPendingIntent(context));
+		notificationManager.cancel(NotificationReceiver.NOTIFICATION_ID);
 
 		if (!currentAlarms.isEmpty()) {
 			final LocalDateTime now = LocalDateTime.now();
@@ -84,8 +85,6 @@ public class ActiveAlarmManager {
 				setNotification(nextAlarm, alarmTime);
 				setAlarm(nextAlarm, alarmTime);
 			}
-		} else {
-			notificationManager.cancel(NotificationReceiver.NOTIFICATION_ID);
 		}
 	}
 
