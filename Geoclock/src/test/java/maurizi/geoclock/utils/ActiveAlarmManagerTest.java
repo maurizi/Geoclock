@@ -23,6 +23,7 @@ import java.time.DayOfWeek;
 import java.util.UUID;
 
 import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.background.AlarmClockReceiver;
 import maurizi.geoclock.background.NotificationReceiver;
 
 import static org.junit.Assert.assertEquals;
@@ -211,6 +212,133 @@ public class ActiveAlarmManagerTest {
 		long newTrigger = am.getNextAlarmClock().getTriggerTime();
 		assertTrue("Alarm should be rescheduled to earlier time",
 		        newTrigger < originalTrigger);
+	}
+
+	// ---- upcoming notification dismissal ----
+
+	@Test
+	public void removeActiveAlarms_lastAlarm_cancelsUpcomingNotification() {
+		// Setup: alarm within 15 min so notification is posted immediately via broadcast
+		java.time.LocalDateTime soon = java.time.LocalDateTime.now().plusMinutes(10);
+		GeoAlarm alarm = saveAlarm(repeatingAlarmAt(soon.getHour(), soon.getMinute()));
+		manager.addActiveAlarms(ImmutableSet.of(alarm.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		android.app.NotificationManager nm = (android.app.NotificationManager)
+		        context.getSystemService(Context.NOTIFICATION_SERVICE);
+		org.robolectric.shadows.ShadowNotificationManager shadowNm = Shadows.shadowOf(nm);
+		assertEquals("Notification should be posted before removal",
+		        1, shadowNm.getAllNotifications().size());
+
+		// Now remove the alarm — notification should be cancelled
+		manager.removeActiveAlarms(ImmutableSet.of(alarm.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		assertEquals("Upcoming notification should be cancelled when last alarm removed",
+		        0, shadowNm.getAllNotifications().size());
+	}
+
+	@Test
+	public void removeActiveAlarms_withRemainingAlarm_cancelsStaleUpcomingNotification() {
+		// Two alarms: A is within 15 min (notification posted), B is far away
+		java.time.LocalDateTime soon = java.time.LocalDateTime.now().plusMinutes(10);
+		java.time.LocalDateTime later = java.time.LocalDateTime.now().plusHours(3);
+		GeoAlarm alarmA = saveAlarm(repeatingAlarmAt(soon.getHour(), soon.getMinute()));
+		GeoAlarm alarmB = saveAlarm(repeatingAlarmAt(later.getHour(), later.getMinute()));
+		manager.addActiveAlarms(ImmutableSet.of(alarmA.id, alarmB.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		android.app.NotificationManager nm = (android.app.NotificationManager)
+		        context.getSystemService(Context.NOTIFICATION_SERVICE);
+		org.robolectric.shadows.ShadowNotificationManager shadowNm = Shadows.shadowOf(nm);
+		assertEquals("Notification should be posted initially",
+		        1, shadowNm.getAllNotifications().size());
+
+		// Remove alarm A (the one with the notification), B remains but is far away
+		manager.removeActiveAlarms(ImmutableSet.of(alarmA.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		// The notification for alarm A should be cancelled. Alarm B is >15 min away
+		// so no new notification should be posted.
+		assertEquals("Stale notification should be cancelled when alarm removed",
+		        0, shadowNm.getAllNotifications().size());
+	}
+
+	@Test
+	public void alarmFires_cancelsUpcomingNotification() {
+		// Use an alarm time slightly in the past — simulates realistic conditions where
+		// the alarm fires AT its scheduled time, so calculateAlarmTime returns the next
+		// day's occurrence (>15 min away), not the same time again.
+		java.time.LocalDateTime justPassed = java.time.LocalDateTime.now().minusMinutes(1);
+		GeoAlarm alarm = saveAlarm(repeatingAlarmAt(justPassed.getHour(), justPassed.getMinute()));
+
+		// Manually post the upcoming notification (it would have been posted ~15 min ago)
+		android.app.NotificationManager nm = (android.app.NotificationManager)
+		        context.getSystemService(Context.NOTIFICATION_SERVICE);
+		org.robolectric.shadows.ShadowNotificationManager shadowNm = Shadows.shadowOf(nm);
+		new NotificationReceiver().onReceive(context, NotificationReceiver.getIntent(context, alarm));
+		assertEquals("Notification should be posted before alarm fires",
+		        1, shadowNm.getAllNotifications().size());
+
+		// Add to active set (no immediate notification broadcast since alarm time is past)
+		manager.addActiveAlarms(ImmutableSet.of(alarm.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		// Simulate alarm firing
+		AlarmClockReceiver receiver = new AlarmClockReceiver();
+		Intent intent = new Intent(context, AlarmClockReceiver.class);
+		intent.putExtra("alarm_id", alarm.id.toString());
+		receiver.onReceive(context, intent);
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		// Upcoming notification should be dismissed (ringing notification is separate)
+		android.app.Notification remaining = shadowNm.getNotification(NotificationReceiver.NOTIFICATION_ID);
+		assertEquals("Upcoming notification (ID 42) should be cancelled after alarm fires",
+		        null, remaining);
+	}
+
+	@Test
+	public void deleteAllAlarms_cancelsUpcomingNotification() {
+		// Post notification, then delete all alarms — simulates user deleting everything
+		java.time.LocalDateTime soon = java.time.LocalDateTime.now().plusMinutes(10);
+		GeoAlarm alarm = saveAlarm(repeatingAlarmAt(soon.getHour(), soon.getMinute()));
+		manager.addActiveAlarms(ImmutableSet.of(alarm.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		android.app.NotificationManager nm = (android.app.NotificationManager)
+		        context.getSystemService(Context.NOTIFICATION_SERVICE);
+		org.robolectric.shadows.ShadowNotificationManager shadowNm = Shadows.shadowOf(nm);
+		assertEquals(1, shadowNm.getAllNotifications().size());
+
+		// Delete the alarm (remove from SharedPrefs + active alarms)
+		GeoAlarm.remove(context, alarm);
+		manager.removeActiveAlarms(ImmutableSet.of(alarm.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		assertEquals("Notification should be cancelled after deleting all alarms",
+		        0, shadowNm.getAllNotifications().size());
+	}
+
+	@Test
+	public void toggleDisable_cancelsUpcomingNotification() {
+		// Alarm within 15 min, notification posted, then user toggles it off
+		java.time.LocalDateTime soon = java.time.LocalDateTime.now().plusMinutes(10);
+		GeoAlarm alarm = saveAlarm(repeatingAlarmAt(soon.getHour(), soon.getMinute()));
+		manager.addActiveAlarms(ImmutableSet.of(alarm.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		android.app.NotificationManager nm = (android.app.NotificationManager)
+		        context.getSystemService(Context.NOTIFICATION_SERVICE);
+		org.robolectric.shadows.ShadowNotificationManager shadowNm = Shadows.shadowOf(nm);
+		assertEquals(1, shadowNm.getAllNotifications().size());
+
+		// Toggle off: save disabled + remove from active (mirrors MapActivity.onToggleEnabled)
+		GeoAlarm.save(context, alarm.withEnabled(false));
+		manager.removeActiveAlarms(ImmutableSet.of(alarm.id));
+		Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+
+		assertEquals("Notification should be cancelled when alarm is toggled off",
+		        0, shadowNm.getAllNotifications().size());
 	}
 
 	// ---- helpers ----
