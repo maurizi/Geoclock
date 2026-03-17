@@ -23,6 +23,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Check formatting
+        run: ./gradlew spotlessCheck
+
       - name: Run unit tests
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
