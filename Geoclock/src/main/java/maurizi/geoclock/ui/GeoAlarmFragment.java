@@ -34,7 +34,13 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
@@ -52,6 +58,7 @@ import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
 import maurizi.geoclock.utils.ActiveAlarmManager;
 import maurizi.geoclock.utils.AddressFormatter;
+import maurizi.geoclock.utils.DistanceUtils;
 import maurizi.geoclock.utils.LocationServiceGoogle;
 import maurizi.geoclock.utils.PermissionHelper;
 
@@ -64,7 +71,8 @@ public class GeoAlarmFragment extends DialogFragment {
   public static final String INITIAL_ZOOM = "INITIAL_ZOOM";
   public static final String EXISTING_ALARM = "ALARM";
 
-  private static final int INITIAL_RADIUS = 100;
+  private static final int INITIAL_RADIUS_METRIC = 250; // 500m wide
+  private static final int INITIAL_RADIUS_IMPERIAL = 244; // 1600ft wide
 
   private EditText locationPreview;
   private TextView radiusPreview;
@@ -74,8 +82,11 @@ public class GeoAlarmFragment extends DialogFragment {
   private Button saveButton;
   private TextView ringtoneNameView;
 
+  private MapView mapThumbnailView;
+  private GoogleMap mapThumbnail;
+
   private LatLng currentLatLng;
-  private int currentRadius = INITIAL_RADIUS;
+  private int currentRadius = INITIAL_RADIUS_METRIC;
   @Nullable private String currentPlaceName;
   private boolean locationChanged = false;
   private boolean setupDone = false;
@@ -104,6 +115,7 @@ public class GeoAlarmFragment extends DialogFragment {
                     result.getData().getStringExtra(LocationPickerActivity.EXTRA_PLACE);
                 locationChanged = true;
                 updateLocationPreview();
+                updateMapThumbnail();
               }
             });
   }
@@ -121,12 +133,24 @@ public class GeoAlarmFragment extends DialogFragment {
     saveButton = dialogView.findViewById(R.id.add_geo_alarm_save);
     ringtoneNameView = dialogView.findViewById(R.id.ringtone_name);
     hideTimePickerToggle(timePicker);
+
+    mapThumbnailView = dialogView.findViewById(R.id.map_thumbnail);
+    mapThumbnailView.onCreate(savedInstanceState);
+    mapThumbnailView.getMapAsync(
+        map -> {
+          mapThumbnail = map;
+          map.getUiSettings().setAllGesturesEnabled(false);
+          map.getUiSettings().setZoomControlsEnabled(false);
+          map.getUiSettings().setMapToolbarEnabled(false);
+          updateMapThumbnail();
+        });
+
+    dialogView.findViewById(R.id.map_tap_overlay).setOnClickListener(v -> openLocationPicker());
+
     return dialogView;
   }
 
-  @Override
-  public void onResume() {
-    super.onResume();
+  private void setupIfNeeded() {
     if (setupDone) return;
     setupDone = true;
 
@@ -179,29 +203,10 @@ public class GeoAlarmFragment extends DialogFragment {
       }
     }
 
-    View changeLocationButton =
-        getView() != null ? getView().findViewById(R.id.change_location_button) : null;
-    if (changeLocationButton != null) {
-      changeLocationButton.setOnClickListener(
-          v -> {
-            Intent intent = new Intent(activity, LocationPickerActivity.class);
-            if (currentLatLng != null) {
-              intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, currentLatLng.latitude);
-              intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, currentLatLng.longitude);
-            }
-            intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, currentRadius);
-            if (currentPlaceName != null) {
-              intent.putExtra(LocationPickerActivity.EXTRA_PLACE, currentPlaceName);
-            }
-            locationPickerLauncher.launch(intent);
-          });
-    }
-
-    // Ringtone picker button
-    View ringtonePickButton =
-        getView() != null ? getView().findViewById(R.id.ringtone_pick_button) : null;
-    if (ringtonePickButton != null) {
-      ringtonePickButton.setOnClickListener(v -> showRingtonePicker());
+    // Ringtone picker — whole row is tappable
+    View ringtoneRow = getView() != null ? getView().findViewById(R.id.ringtone_row) : null;
+    if (ringtoneRow != null) {
+      ringtoneRow.setOnClickListener(v -> showRingtonePicker());
     }
 
     cancelButton.setOnClickListener(
@@ -325,6 +330,7 @@ public class GeoAlarmFragment extends DialogFragment {
     if (radiusPreview != null && getContext() != null) {
       radiusPreview.setText(GeoAlarm.getRadiusSizeLabel(getContext(), currentRadius));
     }
+    updateMapThumbnail();
   }
 
   private void reverseGeocodeForPreview() {
@@ -512,10 +518,76 @@ public class GeoAlarmFragment extends DialogFragment {
     dialog.show();
   }
 
+  private void openLocationPicker() {
+    MapActivity activity = (MapActivity) getActivity();
+    if (activity == null) return;
+    Intent intent = new Intent(activity, LocationPickerActivity.class);
+    if (currentLatLng != null) {
+      intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, currentLatLng.latitude);
+      intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, currentLatLng.longitude);
+    }
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, currentRadius);
+    if (currentPlaceName != null) {
+      intent.putExtra(LocationPickerActivity.EXTRA_PLACE, currentPlaceName);
+    }
+    locationPickerLauncher.launch(intent);
+  }
+
+  private void updateMapThumbnail() {
+    if (mapThumbnail == null || currentLatLng == null) return;
+    mapThumbnail.clear();
+    mapThumbnail.addMarker(new MarkerOptions().position(currentLatLng));
+    mapThumbnail.addCircle(
+        new CircleOptions()
+            .center(currentLatLng)
+            .radius(currentRadius)
+            .fillColor(0x3300C5CD)
+            .strokeColor(0xFF00C5CD)
+            .strokeWidth(2));
+    double latOffset = currentRadius / 111_320.0;
+    double lngOffset =
+        currentRadius / (111_320.0 * Math.cos(Math.toRadians(currentLatLng.latitude)));
+    LatLngBounds bounds =
+        new LatLngBounds.Builder()
+            .include(new LatLng(currentLatLng.latitude + latOffset, currentLatLng.longitude))
+            .include(new LatLng(currentLatLng.latitude - latOffset, currentLatLng.longitude))
+            .include(new LatLng(currentLatLng.latitude, currentLatLng.longitude + lngOffset))
+            .include(new LatLng(currentLatLng.latitude, currentLatLng.longitude - lngOffset))
+            .build();
+    mapThumbnail.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 32));
+  }
+
+  @Override
+  public void onResume() {
+    super.onResume();
+    if (mapThumbnailView != null) mapThumbnailView.onResume();
+    setupIfNeeded();
+  }
+
+  @Override
+  public void onPause() {
+    super.onPause();
+    if (mapThumbnailView != null) mapThumbnailView.onPause();
+  }
+
   @Override
   public void onDestroyView() {
     super.onDestroyView();
+    if (mapThumbnailView != null) mapThumbnailView.onDestroy();
+    mapThumbnail = null;
     executor.shutdownNow();
+  }
+
+  @Override
+  public void onSaveInstanceState(@NonNull Bundle out) {
+    super.onSaveInstanceState(out);
+    if (mapThumbnailView != null) mapThumbnailView.onSaveInstanceState(out);
+  }
+
+  @Override
+  public void onLowMemory() {
+    super.onLowMemory();
+    if (mapThumbnailView != null) mapThumbnailView.onLowMemory();
   }
 
   @android.annotation.SuppressLint("DiscouragedApi") // No non-reflective way to hide the toggle
@@ -533,6 +605,14 @@ public class GeoAlarmFragment extends DialogFragment {
     }
   }
 
+  private int getInitialRadius() {
+    Context ctx = getContext();
+    if (ctx != null && DistanceUtils.useImperial(ctx)) {
+      return INITIAL_RADIUS_IMPERIAL;
+    }
+    return INITIAL_RADIUS_METRIC;
+  }
+
   private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit) {
     if (isEdit) {
       return gson.fromJson(args.getString(GeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class);
@@ -540,7 +620,7 @@ public class GeoAlarmFragment extends DialogFragment {
     LatLng initialPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG);
     return GeoAlarm.builder()
         .location(initialPoint != null ? initialPoint : new LatLng(0, 0))
-        .radius(INITIAL_RADIUS)
+        .radius(getInitialRadius())
         .id(UUID.randomUUID())
         .enabled(true)
         .build();

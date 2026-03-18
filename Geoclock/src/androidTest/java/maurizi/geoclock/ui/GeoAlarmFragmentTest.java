@@ -116,9 +116,11 @@ public class GeoAlarmFragmentTest {
     // TimePicker and location preview are above the fold
     onView(withId(R.id.add_geo_alarm_time)).check(matches(isDisplayed()));
     onView(withId(R.id.location_preview)).check(matches(isDisplayed()));
-    onView(withId(R.id.change_location_button)).check(matches(isDisplayed()));
+    onView(withId(R.id.map_thumbnail_container)).check(matches(isDisplayed()));
     // Checkboxes may be scrolled off-screen on small emulator displays
     onView(withId(R.id.mon)).check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
+    // Ringtone row
+    onView(withId(R.id.ringtone_row)).check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
     // Button row is outside ScrollView, always present
     onView(withId(R.id.add_geo_alarm_cancel))
         .check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
