@@ -51,16 +51,49 @@ public class AlarmManagerDeliveryTest {
   private static final long ORIGINAL_SNOOZE = AlarmRingingService.SNOOZE_DURATION_MS;
 
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
     context = ApplicationProvider.getApplicationContext();
+    // Cancel any lingering alarm clock entries and stop the service from a prior test
+    AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+    am.cancel(AlarmClockReceiver.getPendingIntent(context));
+    AlarmRingingService.stop(context);
+    waitForServiceStopped();
     AlarmRingingService.AUDIO_DISABLED = true;
   }
 
   @After
-  public void tearDown() {
+  public void tearDown() throws Exception {
+    // Remove all saved alarms so resetActiveAlarms() can't reschedule anything
+    for (GeoAlarm alarm : GeoAlarm.getGeoAlarms(context)) {
+      GeoAlarm.remove(context, alarm);
+    }
+    // Cancel any pending alarm clocks
+    AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+    am.cancel(AlarmClockReceiver.getPendingIntent(context));
+    new maurizi.geoclock.utils.ActiveAlarmManager(context).clearActiveAlarms();
     AlarmRingingService.SNOOZE_DURATION_MS = ORIGINAL_SNOOZE;
     AlarmRingingService.AUDIO_DISABLED = false;
     AlarmRingingService.stop(context);
+    waitForServiceStopped();
+  }
+
+  private void waitForServiceStopped() throws Exception {
+    // Poll until AlarmRingingService is no longer running (up to 10s for slow CI emulators)
+    android.app.ActivityManager activityManager =
+        (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+    long deadline = System.currentTimeMillis() + 10_000;
+    while (System.currentTimeMillis() < deadline) {
+      boolean running = false;
+      for (android.app.ActivityManager.RunningServiceInfo info :
+          activityManager.getRunningServices(100)) {
+        if (info.service.getClassName().equals(AlarmRingingService.class.getName())) {
+          running = true;
+          break;
+        }
+      }
+      if (!running) return;
+      Thread.sleep(500);
+    }
   }
 
   @Test
@@ -74,24 +107,7 @@ public class AlarmManagerDeliveryTest {
 
     GeoAlarm alarm = saveAlarm(enabledAlarm());
 
-    // Schedule the alarm 3 seconds from now via setAlarmClock
-    long triggerMs = System.currentTimeMillis() + ALARM_DELAY_MS;
-    Intent alarmIntent = new Intent(context, AlarmClockReceiver.class);
-    alarmIntent.putExtra("alarm_id", alarm.id.toString());
-    android.app.PendingIntent pi =
-        android.app.PendingIntent.getBroadcast(
-            context,
-            0,
-            alarmIntent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT
-                | android.app.PendingIntent.FLAG_IMMUTABLE);
-    android.app.PendingIntent showPi =
-        android.app.PendingIntent.getActivity(
-            context,
-            0,
-            new Intent(context, maurizi.geoclock.ui.AlarmRingingActivity.class),
-            android.app.PendingIntent.FLAG_IMMUTABLE);
-    alarmManager.setAlarmClock(new AlarmManager.AlarmClockInfo(triggerMs, showPi), pi);
+    scheduleAlarmClock(alarmManager, alarm, ALARM_DELAY_MS);
 
     // Verify the alarm is scheduled before waiting
     assertNotNull("Alarm should be scheduled for ~3 seconds out", alarmManager.getNextAlarmClock());
@@ -133,27 +149,25 @@ public class AlarmManagerDeliveryTest {
 
   @Test
   public void nonRepeatingAlarm_disabledAfterFiring() throws Exception {
-    // On API 36+ a plain sendBroadcast can't start a foreground service
-    // (only setAlarmClock-triggered broadcasts get the exemption)
-    Assume.assumeTrue(
-        "Foreground service from synthetic broadcast blocked on API 36+",
-        Build.VERSION.SDK_INT < 36);
+    AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      Assume.assumeTrue(
+          "SCHEDULE_EXACT_ALARM not granted; skipping", alarmManager.canScheduleExactAlarms());
+    }
     GeoAlarm alarm = saveAlarm(enabledAlarm()); // no days = non-repeating
 
-    // Fire the alarm directly
-    Intent intent = new Intent(context, AlarmClockReceiver.class);
-    intent.putExtra("alarm_id", alarm.id.toString());
-    context.sendBroadcast(intent);
+    // Fire via setAlarmClock (the real alarm path) so the broadcast gets the
+    // foreground-service exemption on all API levels
+    scheduleAlarmClock(alarmManager, alarm, ALARM_DELAY_MS);
 
-    // Poll until the receiver processes the broadcast and disables the alarm
-    long deadline = System.currentTimeMillis() + 10000;
+    // Poll until the receiver fires and disables the alarm
+    long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
     GeoAlarm saved = null;
     while (System.currentTimeMillis() < deadline) {
-      Thread.sleep(500);
+      Thread.sleep(POLL_INTERVAL_MS);
       saved = GeoAlarm.getGeoAlarm(context, alarm.id);
       if (saved == null || !saved.enabled) break;
     }
-    // Non-repeating alarm is removed+saved-disabled after firing
     if (saved != null) {
       assertFalse("Non-repeating alarm should be disabled after firing", saved.enabled);
     }
@@ -162,17 +176,22 @@ public class AlarmManagerDeliveryTest {
 
   @Test
   public void repeatingAlarm_remainsEnabledAfterFiring() throws Exception {
-    // On API 36+ a plain sendBroadcast can't start a foreground service
-    Assume.assumeTrue(
-        "Foreground service from synthetic broadcast blocked on API 36+",
-        Build.VERSION.SDK_INT < 36);
+    AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      Assume.assumeTrue(
+          "SCHEDULE_EXACT_ALARM not granted; skipping", alarmManager.canScheduleExactAlarms());
+    }
     GeoAlarm alarm = saveAlarm(repeatingAlarm());
 
-    // Fire the alarm directly
-    Intent intent = new Intent(context, AlarmClockReceiver.class);
-    intent.putExtra("alarm_id", alarm.id.toString());
-    context.sendBroadcast(intent);
-    Thread.sleep(1000);
+    // Fire via setAlarmClock (the real alarm path)
+    scheduleAlarmClock(alarmManager, alarm, ALARM_DELAY_MS);
+
+    // Wait for the alarm to fire
+    long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
+    while (System.currentTimeMillis() < deadline) {
+      Thread.sleep(POLL_INTERVAL_MS);
+      if (alarmManager.getNextAlarmClock() == null) break;
+    }
 
     GeoAlarm saved = GeoAlarm.getGeoAlarm(context, alarm.id);
     assertNotNull("Repeating alarm should still exist after firing", saved);
@@ -180,6 +199,26 @@ public class AlarmManagerDeliveryTest {
   }
 
   // ---- helpers ----
+
+  private void scheduleAlarmClock(AlarmManager alarmManager, GeoAlarm alarm, long delayMs) {
+    long triggerMs = System.currentTimeMillis() + delayMs;
+    Intent alarmIntent = new Intent(context, AlarmClockReceiver.class);
+    alarmIntent.putExtra("alarm_id", alarm.id.toString());
+    android.app.PendingIntent pi =
+        android.app.PendingIntent.getBroadcast(
+            context,
+            alarm.id.hashCode(),
+            alarmIntent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                | android.app.PendingIntent.FLAG_IMMUTABLE);
+    android.app.PendingIntent showPi =
+        android.app.PendingIntent.getActivity(
+            context,
+            0,
+            new Intent(context, maurizi.geoclock.ui.AlarmRingingActivity.class),
+            android.app.PendingIntent.FLAG_IMMUTABLE);
+    alarmManager.setAlarmClock(new AlarmManager.AlarmClockInfo(triggerMs, showPi), pi);
+  }
 
   private GeoAlarm enabledAlarm() {
     return GeoAlarm.builder()
