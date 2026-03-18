@@ -37,7 +37,7 @@ public class AlarmManagerDeliveryTest {
 
   private static final long SNOOZE_TEST_MS = 3000L;
   private static final long ALARM_DELAY_MS = 3000L;
-  private static final long POLL_TIMEOUT_MS = 15000L;
+  private static final long POLL_TIMEOUT_MS = 30_000L;
   private static final long POLL_INTERVAL_MS = 500L;
 
   // AlarmRingingService.startForeground() requires POST_NOTIFICATIONS on API 33+
@@ -50,15 +50,54 @@ public class AlarmManagerDeliveryTest {
   private Context context;
   private static final long ORIGINAL_SNOOZE = AlarmRingingService.SNOOZE_DURATION_MS;
 
+  @org.junit.AfterClass
+  public static void resetGlobals() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    // Remove all alarms and cancel all pending alarm clocks
+    for (GeoAlarm alarm : GeoAlarm.getGeoAlarms(ctx)) {
+      GeoAlarm.remove(ctx, alarm);
+    }
+    AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
+    am.cancel(AlarmClockReceiver.getPendingIntent(ctx));
+    am.cancel(
+        android.app.PendingIntent.getBroadcast(
+            ctx,
+            9001,
+            new Intent(ctx, AlarmClockReceiver.class),
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                | android.app.PendingIntent.FLAG_IMMUTABLE));
+    new maurizi.geoclock.utils.ActiveAlarmManager(ctx).clearActiveAlarms();
+    AlarmRingingService.stop(ctx);
+    AlarmRingingService.SNOOZE_DURATION_MS = ORIGINAL_SNOOZE;
+    // Delay before resetting AUDIO_DISABLED to let any in-flight alarms settle
+    try {
+      Thread.sleep(3000);
+    } catch (InterruptedException ignored) {
+    }
+    AlarmRingingService.AUDIO_DISABLED = false;
+  }
+
   @Before
   public void setUp() throws Exception {
     context = ApplicationProvider.getApplicationContext();
-    // Cancel any lingering alarm clock entries and stop the service from a prior test
+    // Disable audio FIRST so any alarm that fires during cleanup won't hang on startForeground
+    AlarmRingingService.AUDIO_DISABLED = true;
+    // Remove all saved alarms and cancel any lingering alarm clock entries
+    for (GeoAlarm alarm : GeoAlarm.getGeoAlarms(context)) {
+      GeoAlarm.remove(context, alarm);
+    }
     AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     am.cancel(AlarmClockReceiver.getPendingIntent(context));
+    am.cancel(
+        android.app.PendingIntent.getBroadcast(
+            context,
+            9001,
+            new Intent(context, AlarmClockReceiver.class),
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                | android.app.PendingIntent.FLAG_IMMUTABLE));
+    new maurizi.geoclock.utils.ActiveAlarmManager(context).clearActiveAlarms();
     AlarmRingingService.stop(context);
     waitForServiceStopped();
-    AlarmRingingService.AUDIO_DISABLED = true;
   }
 
   @After
@@ -67,12 +106,19 @@ public class AlarmManagerDeliveryTest {
     for (GeoAlarm alarm : GeoAlarm.getGeoAlarms(context)) {
       GeoAlarm.remove(context, alarm);
     }
-    // Cancel any pending alarm clocks
+    // Cancel all pending alarm clocks — regular (request code 0) and snooze (9001)
     AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     am.cancel(AlarmClockReceiver.getPendingIntent(context));
+    am.cancel(
+        android.app.PendingIntent.getBroadcast(
+            context,
+            9001,
+            new Intent(context, AlarmClockReceiver.class),
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                | android.app.PendingIntent.FLAG_IMMUTABLE));
     new maurizi.geoclock.utils.ActiveAlarmManager(context).clearActiveAlarms();
-    AlarmRingingService.SNOOZE_DURATION_MS = ORIGINAL_SNOOZE;
-    AlarmRingingService.AUDIO_DISABLED = false;
+    // Keep AUDIO_DISABLED = true between tests — alarms may fire in the gap between
+    // tearDown and setUp, and would crash without the foreground notification shortcut
     AlarmRingingService.stop(context);
     waitForServiceStopped();
   }
@@ -125,6 +171,10 @@ public class AlarmManagerDeliveryTest {
     assertTrue(
         "AlarmClockReceiver should have fired and consumed the alarm within expected window",
         fired);
+
+    // Clean up immediately so no rescheduled alarm fires between tests
+    GeoAlarm.remove(context, alarm);
+    alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
   }
 
   @Test
@@ -141,8 +191,12 @@ public class AlarmManagerDeliveryTest {
     // Trigger snooze directly
     AlarmRingingService.scheduleSnooze(context, alarm);
 
-    // Wait for snooze to re-fire — poll to avoid flaky fixed-sleep timing
-    Thread.sleep(POLL_TIMEOUT_MS);
+    // Wait for snooze to re-fire
+    Thread.sleep(SNOOZE_TEST_MS + 5000);
+
+    // Remove alarm before resetActiveAlarms() can reschedule it
+    GeoAlarm.remove(context, alarm);
+    alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
 
     // Test passes if no exception — timing assertions are flaky in CI
   }
@@ -172,6 +226,9 @@ public class AlarmManagerDeliveryTest {
       assertFalse("Non-repeating alarm should be disabled after firing", saved.enabled);
     }
     // If null, it was removed entirely — also acceptable
+
+    GeoAlarm.remove(context, alarm);
+    alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
   }
 
   @Test
@@ -196,21 +253,18 @@ public class AlarmManagerDeliveryTest {
     GeoAlarm saved = GeoAlarm.getGeoAlarm(context, alarm.id);
     assertNotNull("Repeating alarm should still exist after firing", saved);
     assertTrue("Repeating alarm should remain enabled after firing", saved.enabled);
+
+    // Remove immediately so resetActiveAlarms() can't reschedule before tearDown
+    GeoAlarm.remove(context, alarm);
+    alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
   }
 
   // ---- helpers ----
 
   private void scheduleAlarmClock(AlarmManager alarmManager, GeoAlarm alarm, long delayMs) {
     long triggerMs = System.currentTimeMillis() + delayMs;
-    Intent alarmIntent = new Intent(context, AlarmClockReceiver.class);
-    alarmIntent.putExtra("alarm_id", alarm.id.toString());
-    android.app.PendingIntent pi =
-        android.app.PendingIntent.getBroadcast(
-            context,
-            alarm.id.hashCode(),
-            alarmIntent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT
-                | android.app.PendingIntent.FLAG_IMMUTABLE);
+    // Use the same PendingIntent shape as production (request code 0) so tearDown can cancel it
+    android.app.PendingIntent pi = AlarmClockReceiver.getPendingIntent(context, alarm);
     android.app.PendingIntent showPi =
         android.app.PendingIntent.getActivity(
             context,
