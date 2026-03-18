@@ -7,6 +7,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.Intent;
@@ -96,8 +97,40 @@ public class LocationPickerActivityTest {
     scenario.onActivity(
         activity -> {
           android.widget.SeekBar bar = activity.findViewById(R.id.radius_bar);
-          // SeekBar progress = radius - MIN_RADIUS (50), so 100 - 50 = 50
-          assertEquals("SeekBar progress should reflect initial radius", 50, bar.getProgress());
+          // Logarithmic scale: radiusToProgress(100) = round(log(100/50)/log(50000/50)*1000) ≈ 100
+          int progress = bar.getProgress();
+          assertTrue(
+              "SeekBar progress should be ~100 for radius=100m, got " + progress,
+              progress >= 95 && progress <= 105);
+        });
+  }
+
+  @Test
+  public void radiusValueLabel_showsFormattedDistance() {
+    Intent intent = makeIntent();
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 500);
+    scenario = ActivityScenario.launch(intent);
+    onView(withId(R.id.radius_value_label)).check(matches(isDisplayed()));
+    onView(withId(R.id.radius_value_label))
+        .check(
+            (view, ex) -> {
+              if (ex != null) throw ex;
+              String text = ((android.widget.TextView) view).getText().toString();
+              assertTrue("Radius label should not be empty", !text.isEmpty());
+            });
+  }
+
+  @Test
+  public void radiusBar_maxProgress_givesLargeRadius() {
+    scenario = ActivityScenario.launch(makeIntent());
+    scenario.onActivity(
+        activity -> {
+          android.widget.SeekBar bar = activity.findViewById(R.id.radius_bar);
+          // At max progress the radius should be close to MAX_RADIUS (50000)
+          bar.setProgress(bar.getMax());
+          android.widget.TextView label = activity.findViewById(R.id.radius_value_label);
+          String text = label.getText().toString();
+          assertTrue("Max radius label should not be empty", !text.isEmpty());
         });
   }
 

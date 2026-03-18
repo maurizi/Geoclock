@@ -311,13 +311,8 @@ public class MapActivity extends AppCompatActivity {
       // Auto-fit map to show all alarms
       if (hasMarkers) {
         try {
-          if (alarms.size() == 1) {
-            GeoAlarm only = alarms.iterator().next();
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(only.location, DEFAULT_ZOOM_LEVEL));
-          } else {
-            map.moveCamera(
-                CameraUpdateFactory.newLatLngBounds(boundsBuilder.build(), MAP_BOUNDS_PADDING));
-          }
+          map.moveCamera(
+              CameraUpdateFactory.newLatLngBounds(boundsBuilder.build(), MAP_BOUNDS_PADDING));
         } catch (Exception ignored) {
           // Map may not be laid out yet
         }
@@ -386,9 +381,18 @@ public class MapActivity extends AppCompatActivity {
   }
 
   void showAlarmOnMap(GeoAlarm alarm) {
-    if (map != null) {
-      map.animateCamera(CameraUpdateFactory.newLatLng(alarm.location));
-    }
+    if (map == null) return;
+    double latOffset = alarm.radius / 111_320.0;
+    double lngOffset =
+        alarm.radius / (111_320.0 * Math.cos(Math.toRadians(alarm.location.latitude)));
+    LatLngBounds bounds =
+        new LatLngBounds.Builder()
+            .include(new LatLng(alarm.location.latitude + latOffset, alarm.location.longitude))
+            .include(new LatLng(alarm.location.latitude - latOffset, alarm.location.longitude))
+            .include(new LatLng(alarm.location.latitude, alarm.location.longitude + lngOffset))
+            .include(new LatLng(alarm.location.latitude, alarm.location.longitude - lngOffset))
+            .build();
+    map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, MAP_BOUNDS_PADDING));
   }
 
   void expandMap() {

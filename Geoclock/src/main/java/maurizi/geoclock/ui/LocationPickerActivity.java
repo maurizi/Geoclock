@@ -10,6 +10,7 @@ import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -23,6 +24,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.libraries.places.api.model.Place;
@@ -36,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import maurizi.geoclock.R;
 import maurizi.geoclock.utils.AddressFormatter;
+import maurizi.geoclock.utils.DistanceUtils;
 
 public class LocationPickerActivity extends AppCompatActivity {
 
@@ -47,8 +50,19 @@ public class LocationPickerActivity extends AppCompatActivity {
   public static final String EXTRA_RADIUS = "radius";
   public static final String EXTRA_PLACE = "place";
 
-  private static final int MIN_RADIUS = 50;
-  private static final int MAX_RADIUS = 500;
+  private static final int MIN_RADIUS_METRIC = 125; // 250m wide
+  private static final int MIN_RADIUS_IMPERIAL = 122; // 800ft wide
+  private static final int MAX_RADIUS_METRIC = 25000; // 50km wide
+  private static final int MAX_RADIUS_IMPERIAL = 24140; // 30mi wide
+  private static final int SEEKBAR_MAX = 1000;
+
+  private int getMinRadius() {
+    return DistanceUtils.useImperial(this) ? MIN_RADIUS_IMPERIAL : MIN_RADIUS_METRIC;
+  }
+
+  private int getMaxRadius() {
+    return DistanceUtils.useImperial(this) ? MAX_RADIUS_IMPERIAL : MAX_RADIUS_METRIC;
+  }
 
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -92,25 +106,35 @@ public class LocationPickerActivity extends AppCompatActivity {
     double initialLat = getIntent().getDoubleExtra(EXTRA_INITIAL_LAT, 0);
     double initialLng = getIntent().getDoubleExtra(EXTRA_INITIAL_LNG, 0);
     selectedLatLng = new LatLng(initialLat, initialLng);
-    selectedRadius = getIntent().getIntExtra(EXTRA_INITIAL_RADIUS, MIN_RADIUS);
+    selectedRadius = getIntent().getIntExtra(EXTRA_INITIAL_RADIUS, getMinRadius());
     placeName = getIntent().getStringExtra(EXTRA_PLACE);
 
+    TextView radiusValueLabel = findViewById(R.id.radius_value_label);
     SeekBar radiusBar = findViewById(R.id.radius_bar);
-    radiusBar.setMax(MAX_RADIUS - MIN_RADIUS);
-    radiusBar.setProgress(selectedRadius - MIN_RADIUS);
+    radiusBar.setMax(SEEKBAR_MAX);
+    radiusBar.setProgress(radiusToProgress(selectedRadius));
+    if (radiusValueLabel != null) {
+      radiusValueLabel.setText(DistanceUtils.formatDiameter(this, selectedRadius));
+    }
     radiusBar.setOnSeekBarChangeListener(
         new SeekBar.OnSeekBarChangeListener() {
           @Override
           public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-            selectedRadius = progress + MIN_RADIUS;
+            selectedRadius = progressToRadius(progress);
             if (circle != null) circle.setRadius(selectedRadius);
+            if (radiusValueLabel != null) {
+              radiusValueLabel.setText(
+                  DistanceUtils.formatDiameter(LocationPickerActivity.this, selectedRadius));
+            }
           }
 
           @Override
           public void onStartTrackingTouch(SeekBar seekBar) {}
 
           @Override
-          public void onStopTrackingTouch(SeekBar seekBar) {}
+          public void onStopTrackingTouch(SeekBar seekBar) {
+            fitCameraToCircle();
+          }
         });
 
     SupportMapFragment mapFragment = SupportMapFragment.newInstance();
@@ -150,6 +174,18 @@ public class LocationPickerActivity extends AppCompatActivity {
     return super.onOptionsItemSelected(item);
   }
 
+  private int progressToRadius(int progress) {
+    int min = getMinRadius();
+    double ratio = (double) progress / SEEKBAR_MAX;
+    return (int) (min * Math.pow((double) getMaxRadius() / min, ratio));
+  }
+
+  private int radiusToProgress(int radius) {
+    int min = getMinRadius();
+    double ratio = Math.log((double) radius / min) / Math.log((double) getMaxRadius() / min);
+    return (int) Math.round(ratio * SEEKBAR_MAX);
+  }
+
   @Override
   protected void onDestroy() {
     super.onDestroy();
@@ -165,13 +201,34 @@ public class LocationPickerActivity extends AppCompatActivity {
     autocompleteLauncher.launch(intent);
   }
 
+  private void fitCameraToCircle() {
+    fitCameraToCircle(true);
+  }
+
+  private void fitCameraToCircle(boolean animate) {
+    if (googleMap == null || selectedLatLng == null) return;
+    double latOffset = selectedRadius / 111_320.0;
+    double lngOffset =
+        selectedRadius / (111_320.0 * Math.cos(Math.toRadians(selectedLatLng.latitude)));
+    LatLngBounds bounds =
+        new LatLngBounds.Builder()
+            .include(new LatLng(selectedLatLng.latitude + latOffset, selectedLatLng.longitude))
+            .include(new LatLng(selectedLatLng.latitude - latOffset, selectedLatLng.longitude))
+            .include(new LatLng(selectedLatLng.latitude, selectedLatLng.longitude + lngOffset))
+            .include(new LatLng(selectedLatLng.latitude, selectedLatLng.longitude - lngOffset))
+            .build();
+    if (animate) {
+      googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64));
+    } else {
+      googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64));
+    }
+  }
+
   private void moveToLocation(LatLng latLng) {
     selectedLatLng = latLng;
     if (marker != null) marker.setPosition(latLng);
     if (circle != null) circle.setCenter(latLng);
-    if (googleMap != null) {
-      googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14));
-    }
+    fitCameraToCircle();
   }
 
   private void reverseGeocodePlace(LatLng latLng) {
@@ -205,7 +262,6 @@ public class LocationPickerActivity extends AppCompatActivity {
     } catch (SecurityException e) {
       // Location permission not granted — skip my-location layer
     }
-    map.moveCamera(CameraUpdateFactory.newLatLngZoom(initial, 14));
     marker = map.addMarker(new MarkerOptions().position(initial).draggable(true));
 
     circle =
@@ -216,6 +272,8 @@ public class LocationPickerActivity extends AppCompatActivity {
                 .fillColor(0x3300C5CD)
                 .strokeColor(0xFF00C5CD)
                 .strokeWidth(2));
+
+    fitCameraToCircle(false);
 
     map.setOnMarkerDragListener(
         new GoogleMap.OnMarkerDragListener() {
