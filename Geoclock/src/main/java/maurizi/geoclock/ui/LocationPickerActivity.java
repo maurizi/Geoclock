@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
@@ -217,11 +218,18 @@ public class LocationPickerActivity extends AppCompatActivity {
             .include(new LatLng(selectedLatLng.latitude, selectedLatLng.longitude + lngOffset))
             .include(new LatLng(selectedLatLng.latitude, selectedLatLng.longitude - lngOffset))
             .build();
-    if (animate) {
-      googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64));
-    } else {
-      googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64));
-    }
+    // Post to ensure map view has been laid out (newLatLngBounds requires non-zero size)
+    View mapContainer = findViewById(R.id.map_container);
+    if (mapContainer == null) return;
+    mapContainer.post(
+        () -> {
+          if (googleMap == null) return;
+          if (animate) {
+            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64));
+          } else {
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64));
+          }
+        });
   }
 
   private void moveToLocation(LatLng latLng) {

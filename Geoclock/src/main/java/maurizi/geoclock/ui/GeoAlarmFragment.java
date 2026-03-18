@@ -554,7 +554,12 @@ public class GeoAlarmFragment extends DialogFragment {
             .include(new LatLng(currentLatLng.latitude, currentLatLng.longitude + lngOffset))
             .include(new LatLng(currentLatLng.latitude, currentLatLng.longitude - lngOffset))
             .build();
-    mapThumbnail.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 32));
+    // Post to ensure map view has been laid out (newLatLngBounds requires non-zero size)
+    mapThumbnailView.post(
+        () -> {
+          if (mapThumbnail == null) return;
+          mapThumbnail.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 32));
+        });
   }
 
   @Override

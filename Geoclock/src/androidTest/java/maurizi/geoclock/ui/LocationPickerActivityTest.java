@@ -92,16 +92,17 @@ public class LocationPickerActivityTest {
   @Test
   public void radiusBar_showsInitialRadius() {
     Intent intent = makeIntent();
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 100);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 250);
     scenario = ActivityScenario.launch(intent);
     scenario.onActivity(
         activity -> {
           android.widget.SeekBar bar = activity.findViewById(R.id.radius_bar);
-          // Logarithmic scale: radiusToProgress(100) = round(log(100/50)/log(50000/50)*1000) ≈ 100
+          // Logarithmic scale: radiusToProgress(250) with min=125, max=25000
+          // = round(log(250/125)/log(25000/125)*1000) ≈ 131
           int progress = bar.getProgress();
           assertTrue(
-              "SeekBar progress should be ~100 for radius=100m, got " + progress,
-              progress >= 95 && progress <= 105);
+              "SeekBar progress should be ~131 for radius=250m, got " + progress,
+              progress >= 120 && progress <= 140);
         });
   }
 

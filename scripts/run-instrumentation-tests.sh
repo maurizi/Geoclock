@@ -113,9 +113,11 @@ run_tests_on_api() {
     echo ">>> Installing APKs..."
     (cd "$PROJECT_DIR" && ./gradlew installDebug installDebugAndroidTest --stacktrace)
 
-    # Grant mock location and exact alarm permissions
+    # Grant permissions
     "$ADB" shell appops set "$APP_PACKAGE" android:mock_location allow
     "$ADB" shell appops set "$APP_PACKAGE" SCHEDULE_EXACT_ALARM allow 2>/dev/null || true
+    "$ADB" shell pm grant "$APP_PACKAGE" android.permission.ACCESS_FINE_LOCATION 2>/dev/null || true
+    "$ADB" shell pm grant "$APP_PACKAGE" android.permission.ACCESS_BACKGROUND_LOCATION 2>/dev/null || true
 
     # Run tests
     echo ">>> Running tests..."
