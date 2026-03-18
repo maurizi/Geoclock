@@ -251,63 +251,110 @@ public class GeoAlarmTest {
   // ---- getRadiusSizeLabel ----
 
   @Test
-  public void getRadiusSizeLabel_nearby_atBoundary() {
+  public void getRadiusSizeLabel_xs_atBoundary() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Nearby", GeoAlarm.getRadiusSizeLabel(context, 100));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 200).startsWith("Extra small"));
   }
 
   @Test
-  public void getRadiusSizeLabel_nearby_belowBoundary() {
+  public void getRadiusSizeLabel_xs_belowBoundary() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Nearby", GeoAlarm.getRadiusSizeLabel(context, 50));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 50).startsWith("Extra small"));
   }
 
   @Test
-  public void getRadiusSizeLabel_small_atLowerBoundary() {
+  public void getRadiusSizeLabel_xs_justBelow() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Small area", GeoAlarm.getRadiusSizeLabel(context, 101));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 151).startsWith("Extra small"));
   }
 
   @Test
   public void getRadiusSizeLabel_small_atUpperBoundary() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Small area", GeoAlarm.getRadiusSizeLabel(context, 200));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 500).startsWith("Small"));
   }
 
   @Test
   public void getRadiusSizeLabel_medium_atLowerBoundary() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Medium area", GeoAlarm.getRadiusSizeLabel(context, 201));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 501).startsWith("Medium"));
   }
 
   @Test
   public void getRadiusSizeLabel_medium_atUpperBoundary() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Medium area", GeoAlarm.getRadiusSizeLabel(context, 300));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 2000).startsWith("Medium"));
   }
 
   @Test
-  public void getRadiusSizeLabel_large() {
+  public void getRadiusSizeLabel_large_atLowerBoundary() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Large area", GeoAlarm.getRadiusSizeLabel(context, 301));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 2001).startsWith("Large"));
   }
 
   @Test
   public void getRadiusSizeLabel_large_atUpperBoundary() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Large area", GeoAlarm.getRadiusSizeLabel(context, 400));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 10000).startsWith("Large"));
   }
 
   @Test
-  public void getRadiusSizeLabel_wide() {
+  public void getRadiusSizeLabel_xl_atLowerBoundary() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Wide area", GeoAlarm.getRadiusSizeLabel(context, 401));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 10001).startsWith("Extra large"));
   }
 
   @Test
-  public void getRadiusSizeLabel_wide_largeValue() {
+  public void getRadiusSizeLabel_xl_large() {
     Context context = ApplicationProvider.getApplicationContext();
-    assertEquals("Wide area", GeoAlarm.getRadiusSizeLabel(context, 500));
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 30000).startsWith("Extra large"));
+  }
+
+  @Test
+  public void getRadiusSizeLabel_xl_veryLarge() {
+    Context context = ApplicationProvider.getApplicationContext();
+    assertTrue(GeoAlarm.getRadiusSizeLabel(context, 50000).startsWith("Extra large"));
+  }
+
+  @Test
+  public void getRadiusSizeLabel_containsDiameterSuffix() {
+    Context context = ApplicationProvider.getApplicationContext();
+    String label = GeoAlarm.getRadiusSizeLabel(context, 250);
+    assertTrue("Label should contain ' · '", label.contains(" \u00B7 "));
+    assertTrue("Label should contain 'wide'", label.contains("wide"));
+  }
+
+  // ---- getCircleOptions ----
+
+  @Test
+  public void getCircleOptions_hasCorrectCenter() {
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .location(new LatLng(37.4220, -122.0841))
+            .radius(500)
+            .id(UUID.randomUUID())
+            .build();
+    assertEquals(new LatLng(37.4220, -122.0841), alarm.getCircleOptions().getCenter());
+  }
+
+  @Test
+  public void getCircleOptions_hasCorrectRadius() {
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .location(new LatLng(37.4220, -122.0841))
+            .radius(500)
+            .id(UUID.randomUUID())
+            .build();
+    assertEquals(500.0, alarm.getCircleOptions().getRadius(), 0.01);
+  }
+
+  @Test
+  public void getCircleOptions_hasCorrectColors() {
+    GeoAlarm alarm =
+        GeoAlarm.builder().location(new LatLng(0, 0)).radius(100).id(UUID.randomUUID()).build();
+    assertEquals(0x3300C5CD, alarm.getCircleOptions().getFillColor());
+    assertEquals(0xFF00C5CD, alarm.getCircleOptions().getStrokeColor());
+    assertEquals(2f, alarm.getCircleOptions().getStrokeWidth(), 0.01);
   }
 
   // ---- Helpers ----
