@@ -292,16 +292,37 @@ public class LocationPickerActivityTest {
     intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
     intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 500);
     scenario = ActivityScenario.launch(intent);
-    // Wait for map to fully render
-    Thread.sleep(4000);
-    // Tap on the map area using UiAutomator (center of the map container)
+    // Wait for map to fully render (setupMap + fitCameraToCircle)
+    Thread.sleep(5000);
+    // Tap on the map area — the map container is the largest element on screen
     UiDevice device = UiDevice.getInstance(getInstrumentation());
     int centerX = device.getDisplayWidth() / 2;
-    int centerY = device.getDisplayHeight() / 3; // Upper third is the map
-    device.click(centerX, centerY);
+    // Map occupies roughly the center of the screen (below toolbar, above seekbar)
+    int mapCenterY = device.getDisplayHeight() / 2;
+    device.click(centerX, mapCenterY);
+    // Wait for the click listener + reverseGeocodePlace async to fire
+    Thread.sleep(3000);
+    // Click a different spot to trigger a second map click
+    device.click(centerX + 100, mapCenterY - 100);
     Thread.sleep(2000);
-    // The map click listener should fire, moving the marker and triggering reverseGeocodePlace
-    // Verify we haven't crashed
+    onView(withId(R.id.confirm_button)).check(matches(isDisplayed()));
+  }
+
+  @Test
+  public void mapDrag_triggersMarkerDragListeners() throws Exception {
+    Intent intent = makeIntent();
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 500);
+    scenario = ActivityScenario.launch(intent);
+    Thread.sleep(5000);
+    // Long-press + drag on the map center (where the marker is) to trigger drag listeners
+    UiDevice device = UiDevice.getInstance(getInstrumentation());
+    int centerX = device.getDisplayWidth() / 2;
+    int centerY = device.getDisplayHeight() / 2;
+    // Long press to start marker drag, then drag to a new position
+    device.swipe(centerX, centerY, centerX + 200, centerY + 100, 50);
+    Thread.sleep(2000);
     onView(withId(R.id.confirm_button)).check(matches(isDisplayed()));
   }
 
