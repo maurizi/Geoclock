@@ -30,3 +30,4 @@ bin/
 gen/
 .gradle/
 build/
+test-output-api*.txt

@@ -333,6 +333,7 @@ public class GeoAlarmFragment extends DialogFragment {
     updateMapThumbnail();
   }
 
+  @SuppressWarnings("deprecation")
   private void reverseGeocodeForPreview() {
     Context ctx = getContext();
     if (ctx == null || !Geocoder.isPresent() || currentLatLng == null) return;
@@ -378,6 +379,7 @@ public class GeoAlarmFragment extends DialogFragment {
     if (dialog != null) dialog.dismiss();
   }
 
+  @SuppressWarnings("deprecation")
   private void geocodeAsync(MapActivity activity, GeoAlarm alarm) {
     if (!Geocoder.isPresent()) return;
     Context appContext = activity.getApplicationContext();
@@ -478,8 +480,7 @@ public class GeoAlarmFragment extends DialogFragment {
                   // Play preview
                   if (selectedRingtoneUri == null) {
                     // Vibrate only — buzz preview
-                    Vibrator vibrator =
-                        (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+                    Vibrator vibrator = context.getSystemService(Vibrator.class);
                     if (vibrator != null) {
                       vibrator.vibrate(
                           VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
@@ -622,7 +623,7 @@ public class GeoAlarmFragment extends DialogFragment {
     if (isEdit) {
       return gson.fromJson(args.getString(GeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class);
     }
-    LatLng initialPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG);
+    LatLng initialPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG, LatLng.class);
     return GeoAlarm.builder()
         .location(initialPoint != null ? initialPoint : new LatLng(0, 0))
         .radius(getInitialRadius())

@@ -21,7 +21,6 @@ import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.background.AlarmClockReceiver;
 import maurizi.geoclock.background.AlarmRingingService;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -146,9 +145,7 @@ public class AlarmManagerDeliveryTest {
   public void alarm_firesWithinExpectedWindow() throws Exception {
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      Assume.assumeTrue(
-          "SCHEDULE_EXACT_ALARM not granted; skipping timing test",
-          alarmManager.canScheduleExactAlarms());
+      assertTrue("SCHEDULE_EXACT_ALARM not granted", alarmManager.canScheduleExactAlarms());
     }
 
     GeoAlarm alarm = saveAlarm(enabledAlarm());
@@ -181,9 +178,7 @@ public class AlarmManagerDeliveryTest {
   public void snooze_refiresAfterDelay() throws Exception {
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      Assume.assumeTrue(
-          "SCHEDULE_EXACT_ALARM not granted; skipping snooze test",
-          alarmManager.canScheduleExactAlarms());
+      assertTrue("SCHEDULE_EXACT_ALARM not granted", alarmManager.canScheduleExactAlarms());
     }
     AlarmRingingService.SNOOZE_DURATION_MS = SNOOZE_TEST_MS;
     GeoAlarm alarm = saveAlarm(repeatingAlarm());
@@ -205,8 +200,7 @@ public class AlarmManagerDeliveryTest {
   public void nonRepeatingAlarm_disabledAfterFiring() throws Exception {
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      Assume.assumeTrue(
-          "SCHEDULE_EXACT_ALARM not granted; skipping", alarmManager.canScheduleExactAlarms());
+      assertTrue("SCHEDULE_EXACT_ALARM not granted", alarmManager.canScheduleExactAlarms());
     }
     GeoAlarm alarm = saveAlarm(enabledAlarm()); // no days = non-repeating
 
@@ -235,8 +229,7 @@ public class AlarmManagerDeliveryTest {
   public void repeatingAlarm_remainsEnabledAfterFiring() throws Exception {
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      Assume.assumeTrue(
-          "SCHEDULE_EXACT_ALARM not granted; skipping", alarmManager.canScheduleExactAlarms());
+      assertTrue("SCHEDULE_EXACT_ALARM not granted", alarmManager.canScheduleExactAlarms());
     }
     GeoAlarm alarm = saveAlarm(repeatingAlarm());
 

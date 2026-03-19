@@ -74,6 +74,7 @@ public class LocationPickerActivity extends AppCompatActivity {
   private int selectedRadius;
   @Nullable private String placeName;
 
+  @SuppressWarnings("deprecation")
   private final ActivityResultLauncher<Intent> autocompleteLauncher =
       registerForActivityResult(
           new ActivityResultContracts.StartActivityForResult(),
@@ -193,6 +194,7 @@ public class LocationPickerActivity extends AppCompatActivity {
     executor.shutdownNow();
   }
 
+  @SuppressWarnings("deprecation")
   private void launchAutocomplete() {
     Intent intent =
         new Autocomplete.IntentBuilder(
@@ -239,6 +241,7 @@ public class LocationPickerActivity extends AppCompatActivity {
     fitCameraToCircle();
   }
 
+  @SuppressWarnings("deprecation")
   private void reverseGeocodePlace(LatLng latLng) {
     if (!Geocoder.isPresent()) return;
     Handler handler = new Handler(Looper.getMainLooper());

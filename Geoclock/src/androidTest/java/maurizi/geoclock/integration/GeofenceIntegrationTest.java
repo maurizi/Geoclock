@@ -2,6 +2,7 @@ package maurizi.geoclock.integration;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
 import android.app.AlarmManager;
@@ -33,7 +34,6 @@ import maurizi.geoclock.background.AlarmRingingService;
 import maurizi.geoclock.utils.ActiveAlarmManager;
 import maurizi.geoclock.utils.LocationServiceGoogle;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -104,7 +104,7 @@ public class GeofenceIntegrationTest {
         .addOnFailureListener(e -> latch.countDown());
     latch.await(10, TimeUnit.SECONDS);
     mockModeEnabled = ok.get();
-    Assume.assumeTrue("FusedLocationProviderClient mock mode not available", mockModeEnabled);
+    assertTrue("FusedLocationProviderClient mock mode not available", mockModeEnabled);
   }
 
   @After
@@ -119,30 +119,30 @@ public class GeofenceIntegrationTest {
     AlarmRingingService.stop(context);
   }
 
-  private void assumePlayServices() {
+  private void assertPlayServicesAvailable() {
     int result = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context);
-    Assume.assumeTrue(
+    assertTrue(
         "Google Play Services not available; geofence transitions require it",
         result == ConnectionResult.SUCCESS);
   }
 
-  private void assumeCanScheduleExactAlarms() {
+  private void assertCanScheduleExactAlarms() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-      Assume.assumeTrue("SCHEDULE_EXACT_ALARM not granted; skipping", am.canScheduleExactAlarms());
+      assertTrue("SCHEDULE_EXACT_ALARM not granted", am.canScheduleExactAlarms());
     }
   }
 
   @Test
   public void enterGeofence_startsAlarmRingingService() throws Exception {
-    assumePlayServices();
-    assumeCanScheduleExactAlarms();
+    assertPlayServicesAvailable();
+    assertCanScheduleExactAlarms();
 
     GeoAlarm alarm = saveAlarm(repeatingAlarmAt(GEOFENCE_CENTER));
 
     LocationServiceGoogle locationService = new LocationServiceGoogle(context);
     boolean registered = registerGeofence(locationService, alarm);
-    Assume.assumeTrue("Geofence registration failed", registered);
+    assertTrue("Geofence registration failed", registered);
 
     // Pump mock location inside the geofence until ENTER fires
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -158,15 +158,15 @@ public class GeofenceIntegrationTest {
 
   @Test
   public void exitGeofence_removesFromActiveAlarms() throws Exception {
-    assumePlayServices();
-    assumeCanScheduleExactAlarms();
+    assertPlayServicesAvailable();
+    assertCanScheduleExactAlarms();
 
     GeoAlarm alarm = saveAlarm(repeatingAlarmAt(GEOFENCE_CENTER));
     new ActiveAlarmManager(context).addActiveAlarms(ImmutableSet.of(alarm.id));
 
     LocationServiceGoogle locationService = new LocationServiceGoogle(context);
     boolean registered = registerGeofence(locationService, alarm);
-    Assume.assumeTrue("Geofence registration failed", registered);
+    assertTrue("Geofence registration failed", registered);
 
     // Establish "inside" baseline
     for (int i = 0; i < 5; i++) {
@@ -188,13 +188,13 @@ public class GeofenceIntegrationTest {
 
   @Test
   public void disabledAlarm_geofenceEnter_doesNotStartService() throws Exception {
-    assumePlayServices();
+    assertPlayServicesAvailable();
 
     GeoAlarm alarm = saveAlarm(repeatingAlarmAt(GEOFENCE_CENTER).withEnabled(false));
 
     LocationServiceGoogle locationService = new LocationServiceGoogle(context);
     boolean registered = registerGeofence(locationService, alarm);
-    Assume.assumeTrue("Geofence registration failed", registered);
+    assertTrue("Geofence registration failed", registered);
 
     // Pump inside-geofence location — disabled alarm should not trigger
     for (int i = 0; i < 10; i++) {

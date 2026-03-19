@@ -30,6 +30,8 @@ import org.robolectric.shadows.ShadowNotificationManager;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 33)
+@SuppressWarnings(
+    "deprecation") // ShadowAlarmManager.getNextScheduledAlarm/operation — no replacement
 public class AlarmRingingServiceTest {
 
   private Context context;

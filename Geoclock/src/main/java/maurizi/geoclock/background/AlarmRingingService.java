@@ -16,7 +16,6 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
-import android.os.VibratorManager;
 import androidx.core.app.NotificationCompat;
 import java.util.UUID;
 import maurizi.geoclock.GeoAlarm;
@@ -205,12 +204,7 @@ public class AlarmRingingService extends Service {
       if (ringtone != null) ringtone.play();
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-      VibratorManager vm = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-      vibrator = vm.getDefaultVibrator();
-    } else {
-      vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-    }
+    vibrator = getSystemService(Vibrator.class);
     if (vibrator != null) {
       long[] pattern = {0, 500, 1000};
       vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0));

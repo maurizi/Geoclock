@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import com.google.android.libraries.places.api.Places;
 import org.acra.ACRA;
 import org.acra.config.CoreConfigurationBuilder;
@@ -18,10 +19,16 @@ public class GeoClockApplication extends Application {
     if (!Places.isInitialized()) {
       try {
         ApplicationInfo ai =
-            getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? getPackageManager()
+                    .getApplicationInfo(
+                        getPackageName(),
+                        PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA))
+                : getPackageManager()
+                    .getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
         String apiKey = ai.metaData.getString("com.google.android.geo.API_KEY");
         if (apiKey != null && !apiKey.isEmpty()) {
-          Places.initialize(getApplicationContext(), apiKey);
+          Places.initializeWithNewPlacesApiEnabled(getApplicationContext(), apiKey);
         }
       } catch (PackageManager.NameNotFoundException e) {
         // best-effort

@@ -31,6 +31,7 @@ import org.robolectric.shadows.ShadowAlarmManager;
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 33)
+@SuppressWarnings("deprecation") // ShadowAlarmManager.getNextScheduledAlarm — no replacement
 public class GeofenceReceiverTest {
 
   private Context context;
