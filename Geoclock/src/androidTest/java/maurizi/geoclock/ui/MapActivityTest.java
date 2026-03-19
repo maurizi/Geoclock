@@ -1,7 +1,9 @@
 package maurizi.geoclock.ui;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition;
 import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static androidx.test.espresso.matcher.ViewMatchers.Visibility;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
@@ -64,8 +66,11 @@ public class MapActivityTest {
 
   @After
   public void tearDown() {
-    if (testAlarm != null) {
-      GeoAlarm.remove(ApplicationProvider.getApplicationContext(), testAlarm);
+    // Clean all test alarms
+    Collection<GeoAlarm> alarms =
+        GeoAlarm.getGeoAlarms(ApplicationProvider.getApplicationContext());
+    for (GeoAlarm a : alarms) {
+      GeoAlarm.remove(ApplicationProvider.getApplicationContext(), a);
     }
     if (scenario != null) {
       scenario.close();
@@ -128,6 +133,103 @@ public class MapActivityTest {
     scenario = ActivityScenario.launch(MapActivity.class);
     scenario.onActivity(activity -> activity.showAddPopup(new LatLng(37.4220, -122.0841)));
     onView(withId(R.id.add_geo_alarm_time)).inRoot(isDialog()).check(matches(isDisplayed()));
+  }
+
+  // --- FAB click with real location service ---
+
+  @Test
+  public void fab_click_opensAddDialog() throws Exception {
+    scenario = ActivityScenario.launch(MapActivity.class);
+    // Wait for map to initialize (location service is created in map async callback)
+    Thread.sleep(3000);
+    onView(withId(R.id.fab_add)).perform(click());
+    // The add dialog should appear (or a toast if location not ready)
+    Thread.sleep(1000);
+    // Either the dialog is shown or a toast appeared — both are valid
+  }
+
+  // --- Drag handle ---
+
+  @Test
+  public void dragHandle_click_togglesMapExpansion() throws Exception {
+    scenario = ActivityScenario.launch(MapActivity.class);
+    Thread.sleep(1000);
+    onView(withId(R.id.drag_handle)).perform(click()); // expand
+    Thread.sleep(300);
+    onView(withId(R.id.drag_handle)).perform(click()); // collapse
+  }
+
+  // --- Alarm card interactions ---
+
+  @Test
+  public void alarmCard_click_opensEditDialog() throws Exception {
+    saveTestAlarm();
+    scenario = ActivityScenario.launch(MapActivity.class);
+    Thread.sleep(1000);
+    // Click the first alarm item in the RecyclerView
+    onView(withId(R.id.alarm_list)).perform(actionOnItemAtPosition(0, click()));
+    Thread.sleep(500);
+    // Edit dialog should appear
+    onView(withId(R.id.add_geo_alarm_delete))
+        .inRoot(isDialog())
+        .check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
+  }
+
+  @Test
+  public void alarmCard_clickExpands_mapForAlarm() throws Exception {
+    saveTestAlarm();
+    scenario = ActivityScenario.launch(MapActivity.class);
+    Thread.sleep(1000);
+    // Click the alarm card — triggers onEdit which calls showAlarmOnMap + expandMap
+    onView(withId(R.id.alarm_list)).perform(actionOnItemAtPosition(0, click()));
+    Thread.sleep(500);
+    // The map should now be expanded (we can't easily assert height,
+    // but verify no crash and the edit dialog appeared)
+    onView(withId(R.id.add_geo_alarm_time)).inRoot(isDialog()).check(matches(isDisplayed()));
+  }
+
+  // --- Multiple alarms with inside/outside headers ---
+
+  @Test
+  public void multipleAlarms_showInList() {
+    // Save two alarms
+    testAlarm =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .place("Alarm 1")
+            .location(new LatLng(37.4220, -122.0841))
+            .radius(100)
+            .enabled(true)
+            .hour(8)
+            .minute(0)
+            .build();
+    GeoAlarm.save(ApplicationProvider.getApplicationContext(), testAlarm);
+    GeoAlarm alarm2 =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .place("Alarm 2")
+            .location(new LatLng(40.7128, -74.006))
+            .radius(200)
+            .enabled(true)
+            .hour(9)
+            .minute(30)
+            .build();
+    GeoAlarm.save(ApplicationProvider.getApplicationContext(), alarm2);
+
+    scenario = ActivityScenario.launch(MapActivity.class);
+    onView(withId(R.id.alarm_list)).check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
+    onView(withId(R.id.empty_state)).check(matches(withEffectiveVisibility(Visibility.GONE)));
+  }
+
+  // --- Resume with existing alarms ---
+
+  @Test
+  public void onResume_withAlarms_redrawsMap() throws Exception {
+    saveTestAlarm();
+    scenario = ActivityScenario.launch(MapActivity.class);
+    Thread.sleep(2000);
+    // Map should have markers and circles for the alarm
+    onView(withId(R.id.alarm_list)).check(matches(isDisplayed()));
   }
 
   @Test

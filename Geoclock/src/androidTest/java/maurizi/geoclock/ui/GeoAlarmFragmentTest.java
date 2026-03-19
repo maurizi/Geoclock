@@ -241,6 +241,113 @@ public class GeoAlarmFragmentTest {
     testAlarm = null; // Already deleted
   }
 
+  // --- Ringtone picker ---
+
+  @Test
+  public void addDialog_ringtoneRow_opensRingtonePicker() throws Exception {
+    launchAndShowAdd(new LatLng(37.4220, -122.0841));
+    onView(withId(R.id.ringtone_row)).perform(scrollTo(), click());
+    // Ringtone picker dialog should appear with a title
+    Thread.sleep(500);
+    onView(withText(R.string.ringtone_label)).check(matches(isDisplayed()));
+  }
+
+  @Test
+  public void addDialog_ringtoneRow_selectAndConfirm() throws Exception {
+    launchAndShowAdd(new LatLng(37.4220, -122.0841));
+    onView(withId(R.id.ringtone_row)).perform(scrollTo(), click());
+    Thread.sleep(500);
+    // Ringtone picker dialog should show OK button — click it to confirm default selection
+    onView(withText(android.R.string.ok)).perform(click());
+    Thread.sleep(300);
+    // We should be back on the fragment dialog
+    onView(withId(R.id.add_geo_alarm_save)).inRoot(isDialog()).check(matches(isDisplayed()));
+  }
+
+  // --- Map tap overlay (openLocationPicker) ---
+
+  @Test
+  public void addDialog_mapTapOverlay_launchesLocationPicker() throws Exception {
+    launchAndShowAdd(new LatLng(37.4220, -122.0841));
+    onView(withId(R.id.map_tap_overlay)).inRoot(isDialog()).perform(click());
+    Thread.sleep(1000);
+    // LocationPickerActivity should be launched — verify its UI is visible
+    onView(withId(R.id.confirm_button)).check(matches(isDisplayed()));
+  }
+
+  // --- Edit mode with null ringtone URI (vibrate only) ---
+
+  @Test
+  public void editDialog_nullRingtoneUri_showsVibrateOnly() {
+    testAlarm =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .place("Vibrate Test")
+            .location(new LatLng(37.4220, -122.0841))
+            .radius(100)
+            .enabled(false)
+            .hour(7)
+            .minute(0)
+            .ringtoneUri(null)
+            .build();
+    GeoAlarm.save(ApplicationProvider.getApplicationContext(), testAlarm);
+    launchAndShowEdit(testAlarm.id);
+    // Ringtone label should show "Vibrate only" for null URI
+    onView(withId(R.id.ringtone_name))
+        .inRoot(isDialog())
+        .check(matches(withText(R.string.ringtone_vibrate_only)));
+  }
+
+  // --- Edit mode with disabled alarm (covers completeSave disabled path) ---
+
+  @Test
+  public void editDialog_disabledAlarm_saveWorks() throws Exception {
+    testAlarm =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .place("Disabled")
+            .location(new LatLng(37.4220, -122.0841))
+            .radius(200)
+            .enabled(false)
+            .hour(6)
+            .minute(0)
+            .build();
+    GeoAlarm.save(ApplicationProvider.getApplicationContext(), testAlarm);
+    launchAndShowEdit(testAlarm.id);
+    onView(withId(R.id.add_geo_alarm_save)).perform(click());
+    Thread.sleep(500);
+    GeoAlarm found =
+        GeoAlarm.getGeoAlarm(ApplicationProvider.getApplicationContext(), testAlarm.id);
+    assertTrue("Disabled alarm should still exist after save", found != null);
+  }
+
+  // --- Save with no place triggers geocoding ---
+
+  @Test
+  public void addDialog_save_withNoPlace_triggersGeocode() throws Exception {
+    launchAndShowAdd(new LatLng(37.4220, -122.0841));
+    // Clear the location preview to remove any place name
+    scenario.onActivity(
+        activity -> {
+          GeoAlarmFragment f =
+              (GeoAlarmFragment)
+                  activity.getSupportFragmentManager().findFragmentByTag("AddGeoAlarmFragment");
+          if (f != null && f.getView() != null) {
+            android.widget.EditText preview = f.getView().findViewById(R.id.location_preview);
+            preview.setText("");
+          }
+        });
+    onView(withId(R.id.add_geo_alarm_save)).perform(click());
+    // Poll until alarm exists (geocode is async)
+    long deadline = System.currentTimeMillis() + 10_000;
+    Collection<GeoAlarm> alarms;
+    do {
+      Thread.sleep(200);
+      alarms = GeoAlarm.getGeoAlarms(ApplicationProvider.getApplicationContext());
+    } while (alarms.isEmpty() && System.currentTimeMillis() < deadline);
+    assertTrue("Should have created alarm with geocoding", alarms.size() >= 1);
+  }
+
   @Test
   public void editDialog_save_updatesAlarm() throws Exception {
     GeoAlarm alarm = saveTestAlarm();
