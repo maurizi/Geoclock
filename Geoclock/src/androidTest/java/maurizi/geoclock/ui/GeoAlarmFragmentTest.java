@@ -348,6 +348,59 @@ public class GeoAlarmFragmentTest {
     assertTrue("Should have created alarm with geocoding", alarms.size() >= 1);
   }
 
+  // --- Save enabled alarm (exercises completeSave with locationService) ---
+
+  @Test
+  public void editDialog_enabledAlarm_save_updatesGeofence() throws Exception {
+    // This alarm is enabled, so saving it triggers completeSave with addGeofence
+    testAlarm =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .place("Enabled Test")
+            .location(new LatLng(37.4220, -122.0841))
+            .radius(100)
+            .enabled(true)
+            .hour(9)
+            .minute(0)
+            .days(ImmutableSet.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY))
+            .build();
+    GeoAlarm.save(ApplicationProvider.getApplicationContext(), testAlarm);
+    launchAndShowEdit(testAlarm.id);
+    // Toggle a day to change something
+    onView(withId(R.id.wed)).perform(scrollTo(), click());
+    onView(withId(R.id.add_geo_alarm_save)).perform(click());
+    // Poll until save completes
+    long deadline = System.currentTimeMillis() + 10_000;
+    boolean found = false;
+    while (!found && System.currentTimeMillis() < deadline) {
+      Thread.sleep(200);
+      Collection<GeoAlarm> alarms =
+          GeoAlarm.getGeoAlarms(ApplicationProvider.getApplicationContext());
+      for (GeoAlarm a : alarms) {
+        if (a.days != null && a.days.contains(DayOfWeek.WEDNESDAY)) {
+          found = true;
+          break;
+        }
+      }
+    }
+    assertTrue("Enabled alarm should be saved with updated days", found);
+  }
+
+  // --- Location picker round-trip (covers lambda$onCreate$0 ActivityResult callback) ---
+
+  @Test
+  public void addDialog_locationPicker_roundTrip() throws Exception {
+    launchAndShowAdd(new LatLng(37.4220, -122.0841));
+    // Open location picker
+    onView(withId(R.id.map_tap_overlay)).inRoot(isDialog()).perform(click());
+    Thread.sleep(2000);
+    // Confirm the location picker (exercises the ActivityResult callback)
+    onView(withId(R.id.confirm_button)).perform(click());
+    Thread.sleep(1000);
+    // Should return to the fragment dialog
+    onView(withId(R.id.add_geo_alarm_time)).inRoot(isDialog()).check(matches(isDisplayed()));
+  }
+
   @Test
   public void editDialog_save_updatesAlarm() throws Exception {
     GeoAlarm alarm = saveTestAlarm();

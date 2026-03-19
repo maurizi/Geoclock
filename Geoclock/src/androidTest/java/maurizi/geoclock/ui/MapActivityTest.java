@@ -288,14 +288,18 @@ public class MapActivityTest {
   // --- onResume with existing alarms triggers activateAlarmsInsideGeofence ---
 
   @Test
-  public void onResume_withEnabledAlarm_activatesGeofences() throws Exception {
+  public void onResume_afterMapInit_activatesGeofences() throws Exception {
     AlarmRingingService.AUDIO_DISABLED = true;
     saveRepeatingAlarm(true);
     scenario = ActivityScenario.launch(MapActivity.class);
-    // Wait for map + location init, which triggers onResume → activateAlarmsInsideGeofence
+    // Wait for map async to fire and create locationService
     Thread.sleep(4000);
-    // The code path runs regardless of whether we're inside the geofence
-    // No crash = activateAlarmsInsideGeofence executed successfully
+    // Pause and resume to trigger onResume with locationService != null
+    // This exercises centerCamera() + activateAlarmsInsideGeofence()
+    scenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED);
+    Thread.sleep(500);
+    scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
+    Thread.sleep(2000);
     onView(withId(R.id.alarm_list)).check(matches(isDisplayed()));
     AlarmRingingService.AUDIO_DISABLED = false;
   }

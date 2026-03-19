@@ -6,6 +6,7 @@ import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -22,6 +23,7 @@ import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.uiautomator.UiDevice;
 import maurizi.geoclock.R;
 import org.junit.After;
 import org.junit.Before;
@@ -281,6 +283,26 @@ public class LocationPickerActivityTest {
       // Places autocomplete may throw if not configured — that's OK,
       // the code path was still exercised for coverage
     }
+  }
+
+  @Test
+  public void mapClick_triggersMapClickListener() throws Exception {
+    Intent intent = makeIntent();
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 500);
+    scenario = ActivityScenario.launch(intent);
+    // Wait for map to fully render
+    Thread.sleep(4000);
+    // Tap on the map area using UiAutomator (center of the map container)
+    UiDevice device = UiDevice.getInstance(getInstrumentation());
+    int centerX = device.getDisplayWidth() / 2;
+    int centerY = device.getDisplayHeight() / 3; // Upper third is the map
+    device.click(centerX, centerY);
+    Thread.sleep(2000);
+    // The map click listener should fire, moving the marker and triggering reverseGeocodePlace
+    // Verify we haven't crashed
+    onView(withId(R.id.confirm_button)).check(matches(isDisplayed()));
   }
 
   @Test
