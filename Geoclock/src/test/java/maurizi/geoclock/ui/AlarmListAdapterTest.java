@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
-import android.content.res.Configuration;
 import android.location.Location;
 import androidx.test.core.app.ApplicationProvider;
 import com.google.android.gms.maps.model.LatLng;
@@ -14,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import maurizi.geoclock.GeoAlarm;
@@ -199,79 +197,6 @@ public class AlarmListAdapterTest {
     assertEquals(3, result.split(",").length);
   }
 
-  // ---- formatEdgeDistance (metric) ----
-
-  @Test
-  public void formatEdgeDistance_meters_formatsAsIntegerMeters() {
-    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
-    Context ctx = metricContext();
-    // Use reflection to test private method
-    String result = invokeFormatEdgeDistance(adapter, ctx, 500f);
-    assertEquals("500m away", result);
-  }
-
-  @Test
-  public void formatEdgeDistance_kilometers_formatsWithOneDecimal() {
-    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
-    Context ctx = metricContext();
-    String result = invokeFormatEdgeDistance(adapter, ctx, 2500f);
-    assertEquals("2.5km away", result);
-  }
-
-  @Test
-  public void formatEdgeDistance_exactlyOneKm_formatsAsKm() {
-    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
-    Context ctx = metricContext();
-    String result = invokeFormatEdgeDistance(adapter, ctx, 1000f);
-    assertEquals("1.0km away", result);
-  }
-
-  @Test
-  public void formatEdgeDistance_belowOneKm_formatsAsMeters() {
-    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
-    Context ctx = metricContext();
-    String result = invokeFormatEdgeDistance(adapter, ctx, 999f);
-    assertEquals("999m away", result);
-  }
-
-  // ---- formatEdgeDistance (imperial) ----
-
-  @Test
-  public void formatEdgeDistance_imperial_feet() {
-    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
-    Context ctx = imperialContext();
-    // 500m ≈ 1640ft
-    String result = invokeFormatEdgeDistance(adapter, ctx, 500f);
-    assertEquals("1640ft away", result);
-  }
-
-  @Test
-  public void formatEdgeDistance_imperial_miles() {
-    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
-    Context ctx = imperialContext();
-    // 2500m ≈ 8202ft ≈ 1.6mi
-    String result = invokeFormatEdgeDistance(adapter, ctx, 2500f);
-    assertEquals("1.6mi away", result);
-  }
-
-  @Test
-  public void formatEdgeDistance_imperial_exactlyOneMile() {
-    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
-    Context ctx = imperialContext();
-    // 1 mile = 5280ft = 1609.344m
-    String result = invokeFormatEdgeDistance(adapter, ctx, 1609.344f);
-    assertEquals("1.0mi away", result);
-  }
-
-  @Test
-  public void formatEdgeDistance_imperial_belowOneMile() {
-    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
-    Context ctx = imperialContext();
-    // 300m ≈ 984ft
-    String result = invokeFormatEdgeDistance(adapter, ctx, 300f);
-    assertEquals("984ft away", result);
-  }
-
   // ---- rebuildItems headers ----
 
   @Test
@@ -372,32 +297,6 @@ public class AlarmListAdapterTest {
   }
 
   // ---- Helpers ----
-
-  private Context metricContext() {
-    Context ctx = ApplicationProvider.getApplicationContext();
-    Configuration config = new Configuration(ctx.getResources().getConfiguration());
-    config.setLocale(Locale.JAPAN);
-    return ctx.createConfigurationContext(config);
-  }
-
-  private Context imperialContext() {
-    Context ctx = ApplicationProvider.getApplicationContext();
-    Configuration config = new Configuration(ctx.getResources().getConfiguration());
-    config.setLocale(Locale.US);
-    return ctx.createConfigurationContext(config);
-  }
-
-  private String invokeFormatEdgeDistance(AlarmListAdapter adapter, Context ctx, float meters) {
-    try {
-      java.lang.reflect.Method method =
-          AlarmListAdapter.class.getDeclaredMethod(
-              "formatEdgeDistance", Context.class, float.class);
-      method.setAccessible(true);
-      return (String) method.invoke(adapter, ctx, meters);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
 
   private GeoAlarm alarmAt(double lat, double lng, int radius) {
     return GeoAlarm.builder()

@@ -17,7 +17,42 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Location preview row -->
+            <!-- Tappable map thumbnail -->
+            <FrameLayout
+                android:id="@+id/map_thumbnail_container"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginBottom="8dp">
+
+                <com.google.android.gms.maps.MapView
+                    android:id="@+id/map_thumbnail"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clickable="false"
+                    android:focusable="false"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:padding="8dp"
+                    android:text="@string/tap_to_change_location"
+                    android:textSize="12sp"
+                    android:background="#88000000"
+                    android:textColor="#FFFFFF"/>
+
+                <!-- Transparent overlay to capture taps above the MapView -->
+                <View
+                    android:id="@+id/map_tap_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+            </FrameLayout>
+
+            <!-- Place name and radius label -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -52,14 +87,6 @@
 
                 </LinearLayout>
 
-                <Button
-                    android:id="@+id/change_location_button"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/change_location"
-                    android:textSize="14sp"/>
-
             </LinearLayout>
 
             <!-- Time -->
@@ -77,12 +104,17 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"/>
 
-            <!-- Ringtone picker row -->
+            <!-- Ringtone picker (dropdown style) -->
             <LinearLayout
+                android:id="@+id/ringtone_row"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingVertical="12dp"
                 android:layout_marginBottom="8dp">
 
                 <TextView
@@ -100,15 +132,9 @@
                     android:layout_marginStart="8dp"
                     android:text="@string/ringtone_default"
                     android:textColor="?android:textColorPrimary"
-                    android:gravity="end"/>
-
-                <Button
-                    android:id="@+id/ringtone_pick_button"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/choose_sound"
-                    android:textSize="14sp"/>
+                    android:gravity="end"
+                    android:drawableEnd="@drawable/ic_dropdown_arrow"
+                    android:drawablePadding="4dp"/>
 
             </LinearLayout>
 

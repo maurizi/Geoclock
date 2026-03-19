@@ -12,6 +12,7 @@ import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.utils.ActiveAlarmManager;
 import maurizi.geoclock.utils.LocationServiceGoogle;
 
+@SuppressWarnings("deprecation") // TODO: migrate to WorkManager
 public class InitializationService extends JobIntentService {
   private static final int JOB_ID = 1000;
 

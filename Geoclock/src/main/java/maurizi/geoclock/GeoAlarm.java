@@ -29,6 +29,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
+import maurizi.geoclock.utils.DistanceUtils;
 
 @Value
 @Builder
@@ -67,18 +68,23 @@ public class GeoAlarm {
   }
 
   public static String getRadiusSizeLabel(Context context, int radius) {
-    if (radius <= 100) return context.getString(R.string.radius_nearby);
-    if (radius <= 200) return context.getString(R.string.radius_small);
-    if (radius <= 300) return context.getString(R.string.radius_medium);
-    if (radius <= 400) return context.getString(R.string.radius_large);
-    return context.getString(R.string.radius_wide);
+    String category;
+    if (radius <= 200) category = context.getString(R.string.radius_xs);
+    else if (radius <= 500) category = context.getString(R.string.radius_small);
+    else if (radius <= 2000) category = context.getString(R.string.radius_medium);
+    else if (radius <= 10000) category = context.getString(R.string.radius_large);
+    else category = context.getString(R.string.radius_xl);
+
+    return category + " \u00B7 " + DistanceUtils.formatDiameter(context, radius);
   }
 
   public CircleOptions getCircleOptions() {
     return new CircleOptions()
         .center(location)
         .radius(radius)
-        .fillColor(R.color.geofence_fill_color);
+        .fillColor(0x3300C5CD)
+        .strokeColor(0xFF00C5CD)
+        .strokeWidth(2);
   }
 
   private LocalTime getAlarmTime() {

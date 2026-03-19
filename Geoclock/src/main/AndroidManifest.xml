@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
@@ -99,6 +100,13 @@
             android:name=".background.InitializationService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="true"/>
+
+        <!-- Remove ACRA's content provider (we use mail sender, not attachments) to suppress
+             manifest merge warning about tools:replace with no other declaration -->
+        <provider
+            android:name="org.acra.attachment.AcraContentProvider"
+            android:authorities="${applicationId}.acra"
+            tools:node="remove"/>
     </application>
 
 </manifest>

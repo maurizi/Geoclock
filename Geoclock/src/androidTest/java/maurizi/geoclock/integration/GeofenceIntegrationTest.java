@@ -2,15 +2,18 @@ package maurizi.geoclock.integration;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
 import android.app.AlarmManager;
 import android.content.Context;
 import android.location.Location;
 import android.os.Build;
+import android.os.SystemClock;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.GrantPermissionRule;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -19,6 +22,8 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.common.collect.ImmutableSet;
 import java.time.DayOfWeek;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,26 +34,22 @@ import maurizi.geoclock.background.AlarmRingingService;
 import maurizi.geoclock.utils.ActiveAlarmManager;
 import maurizi.geoclock.utils.LocationServiceGoogle;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Integration tests for geofence transitions using mock locations.
+ * Integration tests for geofence transitions using FusedLocationProviderClient mock mode.
  *
- * <p>These tests require a google_apis emulator image (Play Services). They are
- * annotated @LargeTest because geofence evaluation by Google Play Services can take up to 30
- * seconds.
- *
- * <p>If flaky in CI, annotate with @RequiresDevice and exclude from automated runs using: gradlew
- * connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.notAnnotation=...
+ * <p>Mock location permission is granted via UiAutomation.executeShellCommand in setUp(), which
+ * runs with shell-level privileges. Location services must be enabled on the emulator.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class GeofenceIntegrationTest {
 
+  static final LatLng GEOFENCE_CENTER = new LatLng(37.4219, -122.0840);
   private static final long GEOFENCE_TIMEOUT_MS = 60_000L;
   private static final long POLL_INTERVAL_MS = 1000L;
 
@@ -56,34 +57,54 @@ public class GeofenceIntegrationTest {
   public RetryRule retryRule = new RetryRule(2);
 
   @Rule(order = 1)
-  public GrantPermissionRule notificationPermission =
-      Build.VERSION.SDK_INT >= 33
-          ? GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
-          : GrantPermissionRule.grant();
+  public GrantPermissionRule permissionRule = GrantPermissionRule.grant(getRequiredPermissions());
+
+  private static String[] getRequiredPermissions() {
+    List<String> perms = new ArrayList<>();
+    perms.add(Manifest.permission.ACCESS_FINE_LOCATION);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      perms.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      perms.add(Manifest.permission.POST_NOTIFICATIONS);
+    }
+    return perms.toArray(new String[0]);
+  }
 
   private Context context;
   private FusedLocationProviderClient fusedClient;
+  private boolean mockModeEnabled = false;
 
   @Before
   public void setUp() throws Exception {
     context = ApplicationProvider.getApplicationContext();
-    // Clear any AlarmManager state left by previous tests
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
     new ActiveAlarmManager(context).clearActiveAlarms();
+    AlarmRingingService.AUDIO_DISABLED = true;
+
+    // Grant mock location via shell (runs with elevated privileges)
+    shellCommand("appops set " + context.getPackageName() + " android:mock_location allow");
+
+    // Ensure location services are enabled (required on Android 11+)
+    shellCommand("settings put secure location_mode 3");
+
     fusedClient = LocationServices.getFusedLocationProviderClient(context);
+
+    // Enable mock mode on FusedLocationProviderClient
     CountDownLatch latch = new CountDownLatch(1);
-    AtomicBoolean mockModeOk = new AtomicBoolean(false);
+    AtomicBoolean ok = new AtomicBoolean(false);
     fusedClient
         .setMockMode(true)
         .addOnSuccessListener(
             v -> {
-              mockModeOk.set(true);
+              ok.set(true);
               latch.countDown();
             })
         .addOnFailureListener(e -> latch.countDown());
-    latch.await(5, TimeUnit.SECONDS);
-    Assume.assumeTrue("Mock location not available", mockModeOk.get());
+    latch.await(10, TimeUnit.SECONDS);
+    mockModeEnabled = ok.get();
+    assertTrue("FusedLocationProviderClient mock mode should be enabled", mockModeEnabled);
   }
 
   @After
@@ -91,53 +112,43 @@ public class GeofenceIntegrationTest {
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     alarmManager.cancel(AlarmClockReceiver.getPendingIntent(context));
     new ActiveAlarmManager(context).clearActiveAlarms();
-    fusedClient.setMockMode(false);
+    if (mockModeEnabled) {
+      fusedClient.setMockMode(false);
+    }
+    AlarmRingingService.AUDIO_DISABLED = false;
     AlarmRingingService.stop(context);
   }
 
-  private void assumePlayServices() {
+  private void assertPlayServicesAvailable() {
     int result = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context);
-    Assume.assumeTrue(
+    assertTrue(
         "Google Play Services not available; geofence transitions require it",
         result == ConnectionResult.SUCCESS);
   }
 
-  private void assumeCanScheduleExactAlarms() {
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+  private void assertCanScheduleExactAlarms() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-      Assume.assumeTrue("SCHEDULE_EXACT_ALARM not granted; skipping", am.canScheduleExactAlarms());
+      assertTrue("SCHEDULE_EXACT_ALARM not granted", am.canScheduleExactAlarms());
     }
   }
 
   @Test
   public void enterGeofence_startsAlarmRingingService() throws Exception {
-    assumePlayServices();
-    assumeCanScheduleExactAlarms();
-    LatLng alarmLocation = new LatLng(37.4219, -122.0840);
-    GeoAlarm alarm = saveAlarm(repeatingAlarmAt(alarmLocation));
+    assertPlayServicesAvailable();
+    assertCanScheduleExactAlarms();
 
-    // Register geofences
+    GeoAlarm alarm = saveAlarm(repeatingAlarmAt(GEOFENCE_CENTER));
+
     LocationServiceGoogle locationService = new LocationServiceGoogle(context);
-    CountDownLatch geofenceLatch = new CountDownLatch(1);
-    AtomicBoolean geofenceOk = new AtomicBoolean(false);
-    locationService
-        .addGeofence(alarm)
-        .addOnSuccessListener(
-            v -> {
-              geofenceOk.set(true);
-              geofenceLatch.countDown();
-            })
-        .addOnFailureListener(e -> geofenceLatch.countDown());
-    geofenceLatch.await(10, TimeUnit.SECONDS);
-    Assume.assumeTrue(
-        "Geofence registration failed (GEOFENCE_NOT_AVAILABLE on emulator)", geofenceOk.get());
+    boolean registered = registerGeofence(locationService, alarm);
+    assertTrue("Geofence registration failed", registered);
 
-    // Poll for AlarmManager to receive the alarm (geofence ENTER → addActiveAlarms).
-    // Send repeated mock locations; newer API levels need sustained updates.
+    // Pump mock location inside the geofence until ENTER fires
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     long deadline = System.currentTimeMillis() + GEOFENCE_TIMEOUT_MS;
     while (System.currentTimeMillis() < deadline) {
-      setMockLocation(alarmLocation.latitude, alarmLocation.longitude);
+      setMockLocation(GEOFENCE_CENTER.latitude, GEOFENCE_CENTER.longitude);
       if (alarmManager.getNextAlarmClock() != null) break;
       Thread.sleep(POLL_INTERVAL_MS);
     }
@@ -147,39 +158,26 @@ public class GeofenceIntegrationTest {
 
   @Test
   public void exitGeofence_removesFromActiveAlarms() throws Exception {
-    assumePlayServices();
-    assumeCanScheduleExactAlarms();
-    LatLng alarmLocation = new LatLng(37.4219, -122.0840);
-    GeoAlarm alarm = saveAlarm(repeatingAlarmAt(alarmLocation));
+    assertPlayServicesAvailable();
+    assertCanScheduleExactAlarms();
 
-    // Pre-add as active
+    GeoAlarm alarm = saveAlarm(repeatingAlarmAt(GEOFENCE_CENTER));
     new ActiveAlarmManager(context).addActiveAlarms(ImmutableSet.of(alarm.id));
 
-    // Register geofence and simulate being inside
     LocationServiceGoogle locationService = new LocationServiceGoogle(context);
-    CountDownLatch geofenceLatch = new CountDownLatch(1);
-    AtomicBoolean geofenceOk = new AtomicBoolean(false);
-    locationService
-        .addGeofence(alarm)
-        .addOnSuccessListener(
-            v -> {
-              geofenceOk.set(true);
-              geofenceLatch.countDown();
-            })
-        .addOnFailureListener(e -> geofenceLatch.countDown());
-    geofenceLatch.await(10, TimeUnit.SECONDS);
-    Assume.assumeTrue(
-        "Geofence registration failed (GEOFENCE_NOT_AVAILABLE on emulator)", geofenceOk.get());
-    setMockLocation(alarmLocation.latitude, alarmLocation.longitude);
-    Thread.sleep(3000);
+    boolean registered = registerGeofence(locationService, alarm);
+    assertTrue("Geofence registration failed", registered);
 
-    // Now move away — EXIT transition
-    // Send repeated mock locations outside the geofence; newer API levels need
-    // sustained location updates before Play Services fires the EXIT transition.
+    // Establish "inside" baseline
+    for (int i = 0; i < 5; i++) {
+      setMockLocation(GEOFENCE_CENTER.latitude, GEOFENCE_CENTER.longitude);
+    }
+
+    // Move far outside and pump until EXIT fires
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     long deadline = System.currentTimeMillis() + GEOFENCE_TIMEOUT_MS;
     while (System.currentTimeMillis() < deadline) {
-      setMockLocation(0.0, 0.0);
+      setMockLocation(37.0, -122.0);
       if (alarmManager.getNextAlarmClock() == null) break;
       Thread.sleep(POLL_INTERVAL_MS);
     }
@@ -190,27 +188,18 @@ public class GeofenceIntegrationTest {
 
   @Test
   public void disabledAlarm_geofenceEnter_doesNotStartService() throws Exception {
-    assumePlayServices();
-    LatLng alarmLocation = new LatLng(37.4219, -122.0840);
-    GeoAlarm alarm = saveAlarm(repeatingAlarmAt(alarmLocation).withEnabled(false));
+    assertPlayServicesAvailable();
+
+    GeoAlarm alarm = saveAlarm(repeatingAlarmAt(GEOFENCE_CENTER).withEnabled(false));
 
     LocationServiceGoogle locationService = new LocationServiceGoogle(context);
-    CountDownLatch geofenceLatch = new CountDownLatch(1);
-    AtomicBoolean geofenceOk = new AtomicBoolean(false);
-    locationService
-        .addGeofence(alarm)
-        .addOnSuccessListener(
-            v -> {
-              geofenceOk.set(true);
-              geofenceLatch.countDown();
-            })
-        .addOnFailureListener(e -> geofenceLatch.countDown());
-    geofenceLatch.await(10, TimeUnit.SECONDS);
-    Assume.assumeTrue(
-        "Geofence registration failed (GEOFENCE_NOT_AVAILABLE on emulator)", geofenceOk.get());
+    boolean registered = registerGeofence(locationService, alarm);
+    assertTrue("Geofence registration failed", registered);
 
-    setMockLocation(alarmLocation.latitude, alarmLocation.longitude);
-    Thread.sleep(5000); // short wait — disabled alarm should not trigger
+    // Pump inside-geofence location — disabled alarm should not trigger
+    for (int i = 0; i < 10; i++) {
+      setMockLocation(GEOFENCE_CENTER.latitude, GEOFENCE_CENTER.longitude);
+    }
 
     AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
     assertNull(
@@ -221,14 +210,38 @@ public class GeofenceIntegrationTest {
   // ---- helpers ----
 
   private void setMockLocation(double lat, double lng) throws Exception {
-    Location mockLocation = new Location("mock");
-    mockLocation.setLatitude(lat);
-    mockLocation.setLongitude(lng);
-    mockLocation.setAccuracy(1.0f);
-    mockLocation.setTime(System.currentTimeMillis());
-    mockLocation.setElapsedRealtimeNanos(android.os.SystemClock.elapsedRealtimeNanos());
-    fusedClient.setMockLocation(mockLocation);
+    Location loc = new Location("fused");
+    loc.setLatitude(lat);
+    loc.setLongitude(lng);
+    loc.setAccuracy(1.0f);
+    loc.setAltitude(0);
+    loc.setTime(System.currentTimeMillis());
+    loc.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+    fusedClient.setMockLocation(loc);
     Thread.sleep(500);
+  }
+
+  private void shellCommand(String command) throws Exception {
+    InstrumentationRegistry.getInstrumentation()
+        .getUiAutomation()
+        .executeShellCommand(command)
+        .close();
+  }
+
+  private boolean registerGeofence(LocationServiceGoogle locationService, GeoAlarm alarm)
+      throws Exception {
+    CountDownLatch latch = new CountDownLatch(1);
+    AtomicBoolean ok = new AtomicBoolean(false);
+    locationService
+        .addGeofence(alarm)
+        .addOnSuccessListener(
+            v -> {
+              ok.set(true);
+              latch.countDown();
+            })
+        .addOnFailureListener(e -> latch.countDown());
+    latch.await(10, TimeUnit.SECONDS);
+    return ok.get();
   }
 
   private GeoAlarm repeatingAlarmAt(LatLng location) {
