@@ -185,7 +185,7 @@ public class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     if (currentLocation != null && !inside) {
       float edgeDist = Math.max(0, centerDist - alarm.radius);
       holder.distanceView.setText(
-          ctx.getString(R.string.distance_separator, formatEdgeDistance(ctx, edgeDist)));
+          ctx.getString(R.string.distance_separator, DistanceUtils.formatDistance(ctx, edgeDist)));
       holder.distanceView.setVisibility(View.VISIBLE);
     } else {
       holder.distanceView.setVisibility(View.GONE);
@@ -258,10 +258,6 @@ public class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
       }
     }
     return sb.toString();
-  }
-
-  private String formatEdgeDistance(Context ctx, float meters) {
-    return DistanceUtils.formatDistance(ctx, meters);
   }
 
   static class SectionViewHolder extends RecyclerView.ViewHolder {

@@ -623,7 +623,8 @@ public class GeoAlarmFragment extends DialogFragment {
     if (isEdit) {
       return gson.fromJson(args.getString(GeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class);
     }
-    LatLng initialPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG, LatLng.class);
+    @SuppressWarnings("deprecation") // Type-safe overload requires API 33; minSdk is 28
+    LatLng initialPoint = args.getParcelable(GeoAlarmFragment.INITIAL_LATLNG);
     return GeoAlarm.builder()
         .location(initialPoint != null ? initialPoint : new LatLng(0, 0))
         .radius(getInitialRadius())
