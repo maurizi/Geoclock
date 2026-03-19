@@ -84,6 +84,37 @@ public class GeoAlarmFragmentUnitTest {
     assertEquals(original.minute, alarm.minute);
   }
 
+  // ---- lifecycle methods with null mapThumbnailView ----
+
+  @Test
+  public void onPause_beforeViewCreated_doesNotCrash() {
+    GeoAlarmFragment fragment = new GeoAlarmFragment();
+    // mapThumbnailView is null before onCreateView — the null check should return early
+    fragment.onPause();
+  }
+
+  @Test
+  public void onLowMemory_beforeViewCreated_doesNotCrash() {
+    GeoAlarmFragment fragment = new GeoAlarmFragment();
+    fragment.onLowMemory();
+  }
+
+  @Test
+  public void onSaveInstanceState_beforeViewCreated_doesNotCrash() {
+    GeoAlarmFragment fragment = new GeoAlarmFragment();
+    fragment.onSaveInstanceState(new Bundle());
+  }
+
+  // ---- getInitialRadius with imperial locale ----
+
+  @Test
+  public void getInitialRadius_noContext_returnsMetricDefault() {
+    // Unattached fragment has null context → falls through to metric default
+    GeoAlarmFragment fragment = new GeoAlarmFragment();
+    int radius = fragment.getInitialRadius();
+    assertEquals("Null context should return metric default", 250, radius);
+  }
+
   // ---- getInitialRadius ----
 
   @Test

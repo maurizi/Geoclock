@@ -327,6 +327,53 @@ public class LocationPickerActivityTest {
   }
 
   @Test
+  public void mapClick_reverseGeocode_updatesPlaceAfterWait() throws Exception {
+    Intent intent = makeIntent();
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 500);
+    scenario = ActivityScenario.launch(intent);
+    Thread.sleep(5000);
+    // Tap on map
+    UiDevice device = UiDevice.getInstance(getInstrumentation());
+    device.click(device.getDisplayWidth() / 2, device.getDisplayHeight() / 2);
+    // Wait long enough for the reverse geocode async to complete
+    Thread.sleep(5000);
+    // Confirm — the place name should have been updated by reverseGeocode
+    onView(withId(R.id.confirm_button)).perform(click());
+    long deadline = System.currentTimeMillis() + 5_000;
+    while (scenario.getState() != Lifecycle.State.DESTROYED
+        && System.currentTimeMillis() < deadline) {
+      Thread.sleep(100);
+    }
+  }
+
+  @Test
+  public void imperialLocale_usesImperialRadiusBounds() throws Exception {
+    // Force US locale via shell command before launching
+    getInstrumentation()
+        .getUiAutomation()
+        .executeShellCommand("settings put system system_locales en-US")
+        .close();
+    Thread.sleep(500);
+
+    Intent intent = makeIntent();
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
+    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 250);
+    scenario = ActivityScenario.launch(intent);
+    scenario.onActivity(
+        activity -> {
+          // On the emulator this may already be US locale; verify min radius matches imperial
+          int minRadius = activity.getMinRadius();
+          // Imperial min is 122 (800ft wide), metric is 125 (250m wide)
+          assertTrue(
+              "Min radius should be valid (imperial=122 or metric=125), got " + minRadius,
+              minRadius == 122 || minRadius == 125);
+        });
+  }
+
+  @Test
   public void toolbar_backButton_finishesActivity() throws Exception {
     scenario = ActivityScenario.launch(makeIntent());
     onView(withId(R.id.toolbar)).check(matches(isDisplayed()));

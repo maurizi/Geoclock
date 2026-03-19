@@ -197,6 +197,49 @@ public class LocationPickerActivityUnitTest {
     assertTrue("Progress should be small without initial radius", seekBar.getProgress() <= 1);
   }
 
+  // ---- imperial locale via @Config qualifiers ----
+
+  @Test
+  @Config(sdk = 33, qualifiers = "ja-rJP")
+  public void getMinRadius_metricLocale_returnsMetricMin() {
+    LocationPickerActivity activity = buildActivity(37.0, -122.0, 250);
+    assertEquals("JP locale should use metric min radius", 125, activity.getMinRadius());
+  }
+
+  @Test
+  @Config(sdk = 33, qualifiers = "ja-rJP")
+  public void getMaxRadius_metricLocale_returnsMetricMax() {
+    LocationPickerActivity activity = buildActivity(37.0, -122.0, 250);
+    assertEquals("JP locale should use metric max radius", 25000, activity.getMaxRadius());
+  }
+
+  @Test
+  @Config(sdk = 33, qualifiers = "en-rUS")
+  public void getMinRadius_usLocale_returnsImperialMin() {
+    LocationPickerActivity activity = buildActivity(37.0, -122.0, 250);
+    assertEquals("US locale should use imperial min radius", 122, activity.getMinRadius());
+  }
+
+  @Test
+  @Config(sdk = 33, qualifiers = "en-rUS")
+  public void getMaxRadius_usLocale_returnsImperialMax() {
+    LocationPickerActivity activity = buildActivity(37.0, -122.0, 250);
+    assertEquals("US locale should use imperial max radius", 24140, activity.getMaxRadius());
+  }
+
+  @Test
+  @Config(sdk = 33, qualifiers = "en-rUS")
+  public void progressToRadius_imperial_roundTrips() {
+    LocationPickerActivity activity = buildActivity(37.0, -122.0, 250);
+    for (int progress = 0; progress <= 1000; progress += 100) {
+      int radius = activity.progressToRadius(progress);
+      int recovered = activity.radiusToProgress(radius);
+      assertTrue(
+          "Imperial round-trip error should be small for progress=" + progress,
+          Math.abs(recovered - progress) <= 1);
+    }
+  }
+
   // ---- helpers ----
 
   private Intent buildIntent(double lat, double lng, int radius) {
