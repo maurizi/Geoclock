@@ -2,7 +2,7 @@
 <resources>
 
     <string name="app_name">Geoclock</string>
-    <string name="add_geo_alarm_title">Add alarm area</string>
+    <string name="add_geo_alarm_title">Add alarm</string>
     <string name="add_geo_alarm_cancel">Cancel</string>
     <string name="add_geo_alarm_continue">Save</string>
     <string name="add_geo_alarm_days_label">Repeats on</string>
@@ -21,7 +21,7 @@
     <string name="dismiss">Dismiss</string>
 
     <string name="empty_state_title">No alarms yet</string>
-    <string name="empty_state_body">Tap + to add your first location alarm</string>
+    <string name="empty_state_body">Tap + to add your first alarm</string>
     <string name="change_location">Change</string>
     <string name="radius_xs">Extra small</string>
     <string name="radius_small">Small</string>

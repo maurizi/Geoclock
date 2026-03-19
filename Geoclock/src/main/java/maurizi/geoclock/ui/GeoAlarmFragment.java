@@ -333,7 +333,8 @@ public class GeoAlarmFragment extends DialogFragment {
     updateMapThumbnail();
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings("deprecation") // Geocoder.getFromLocation(double,double,int) — async version
+  // requires API 33; sync call is fine here since we're already on a background thread
   private void reverseGeocodeForPreview() {
     Context ctx = getContext();
     if (ctx == null || !Geocoder.isPresent() || currentLatLng == null) return;
@@ -379,7 +380,7 @@ public class GeoAlarmFragment extends DialogFragment {
     if (dialog != null) dialog.dismiss();
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings("deprecation") // Geocoder.getFromLocation — sync call on background thread
   private void geocodeAsync(MapActivity activity, GeoAlarm alarm) {
     if (!Geocoder.isPresent()) return;
     Context appContext = activity.getApplicationContext();

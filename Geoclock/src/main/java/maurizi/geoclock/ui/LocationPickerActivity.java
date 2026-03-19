@@ -74,7 +74,8 @@ public class LocationPickerActivity extends AppCompatActivity {
   private int selectedRadius;
   @Nullable private String placeName;
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings("deprecation") // Autocomplete.getPlaceFromIntent — Places SDK renamed this
+  // class but the replacement (PlaceAutocomplete) requires a major SDK migration
   private final ActivityResultLauncher<Intent> autocompleteLauncher =
       registerForActivityResult(
           new ActivityResultContracts.StartActivityForResult(),
@@ -194,7 +195,7 @@ public class LocationPickerActivity extends AppCompatActivity {
     executor.shutdownNow();
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings("deprecation") // Autocomplete.IntentBuilder — same Places SDK deprecation
   private void launchAutocomplete() {
     Intent intent =
         new Autocomplete.IntentBuilder(
@@ -241,7 +242,7 @@ public class LocationPickerActivity extends AppCompatActivity {
     fitCameraToCircle();
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings("deprecation") // Geocoder.getFromLocation — sync call on background thread
   private void reverseGeocodePlace(LatLng latLng) {
     if (!Geocoder.isPresent()) return;
     Handler handler = new Handler(Looper.getMainLooper());

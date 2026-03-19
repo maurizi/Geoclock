@@ -86,9 +86,17 @@ public class AlarmManagerDeliveryTest {
 
     AlarmRingingService.scheduleSnooze(context, alarm);
 
-    Thread.sleep(SNOOZE_TEST_MS + 5000);
-
-    // Test passes if no exception — timing assertions are flaky in CI
+    // Poll until the snooze alarm fires (getNextAlarmClock becomes null)
+    long deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS;
+    boolean fired = false;
+    while (System.currentTimeMillis() < deadline) {
+      Thread.sleep(POLL_INTERVAL_MS);
+      if (alarmManager.getNextAlarmClock() == null) {
+        fired = true;
+        break;
+      }
+    }
+    assertTrue("Snooze alarm should have fired within expected window", fired);
   }
 
   @Test

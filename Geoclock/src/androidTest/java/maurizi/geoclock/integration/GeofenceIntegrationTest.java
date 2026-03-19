@@ -104,7 +104,7 @@ public class GeofenceIntegrationTest {
         .addOnFailureListener(e -> latch.countDown());
     latch.await(10, TimeUnit.SECONDS);
     mockModeEnabled = ok.get();
-    assertTrue("FusedLocationProviderClient mock mode not available", mockModeEnabled);
+    assertTrue("FusedLocationProviderClient mock mode should be enabled", mockModeEnabled);
   }
 
   @After
@@ -221,15 +221,11 @@ public class GeofenceIntegrationTest {
     Thread.sleep(500);
   }
 
-  private void shellCommand(String command) {
-    try {
-      InstrumentationRegistry.getInstrumentation()
-          .getUiAutomation()
-          .executeShellCommand(command)
-          .close();
-    } catch (Exception ignored) {
-      // Best effort
-    }
+  private void shellCommand(String command) throws Exception {
+    InstrumentationRegistry.getInstrumentation()
+        .getUiAutomation()
+        .executeShellCommand(command)
+        .close();
   }
 
   private boolean registerGeofence(LocationServiceGoogle locationService, GeoAlarm alarm)
