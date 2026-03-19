@@ -1,5 +1,6 @@
 package maurizi.geoclock.ui;
 
+import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.scrollTo;
@@ -12,6 +13,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.isNotChecked;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -253,14 +255,35 @@ public class GeoAlarmFragmentTest {
   }
 
   @Test
-  public void addDialog_ringtoneRow_selectAndConfirm() throws Exception {
+  public void addDialog_ringtoneRow_selectItemAndConfirm() throws Exception {
     launchAndShowAdd(new LatLng(37.4220, -122.0841));
     onView(withId(R.id.ringtone_row)).perform(scrollTo(), click());
     Thread.sleep(500);
-    // Ringtone picker dialog should show OK button — click it to confirm default selection
+    // Click the first item in the ringtone list (Vibrate only) — exercises the
+    // setSingleChoiceItems click lambda which handles preview playback and selection
+    onData(anything()).atPosition(0).perform(click());
+    Thread.sleep(500);
+    // Click the second item (Default) to exercise the ringtone preview branch
+    onData(anything()).atPosition(1).perform(click());
+    Thread.sleep(500);
+    // Confirm selection
     onView(withText(android.R.string.ok)).perform(click());
     Thread.sleep(300);
     // We should be back on the fragment dialog
+    onView(withId(R.id.add_geo_alarm_save)).inRoot(isDialog()).check(matches(isDisplayed()));
+  }
+
+  @Test
+  public void addDialog_ringtoneRow_cancelRingtoneDialog() throws Exception {
+    launchAndShowAdd(new LatLng(37.4220, -122.0841));
+    onView(withId(R.id.ringtone_row)).perform(scrollTo(), click());
+    Thread.sleep(500);
+    // Select an item
+    onData(anything()).atPosition(0).perform(click());
+    Thread.sleep(300);
+    // Cancel — should restore previous selection
+    onView(withText(R.string.add_geo_alarm_cancel)).perform(click());
+    Thread.sleep(300);
     onView(withId(R.id.add_geo_alarm_save)).inRoot(isDialog()).check(matches(isDisplayed()));
   }
 
