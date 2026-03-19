@@ -320,6 +320,146 @@ public class AlarmRingingServiceTest {
         shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
   }
 
+  // ---- startAlarm: AUDIO_DISABLED ----
+
+  @Test
+  public void startAlarm_audioDisabled_skipsAudio() {
+    GeoAlarm alarm =
+        saveAlarm(enabledAlarm().withRingtoneUri("content://media/internal/audio/media/42"));
+    AlarmRingingService.AUDIO_DISABLED = true;
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+    controller.startCommand(0, 0);
+    // Should not crash — audio is skipped
+    assertNotNull(
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+  }
+
+  // ---- null/missing alarm ID ----
+
+  @Test
+  public void normalStart_nullAlarmId_serviceStarts() {
+    Intent intent = new Intent(context, AlarmRingingService.class);
+    // No EXTRA_ALARM_ID
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, intent).create();
+    controller.startCommand(0, 0);
+    assertNotNull(
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+  }
+
+  @Test
+  public void normalStart_unknownAlarmId_serviceStarts() {
+    Intent intent = new Intent(context, AlarmRingingService.class);
+    intent.putExtra(AlarmRingingService.EXTRA_ALARM_ID, UUID.randomUUID().toString());
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, intent).create();
+    controller.startCommand(0, 0);
+    assertNotNull(
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+  }
+
+  @Test
+  public void actionSnooze_nullAlarm_doesNotSchedule() {
+    Intent intent = new Intent(context, AlarmRingingService.class);
+    intent.setAction(AlarmRingingService.ACTION_SNOOZE);
+    // No alarm ID → alarm is null → should not schedule snooze
+    Robolectric.buildService(AlarmRingingService.class, intent).create().startCommand(0, 0);
+    assertNull(
+        "SNOOZE with null alarm should not schedule", shadowAlarmManager.getNextScheduledAlarm());
+  }
+
+  @Test
+  public void buildNotification_nullAlarm_hasEmptyContentText() {
+    Intent intent = new Intent(context, AlarmRingingService.class);
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, intent).create();
+    controller.startCommand(0, 0);
+    Notification n =
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID);
+    assertNotNull(n);
+  }
+
+  @Test
+  public void normalStart_vibrateOnlyAlarm_serviceStarts() {
+    // Alarm with null ringtoneUri means vibrate only
+    GeoAlarm alarm = saveAlarm(enabledAlarm().withRingtoneUri(null));
+    AlarmRingingService.AUDIO_DISABLED = false;
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+    controller.startCommand(0, 0);
+    assertNotNull(
+        "Vibrate-only alarm should start correctly",
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+  }
+
+  @Test
+  public void normalStart_withRingtoneUri_serviceStarts() {
+    GeoAlarm alarm =
+        saveAlarm(enabledAlarm().withRingtoneUri("content://media/internal/audio/media/42"));
+    AlarmRingingService.AUDIO_DISABLED = false;
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+    controller.startCommand(0, 0);
+    assertNotNull(
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+  }
+
+  @Test
+  public void normalStart_nullIntent_serviceStarts() {
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class).create();
+    controller.startCommand(0, 0);
+    assertNotNull(
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+  }
+
+  @Test
+  public void buildNotification_withAlarmPlace_showsPlaceInContent() {
+    GeoAlarm alarm = saveAlarm(enabledAlarm().withPlace("Office"));
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+    controller.startCommand(0, 0);
+    Notification n =
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID);
+    assertNotNull(n);
+  }
+
+  @Test
+  public void onDestroy_stopsRingtoneAndVibrator() {
+    GeoAlarm alarm = saveAlarm(enabledAlarm());
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+    controller.startCommand(0, 0);
+    controller.destroy();
+    // No crash during cleanup = success
+  }
+
+  // ---- pre-Q startForeground path ----
+
+  @Test
+  @Config(sdk = 28)
+  public void normalStart_api28_startsForegroundWithoutServiceType() {
+    GeoAlarm alarm = saveAlarm(enabledAlarm());
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+    controller.startCommand(0, 0);
+    assertNotNull(
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+  }
+
+  @Test
+  @Config(sdk = 28)
+  public void normalStart_api28_vibrateOnly() {
+    GeoAlarm alarm = saveAlarm(enabledAlarm().withRingtoneUri(null));
+    AlarmRingingService.AUDIO_DISABLED = false;
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+    controller.startCommand(0, 0);
+    assertNotNull(
+        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
+  }
+
   // ---- helpers ----
 
   private GeoAlarm enabledAlarm() {

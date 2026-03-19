@@ -2,10 +2,15 @@ package maurizi.geoclock.ui;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.location.Location;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.TextView;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.core.app.ApplicationProvider;
 import com.google.android.gms.maps.model.LatLng;
 import java.time.DayOfWeek;
@@ -16,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import maurizi.geoclock.GeoAlarm;
+import maurizi.geoclock.R;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -294,6 +300,199 @@ public class AlarmListAdapterTest {
   public void distanceToCenter_nullLocation_returnsMaxValue() {
     GeoAlarm alarm = alarmAt(37.0, -122.0, 100);
     assertEquals(Float.MAX_VALUE, AlarmListAdapter.distanceToCenter(alarm, null), 0.01f);
+  }
+
+  // ---- onBindViewHolder ----
+
+  @Test
+  public void onBindViewHolder_withTime_showsFormattedTime() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000).withHour(8).withMinute(30);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView timeView = vh.itemView.findViewById(R.id.alarm_time);
+    assertNotNull(timeView);
+    assertFalse("Time should be displayed", timeView.getText().toString().isEmpty());
+  }
+
+  @Test
+  public void onBindViewHolder_nullTime_showsPlaceholder() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000); // no hour/minute
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView timeView = vh.itemView.findViewById(R.id.alarm_time);
+    assertNotNull(timeView);
+    assertFalse("Placeholder should be shown", timeView.getText().toString().isEmpty());
+  }
+
+  @Test
+  public void onBindViewHolder_withPlace_showsPlaceName() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000).withPlace("Home").withHour(8).withMinute(0);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView placeView = vh.itemView.findViewById(R.id.alarm_place);
+    assertEquals("Home", placeView.getText().toString());
+  }
+
+  @Test
+  public void onBindViewHolder_nullPlace_showsCoordinates() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000).withHour(8).withMinute(0); // no place
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView placeView = vh.itemView.findViewById(R.id.alarm_place);
+    assertTrue("Coordinates should be shown", placeView.getText().toString().contains(","));
+  }
+
+  @Test
+  public void onBindViewHolder_emptyPlace_showsCoordinates() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000).withPlace("").withHour(8).withMinute(0);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView placeView = vh.itemView.findViewById(R.id.alarm_place);
+    assertTrue(
+        "Coordinates should be shown for empty place",
+        placeView.getText().toString().contains(","));
+  }
+
+  @Test
+  public void onBindViewHolder_outsideGeofence_showsDistance() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(38.0, -122.0, 100).withHour(8).withMinute(0);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView distanceView = vh.itemView.findViewById(R.id.alarm_distance);
+    assertEquals(View.VISIBLE, distanceView.getVisibility());
+  }
+
+  @Test
+  public void onBindViewHolder_insideGeofence_hidesDistance() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000).withHour(8).withMinute(0);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView distanceView = vh.itemView.findViewById(R.id.alarm_distance);
+    assertEquals(View.GONE, distanceView.getVisibility());
+  }
+
+  @Test
+  public void onBindViewHolder_nullLocation_hidesDistance() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000).withHour(8).withMinute(0);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(new ArrayList<>(Arrays.asList(alarm)), null, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView distanceView = vh.itemView.findViewById(R.id.alarm_distance);
+    assertEquals(View.GONE, distanceView.getVisibility());
+  }
+
+  @Test
+  public void onBindViewHolder_showsRadiusLabel() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 500).withHour(8).withMinute(0);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    TextView radiusView = vh.itemView.findViewById(R.id.alarm_radius);
+    assertFalse("Radius should be displayed", radiusView.getText().toString().isEmpty());
+  }
+
+  @Test
+  public void onBindViewHolder_enabledAlarm_switchChecked() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000).withHour(8).withMinute(0).withEnabled(true);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    androidx.appcompat.widget.SwitchCompat toggle =
+        vh.itemView.findViewById(R.id.alarm_enabled_switch);
+    assertTrue("Enabled alarm switch should be checked", toggle.isChecked());
+  }
+
+  @Test
+  public void onBindViewHolder_disabledAlarm_switchUnchecked() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = alarmAt(37.0, -122.0, 1000).withHour(8).withMinute(0).withEnabled(false);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(alarm)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 1);
+    adapter.onBindViewHolder(vh, 0);
+    androidx.appcompat.widget.SwitchCompat toggle =
+        vh.itemView.findViewById(R.id.alarm_enabled_switch);
+    assertFalse("Disabled alarm switch should be unchecked", toggle.isChecked());
+  }
+
+  // ---- onCreateViewHolder / onBindViewHolder for header ----
+
+  @Test
+  public void onBindViewHolder_header_setsTitle() {
+    Context ctx = ApplicationProvider.getApplicationContext();
+    GeoAlarm inside = alarmAt(37.0, -122.0, 1000).withHour(8).withMinute(0);
+    GeoAlarm outside = alarmAt(38.0, -122.0, 100).withHour(9).withMinute(0);
+    AlarmListAdapter adapter =
+        new AlarmListAdapter(
+            new ArrayList<>(Arrays.asList(inside, outside)), currentLocation, noopCallbacks());
+    FrameLayout parent = new FrameLayout(ctx);
+    // First item is a header
+    assertEquals(0, adapter.getItemViewType(0));
+    RecyclerView.ViewHolder vh = adapter.onCreateViewHolder(parent, 0);
+    adapter.onBindViewHolder(vh, 0);
+    TextView title = vh.itemView.findViewById(R.id.section_title);
+    assertNotNull(title);
+    assertFalse("Header should have text", title.getText().toString().isEmpty());
+  }
+
+  // ---- getDaysSummary single day ----
+
+  @Test
+  public void getDaysSummary_singleDay_returnsAbbreviation() {
+    AlarmListAdapter adapter = new AlarmListAdapter(new ArrayList<>(), null, noopCallbacks());
+    Context ctx = ApplicationProvider.getApplicationContext();
+    String result = adapter.getDaysSummary(EnumSet.of(DayOfWeek.WEDNESDAY), ctx);
+    assertFalse("Single day should return abbreviation", result.isEmpty());
+    // Should not be "Weekdays", "Weekends", "Every day", or "Once"
+    assertFalse(result.contains(","));
   }
 
   // ---- Helpers ----

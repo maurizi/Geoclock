@@ -2,20 +2,27 @@ package maurizi.geoclock.test;
 
 import static java.time.temporal.TemporalAdjusters.nextOrSame;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import androidx.test.core.app.ApplicationProvider;
+import com.google.android.gms.location.Geofence;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.TimeZone;
 import java.util.UUID;
 import maurizi.geoclock.GeoAlarm;
@@ -355,6 +362,469 @@ public class GeoAlarmTest {
     assertEquals(0x3300C5CD, alarm.getCircleOptions().getFillColor());
     assertEquals(0xFF00C5CD, alarm.getCircleOptions().getStrokeColor());
     assertEquals(2f, alarm.getCircleOptions().getStrokeWidth(), 0.01);
+  }
+
+  // ---- getGeoAlarms ----
+
+  @Test
+  public void getGeoAlarms_emptyPrefs_returnsEmpty() {
+    Context context = ApplicationProvider.getApplicationContext();
+    Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(context);
+    assertTrue(alarms.isEmpty());
+  }
+
+  @Test
+  public void getGeoAlarms_singleAlarm_returnsOne() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = testAlarm.withEnabled(false);
+    GeoAlarm.save(context, alarm);
+    Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(context);
+    assertEquals(1, alarms.size());
+  }
+
+  @Test
+  public void getGeoAlarms_multipleAlarms_returnsAll() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm a1 =
+        GeoAlarm.builder()
+            .location(new LatLng(1, 1))
+            .radius(100)
+            .id(UUID.randomUUID())
+            .enabled(false)
+            .build();
+    GeoAlarm a2 =
+        GeoAlarm.builder()
+            .location(new LatLng(2, 2))
+            .radius(200)
+            .id(UUID.randomUUID())
+            .enabled(false)
+            .build();
+    GeoAlarm.save(context, a1);
+    GeoAlarm.save(context, a2);
+    Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(context);
+    assertEquals(2, alarms.size());
+  }
+
+  @Test
+  public void getGeoAlarms_malformedJson_skipsInvalid() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = testAlarm.withEnabled(false);
+    GeoAlarm.save(context, alarm);
+    // Write malformed JSON directly
+    SharedPreferences prefs = context.getSharedPreferences("alarms", Context.MODE_PRIVATE);
+    prefs.edit().putString("bad-key", "not valid json {{{").apply();
+    Collection<GeoAlarm> alarms = GeoAlarm.getGeoAlarms(context);
+    assertEquals(1, alarms.size());
+  }
+
+  // ---- getGeoAlarm ----
+
+  @Test
+  public void getGeoAlarm_nonexistentId_returnsNull() {
+    Context context = ApplicationProvider.getApplicationContext();
+    assertNull(GeoAlarm.getGeoAlarm(context, UUID.randomUUID()));
+  }
+
+  @Test
+  public void getGeoAlarm_existingAlarm_returnsAlarm() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = testAlarm.withEnabled(false);
+    GeoAlarm.save(context, alarm);
+    GeoAlarm loaded = GeoAlarm.getGeoAlarm(context, alarm.id);
+    assertNotNull(loaded);
+    assertEquals(alarm.id, loaded.id);
+  }
+
+  // ---- getGeoAlarmForGeofenceFn ----
+
+  @Test
+  public void getGeoAlarmForGeofenceFn_validId_returnsAlarm() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = testAlarm.withEnabled(false);
+    GeoAlarm.save(context, alarm);
+    Geofence geofence = mock(Geofence.class);
+    when(geofence.getRequestId()).thenReturn(alarm.id.toString());
+    Function<Geofence, GeoAlarm> fn = GeoAlarm.getGeoAlarmForGeofenceFn(context);
+    GeoAlarm result = fn.apply(geofence);
+    assertNotNull(result);
+    assertEquals(alarm.id, result.id);
+  }
+
+  @Test
+  public void getGeoAlarmForGeofenceFn_unknownId_returnsNull() {
+    Context context = ApplicationProvider.getApplicationContext();
+    Geofence geofence = mock(Geofence.class);
+    when(geofence.getRequestId()).thenReturn(UUID.randomUUID().toString());
+    Function<Geofence, GeoAlarm> fn = GeoAlarm.getGeoAlarmForGeofenceFn(context);
+    assertNull(fn.apply(geofence));
+  }
+
+  // ---- toString ----
+
+  @Test
+  public void toString_withPlace_returnsPlace() {
+    assertEquals("Home", testAlarm.withPlace("Home").toString());
+  }
+
+  @Test
+  public void toString_withoutPlace_returnsCoordinates() {
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .location(new LatLng(37.4220, -122.0841))
+            .radius(100)
+            .id(UUID.randomUUID())
+            .build();
+    assertEquals("37.4220,-122.0841", alarm.toString());
+  }
+
+  // ---- getMarkerOptions ----
+
+  @Test
+  public void getMarkerOptions_withPlace_titleIsPlace() {
+    assertEquals("Work", testAlarm.withPlace("Work").getMarkerOptions().getTitle());
+  }
+
+  @Test
+  public void getMarkerOptions_nullPlace_titleIsEmpty() {
+    assertEquals("", testAlarm.getMarkerOptions().getTitle());
+  }
+
+  @Test
+  public void getMarkerOptions_positionMatchesLocation() {
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .location(new LatLng(37.4220, -122.0841))
+            .radius(100)
+            .id(UUID.randomUUID())
+            .build();
+    assertEquals(new LatLng(37.4220, -122.0841), alarm.getMarkerOptions().getPosition());
+  }
+
+  // ---- save ----
+
+  @Test
+  public void save_enabledAlarm_setsTime() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .location(new LatLng(0, 0))
+            .radius(100)
+            .id(UUID.randomUUID())
+            .enabled(true)
+            .hour(8)
+            .minute(0)
+            .days(ImmutableSet.copyOf(DayOfWeek.values()))
+            .build();
+    assertNull(alarm.time);
+    GeoAlarm.save(context, alarm);
+    GeoAlarm loaded = GeoAlarm.getGeoAlarm(context, alarm.id);
+    assertNotNull(loaded);
+    assertNotNull("Time should be set after save for enabled alarm", loaded.time);
+  }
+
+  @Test
+  public void save_disabledAlarm_preservesNullTime() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .location(new LatLng(0, 0))
+            .radius(100)
+            .id(UUID.randomUUID())
+            .enabled(false)
+            .hour(8)
+            .minute(0)
+            .build();
+    GeoAlarm.save(context, alarm);
+    GeoAlarm loaded = GeoAlarm.getGeoAlarm(context, alarm.id);
+    assertNotNull(loaded);
+    assertNull("Time should remain null for disabled alarm", loaded.time);
+  }
+
+  @Test
+  public void save_enabledAlarmNoHour_timeRemainsNull() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .location(new LatLng(0, 0))
+            .radius(100)
+            .id(UUID.randomUUID())
+            .enabled(true)
+            .build();
+    GeoAlarm.save(context, alarm);
+    GeoAlarm loaded = GeoAlarm.getGeoAlarm(context, alarm.id);
+    assertNotNull(loaded);
+    assertNull("Time should remain null when hour/minute not set", loaded.time);
+  }
+
+  // ---- remove ----
+
+  @Test
+  public void remove_existingAlarm_noLongerRetrievable() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm = testAlarm.withEnabled(false);
+    GeoAlarm.save(context, alarm);
+    assertNotNull(GeoAlarm.getGeoAlarm(context, alarm.id));
+    GeoAlarm.remove(context, alarm);
+    assertNull(GeoAlarm.getGeoAlarm(context, alarm.id));
+  }
+
+  // ---- isNonRepeating ----
+
+  @Test
+  public void isNonRepeating_nullDays_returnsTrue() {
+    assertTrue(testAlarm.isNonRepeating());
+  }
+
+  @Test
+  public void isNonRepeating_emptyDays_returnsTrue() {
+    assertTrue(testAlarm.withDays(ImmutableSet.of()).isNonRepeating());
+  }
+
+  @Test
+  public void isNonRepeating_withDays_returnsFalse() {
+    assertFalse(testAlarm.withDays(ImmutableSet.of(DayOfWeek.MONDAY)).isNonRepeating());
+  }
+
+  // ---- toJson round-trip ----
+
+  @Test
+  public void toJson_roundTrip_preservesAllFields() {
+    Context context = ApplicationProvider.getApplicationContext();
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .location(new LatLng(37.4, -122.0))
+            .radius(500)
+            .id(UUID.randomUUID())
+            .enabled(false)
+            .hour(8)
+            .minute(30)
+            .place("Home")
+            .days(ImmutableSet.of(DayOfWeek.MONDAY, DayOfWeek.FRIDAY))
+            .ringtoneUri("content://media/42")
+            .build();
+    GeoAlarm.save(context, alarm);
+    GeoAlarm loaded = GeoAlarm.getGeoAlarm(context, alarm.id);
+    assertNotNull(loaded);
+    assertEquals(alarm.place, loaded.place);
+    assertEquals(alarm.radius, loaded.radius);
+    assertEquals(alarm.hour, loaded.hour);
+    assertEquals(alarm.minute, loaded.minute);
+    assertEquals(alarm.ringtoneUri, loaded.ringtoneUri);
+    assertEquals(alarm.days, loaded.days);
+  }
+
+  // ---- equals ----
+
+  @Test
+  public void equals_sameAlarm_returnsTrue() {
+    GeoAlarm a =
+        GeoAlarm.builder()
+            .id(testAlarm.id)
+            .location(testAlarm.location)
+            .radius(testAlarm.radius)
+            .build();
+    GeoAlarm b =
+        GeoAlarm.builder()
+            .id(testAlarm.id)
+            .location(testAlarm.location)
+            .radius(testAlarm.radius)
+            .build();
+    assertEquals(a, b);
+  }
+
+  @Test
+  public void equals_differentId_notEqual() {
+    GeoAlarm a =
+        GeoAlarm.builder().id(UUID.randomUUID()).location(new LatLng(0, 0)).radius(100).build();
+    GeoAlarm b =
+        GeoAlarm.builder().id(UUID.randomUUID()).location(new LatLng(0, 0)).radius(100).build();
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_withAllFieldsSet() {
+    UUID id = UUID.randomUUID();
+    GeoAlarm a =
+        GeoAlarm.builder()
+            .id(id)
+            .location(new LatLng(37.4, -122.0))
+            .radius(500)
+            .enabled(true)
+            .hour(8)
+            .minute(30)
+            .place("Home")
+            .days(ImmutableSet.of(DayOfWeek.MONDAY))
+            .ringtoneUri("content://media/42")
+            .time(123456L)
+            .build();
+    GeoAlarm b =
+        GeoAlarm.builder()
+            .id(id)
+            .location(new LatLng(37.4, -122.0))
+            .radius(500)
+            .enabled(true)
+            .hour(8)
+            .minute(30)
+            .place("Home")
+            .days(ImmutableSet.of(DayOfWeek.MONDAY))
+            .ringtoneUri("content://media/42")
+            .time(123456L)
+            .build();
+    assertEquals(a, b);
+    assertEquals(a.hashCode(), b.hashCode());
+  }
+
+  @Test
+  public void equals_null_notEqual() {
+    assertFalse(testAlarm.equals(null));
+  }
+
+  @Test
+  public void equals_differentType_notEqual() {
+    assertFalse(testAlarm.equals("not an alarm"));
+  }
+
+  @Test
+  public void equals_differentPlace_notEqual() {
+    GeoAlarm a = testAlarm.withPlace("Home");
+    GeoAlarm b = testAlarm.withPlace("Work");
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_nullVsNonNullPlace_notEqual() {
+    GeoAlarm a = testAlarm.withPlace(null);
+    GeoAlarm b = testAlarm.withPlace("Home");
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_nullVsNonNullHour_notEqual() {
+    GeoAlarm a = testAlarm.withHour(null);
+    GeoAlarm b = testAlarm.withHour(8);
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_nullVsNonNullMinute_notEqual() {
+    GeoAlarm a = testAlarm.withMinute(null);
+    GeoAlarm b = testAlarm.withMinute(30);
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_nullVsNonNullDays_notEqual() {
+    GeoAlarm a = testAlarm.withDays(null);
+    GeoAlarm b = testAlarm.withDays(ImmutableSet.of(DayOfWeek.MONDAY));
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_nullVsNonNullRingtoneUri_notEqual() {
+    GeoAlarm a = testAlarm.withRingtoneUri(null);
+    GeoAlarm b = testAlarm.withRingtoneUri("content://media/42");
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_nullVsNonNullTime_notEqual() {
+    GeoAlarm a = testAlarm.withTime(null);
+    GeoAlarm b = testAlarm.withTime(123456L);
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_differentEnabled_notEqual() {
+    GeoAlarm a = testAlarm.withEnabled(true);
+    GeoAlarm b = testAlarm.withEnabled(false);
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_differentRadius_notEqual() {
+    GeoAlarm a = testAlarm.withRadius(100);
+    GeoAlarm b = testAlarm.withRadius(200);
+    assertNotEquals(a, b);
+  }
+
+  @Test
+  public void equals_differentLocation_notEqual() {
+    GeoAlarm a = testAlarm.withLocation(new LatLng(0, 0));
+    GeoAlarm b = testAlarm.withLocation(new LatLng(1, 1));
+    assertNotEquals(a, b);
+  }
+
+  // ---- hashCode ----
+
+  @Test
+  public void hashCode_equalObjects_sameHash() {
+    UUID id = UUID.randomUUID();
+    GeoAlarm a =
+        GeoAlarm.builder()
+            .id(id)
+            .location(new LatLng(0, 0))
+            .radius(100)
+            .place("Home")
+            .hour(8)
+            .minute(30)
+            .days(ImmutableSet.of(DayOfWeek.MONDAY))
+            .ringtoneUri("uri")
+            .time(12345L)
+            .build();
+    GeoAlarm b =
+        GeoAlarm.builder()
+            .id(id)
+            .location(new LatLng(0, 0))
+            .radius(100)
+            .place("Home")
+            .hour(8)
+            .minute(30)
+            .days(ImmutableSet.of(DayOfWeek.MONDAY))
+            .ringtoneUri("uri")
+            .time(12345L)
+            .build();
+    assertEquals(a.hashCode(), b.hashCode());
+  }
+
+  @Test
+  public void hashCode_withNullFields_doesNotThrow() {
+    // Builder with only required fields; all nullable fields are null
+    GeoAlarm alarm =
+        GeoAlarm.builder().id(UUID.randomUUID()).location(new LatLng(0, 0)).radius(100).build();
+    alarm.hashCode(); // should not throw
+  }
+
+  // ---- toJson ----
+
+  @Test
+  public void toJson_returnsNonEmptyString() {
+    String json = testAlarm.toJson();
+    assertNotNull(json);
+    assertTrue("toJson should return non-empty", json.length() > 0);
+    assertTrue("toJson should contain id", json.contains(testAlarm.id.toString()));
+  }
+
+  // ---- with* methods that were at 0% ----
+
+  @Test
+  public void withId_changesId() {
+    UUID newId = UUID.randomUUID();
+    GeoAlarm changed = testAlarm.withId(newId);
+    assertEquals(newId, changed.id);
+    assertNotEquals(testAlarm.id, changed.id);
+  }
+
+  @Test
+  public void withLocation_changesLocation() {
+    LatLng newLoc = new LatLng(40.7, -74.0);
+    GeoAlarm changed = testAlarm.withLocation(newLoc);
+    assertEquals(newLoc, changed.location);
+  }
+
+  @Test
+  public void withRadius_changesRadius() {
+    GeoAlarm changed = testAlarm.withRadius(999);
+    assertEquals(999, changed.radius);
   }
 
   // ---- Helpers ----

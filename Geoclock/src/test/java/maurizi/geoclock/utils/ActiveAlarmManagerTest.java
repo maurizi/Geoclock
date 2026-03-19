@@ -352,6 +352,56 @@ public class ActiveAlarmManagerTest {
         shadowNm.getAllNotifications().size());
   }
 
+  // ---- alarm with null time ----
+
+  @Test
+  public void addActiveAlarms_alarmWithNullTime_doesNotSchedule() {
+    // An alarm with no hour/minute — calculateAlarmTime returns null, so it's filtered
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .location(new LatLng(37.4, -122.0))
+            .radius(100)
+            .enabled(true)
+            .build();
+    saveAlarm(alarm);
+    manager.addActiveAlarms(ImmutableSet.of(alarm.id));
+    // No alarm time → nothing scheduled
+    assertEquals(0, shadowAlarmManager.getScheduledAlarms().size());
+  }
+
+  @Test
+  public void addActiveAlarms_mixedNullAndValidTime_schedulesValid() {
+    GeoAlarm noTime =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .location(new LatLng(37.4, -122.0))
+            .radius(100)
+            .enabled(true)
+            .build();
+    java.time.LocalTime soonTime = java.time.LocalTime.now().plusHours(1);
+    GeoAlarm withTime = saveAlarm(repeatingAlarmAt(soonTime.getHour(), soonTime.getMinute()));
+    saveAlarm(noTime);
+    manager.addActiveAlarms(ImmutableSet.of(noTime.id, withTime.id));
+    assertNotNull(
+        "Valid alarm should be scheduled even when null-time alarm present",
+        shadowAlarmManager.getNextScheduledAlarm());
+  }
+
+  // ---- resetActiveAlarms with saved alarms ----
+
+  @Test
+  public void resetActiveAlarms_withSavedAlarms_reschedulesAlarm() {
+    GeoAlarm alarm = saveAlarm(enabledAlarm());
+    manager.addActiveAlarms(ImmutableSet.of(alarm.id));
+    shadowAlarmManager.getScheduledAlarms().clear();
+
+    manager.resetActiveAlarms();
+    assertNotNull(
+        "resetActiveAlarms should reschedule from saved state",
+        shadowAlarmManager.getNextScheduledAlarm());
+  }
+
   // ---- helpers ----
 
   private GeoAlarm repeatingAlarmAt(int hour, int minute) {
