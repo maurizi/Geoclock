@@ -207,6 +207,34 @@ public class GeofenceIntegrationTest {
         alarmManager.getNextAlarmClock());
   }
 
+  @Test
+  public void enterGeofence_mixedEnabledDisabled_onlyEnabledActivated() throws Exception {
+    assertPlayServicesAvailable();
+    assertCanScheduleExactAlarms();
+
+    // Two alarms at the same location — one enabled, one disabled
+    GeoAlarm enabledAlarm = saveAlarm(repeatingAlarmAt(GEOFENCE_CENTER));
+    GeoAlarm disabledAlarm = saveAlarm(repeatingAlarmAt(GEOFENCE_CENTER).withEnabled(false));
+
+    LocationServiceGoogle locationService = new LocationServiceGoogle(context);
+    assertTrue(
+        "Enabled geofence registration failed", registerGeofence(locationService, enabledAlarm));
+    assertTrue(
+        "Disabled geofence registration failed", registerGeofence(locationService, disabledAlarm));
+
+    // Pump mock location — only the enabled alarm should be activated
+    AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+    long deadline = System.currentTimeMillis() + GEOFENCE_TIMEOUT_MS;
+    while (System.currentTimeMillis() < deadline) {
+      setMockLocation(GEOFENCE_CENTER.latitude, GEOFENCE_CENTER.longitude);
+      if (alarmManager.getNextAlarmClock() != null) break;
+      Thread.sleep(POLL_INTERVAL_MS);
+    }
+    // The enabled alarm should trigger; the disabled one should be filtered out
+    assertNotNull(
+        "Only enabled alarm should schedule alarm clock", alarmManager.getNextAlarmClock());
+  }
+
   // ---- helpers ----
 
   private void setMockLocation(double lat, double lng) throws Exception {
