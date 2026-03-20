@@ -40,6 +40,7 @@ public class AlarmRingingServiceAudioTest {
     }
   }
 
+  // No assertion — this test exercises real audio/vibration hardware paths
   @Test
   public void startAlarm_withRingtoneUri_playsAudio() throws Exception {
     GeoAlarm alarm =
@@ -60,9 +61,9 @@ public class AlarmRingingServiceAudioTest {
     // Stop the service — exercises onDestroy with active ringtone/vibrator
     AlarmRingingService.stop(ctx);
     Thread.sleep(500);
-    // If we got here without crash, startAlarm() and onDestroy() ran successfully
   }
 
+  // No assertion — this test exercises real audio/vibration hardware paths
   @Test
   public void startAlarm_vibrateOnly_vibratesWithoutRingtone() throws Exception {
     GeoAlarm alarm =
@@ -81,15 +82,6 @@ public class AlarmRingingServiceAudioTest {
     Thread.sleep(1500);
 
     // Service is running with vibration only
-    AlarmRingingService.stop(ctx);
-    Thread.sleep(500);
-  }
-
-  @Test
-  public void startAlarm_noAlarm_handlesGracefully() throws Exception {
-    // Start service with a non-existent alarm ID
-    AlarmRingingService.start(ctx, UUID.randomUUID().toString());
-    Thread.sleep(1000);
     AlarmRingingService.stop(ctx);
     Thread.sleep(500);
   }

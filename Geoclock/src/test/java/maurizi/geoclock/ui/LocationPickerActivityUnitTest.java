@@ -250,8 +250,6 @@ public class LocationPickerActivityUnitTest {
     return intent;
   }
 
-  // ---- original helpers ----
-
   private LocationPickerActivity buildActivity(double lat, double lng, int radius) {
     Intent intent = new Intent(context, LocationPickerActivity.class);
     intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, lat);

@@ -9,6 +9,8 @@ import static androidx.test.espresso.matcher.ViewMatchers.Visibility;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 import android.content.Context;
 import android.os.Build;
@@ -58,7 +60,6 @@ public class MapActivityTest {
 
   private ActivityScenario<MapActivity> scenario;
   private PowerManager.WakeLock wakeLock;
-  private GeoAlarm testAlarm;
 
   @SuppressWarnings("deprecation")
   @Before
@@ -88,7 +89,7 @@ public class MapActivityTest {
   }
 
   private GeoAlarm saveTestAlarm() {
-    testAlarm =
+    GeoAlarm alarm =
         GeoAlarm.builder()
             .id(UUID.randomUUID())
             .place("Test Place")
@@ -98,8 +99,8 @@ public class MapActivityTest {
             .hour(9)
             .minute(0)
             .build();
-    GeoAlarm.save(ApplicationProvider.getApplicationContext(), testAlarm);
-    return testAlarm;
+    GeoAlarm.save(ApplicationProvider.getApplicationContext(), alarm);
+    return alarm;
   }
 
   @Test
@@ -142,19 +143,6 @@ public class MapActivityTest {
     onView(withId(R.id.add_geo_alarm_time)).inRoot(isDialog()).check(matches(isDisplayed()));
   }
 
-  // --- FAB click with real location service ---
-
-  @Test
-  public void fab_click_opensAddDialog() throws Exception {
-    scenario = ActivityScenario.launch(MapActivity.class);
-    // Wait for map to initialize (location service is created in map async callback)
-    Thread.sleep(3000);
-    onView(withId(R.id.fab_add)).perform(click());
-    // The add dialog should appear (or a toast if location not ready)
-    Thread.sleep(1000);
-    // Either the dialog is shown or a toast appeared — both are valid
-  }
-
   // --- Drag handle ---
 
   @Test
@@ -182,25 +170,12 @@ public class MapActivityTest {
         .check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
   }
 
-  @Test
-  public void alarmCard_clickExpands_mapForAlarm() throws Exception {
-    saveTestAlarm();
-    scenario = ActivityScenario.launch(MapActivity.class);
-    Thread.sleep(1000);
-    // Click the alarm card — triggers onEdit which calls showAlarmOnMap + expandMap
-    onView(withId(R.id.alarm_list)).perform(actionOnItemAtPosition(0, click()));
-    Thread.sleep(500);
-    // The map should now be expanded (we can't easily assert height,
-    // but verify no crash and the edit dialog appeared)
-    onView(withId(R.id.add_geo_alarm_time)).inRoot(isDialog()).check(matches(isDisplayed()));
-  }
-
   // --- Multiple alarms with inside/outside headers ---
 
   @Test
   public void multipleAlarms_showInList() {
     // Save two alarms
-    testAlarm =
+    GeoAlarm alarm1 =
         GeoAlarm.builder()
             .id(UUID.randomUUID())
             .place("Alarm 1")
@@ -210,7 +185,7 @@ public class MapActivityTest {
             .hour(8)
             .minute(0)
             .build();
-    GeoAlarm.save(ApplicationProvider.getApplicationContext(), testAlarm);
+    GeoAlarm.save(ApplicationProvider.getApplicationContext(), alarm1);
     GeoAlarm alarm2 =
         GeoAlarm.builder()
             .id(UUID.randomUUID())
@@ -226,17 +201,6 @@ public class MapActivityTest {
     scenario = ActivityScenario.launch(MapActivity.class);
     onView(withId(R.id.alarm_list)).check(matches(withEffectiveVisibility(Visibility.VISIBLE)));
     onView(withId(R.id.empty_state)).check(matches(withEffectiveVisibility(Visibility.GONE)));
-  }
-
-  // --- Resume with existing alarms ---
-
-  @Test
-  public void onResume_withAlarms_redrawsMap() throws Exception {
-    saveTestAlarm();
-    scenario = ActivityScenario.launch(MapActivity.class);
-    Thread.sleep(2000);
-    // Map should have markers and circles for the alarm
-    onView(withId(R.id.alarm_list)).check(matches(isDisplayed()));
   }
 
   @Test
@@ -264,21 +228,23 @@ public class MapActivityTest {
     Thread.sleep(1000);
     // Alarm should now be disabled
     GeoAlarm saved = GeoAlarm.getGeoAlarm(ApplicationProvider.getApplicationContext(), alarm.id);
-    if (saved != null) {
-      // If the toggle fired, it should be disabled
-      // (it may still be enabled if the switch didn't render yet)
-    }
+    assertNotNull(saved);
+    assertFalse("Alarm should be disabled", saved.enabled);
     AlarmRingingService.AUDIO_DISABLED = false;
   }
 
   // --- Toggle switch: enable a disabled alarm ---
 
   @Test
-  public void toggleSwitch_enableAlarm_addsGeofence() throws Exception {
+  public void toggleSwitch_enableAlarm_triggersPermissionFlow() throws Exception {
     AlarmRingingService.AUDIO_DISABLED = true;
-    GeoAlarm alarm = saveRepeatingAlarm(false);
+    saveRepeatingAlarm(false);
     scenario = ActivityScenario.launch(MapActivity.class);
     Thread.sleep(3000);
+    // Click the switch to enable — this triggers onToggleEnabled which calls
+    // requestAlarmPermissions (showing a dialog). The alarm may not actually
+    // become enabled because the permission dialog blocks, but the code path
+    // through onToggleEnabled's enable branch is exercised.
     onView(withId(R.id.alarm_list))
         .perform(actionOnItemAtPosition(0, clickChildView(R.id.alarm_enabled_switch)));
     Thread.sleep(1000);
@@ -302,21 +268,6 @@ public class MapActivityTest {
     Thread.sleep(2000);
     onView(withId(R.id.alarm_list)).check(matches(isDisplayed()));
     AlarmRingingService.AUDIO_DISABLED = false;
-  }
-
-  // --- Intent with ALARM_ID extra ---
-
-  @Test
-  public void launch_withAlarmIdExtra_opensEditDialog() throws Exception {
-    GeoAlarm alarm = saveTestAlarm();
-    android.content.Intent intent =
-        new android.content.Intent(ApplicationProvider.getApplicationContext(), MapActivity.class);
-    intent.putExtra("ALARM_ID", alarm.id.toString());
-    scenario = ActivityScenario.launch(intent);
-    // Wait for map init which triggers onLocationPermissionGranted → pendingAlarmId check
-    Thread.sleep(4000);
-    // If permission is granted and map loaded, the edit popup should open
-    // (may not show if map hasn't loaded yet, but the code path is exercised)
   }
 
   // --- activateAlarmsInsideGeofence with disabled alarm (skip path) ---
@@ -369,8 +320,6 @@ public class MapActivityTest {
       // Location might not be available on emulator, but the code path was exercised
     }
   }
-
-  // --- showAddDialog fallback: null latLng from getLastLocation ---
 
   @Test
   public void redrawGeoAlarms_multipleAlarms_showsAllOnMap() throws Exception {

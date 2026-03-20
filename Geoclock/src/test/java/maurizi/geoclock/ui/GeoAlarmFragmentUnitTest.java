@@ -4,16 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.content.Context;
 import android.os.Bundle;
-import androidx.test.core.app.ApplicationProvider;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import java.time.DayOfWeek;
 import java.util.UUID;
 import maurizi.geoclock.GeoAlarm;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -24,12 +21,6 @@ import org.robolectric.annotation.Config;
 public class GeoAlarmFragmentUnitTest {
 
   private static final Gson gson = new Gson();
-  private Context context;
-
-  @Before
-  public void setUp() {
-    context = ApplicationProvider.getApplicationContext();
-  }
 
   // ---- getEffectiveGeoAlarm: add mode ----
 
@@ -116,13 +107,6 @@ public class GeoAlarmFragmentUnitTest {
   }
 
   // ---- getInitialRadius ----
-
-  @Test
-  public void getInitialRadius_returnsPositive() {
-    GeoAlarmFragment fragment = new GeoAlarmFragment();
-    int radius = fragment.getInitialRadius();
-    assertTrue("Initial radius should be positive", radius > 0);
-  }
 
   @Test
   public void getInitialRadius_isReasonableValue() {

@@ -15,6 +15,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -341,7 +342,7 @@ public class GeoAlarmFragmentTest {
     Thread.sleep(500);
     GeoAlarm found =
         GeoAlarm.getGeoAlarm(ApplicationProvider.getApplicationContext(), testAlarm.id);
-    assertTrue("Disabled alarm should still exist after save", found != null);
+    assertNotNull("Disabled alarm should still exist after save", found);
   }
 
   // --- Save with no place triggers geocoding ---

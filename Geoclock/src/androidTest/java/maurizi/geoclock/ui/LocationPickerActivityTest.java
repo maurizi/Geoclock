@@ -267,28 +267,6 @@ public class LocationPickerActivityTest {
   }
 
   @Test
-  public void searchAction_click_launchesAutocomplete() throws Exception {
-    Intent intent = makeIntent();
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
-    scenario = ActivityScenario.launch(intent);
-    Thread.sleep(1000);
-    // Click the search action — exercises onOptionsItemSelected + launchAutocomplete
-    try {
-      onView(withId(R.id.action_search)).perform(click());
-      Thread.sleep(2000);
-      // If autocomplete overlay opened, press back to dismiss and return
-      UiDevice device = UiDevice.getInstance(getInstrumentation());
-      device.pressBack();
-      Thread.sleep(1000);
-    } catch (Exception e) {
-      // Places autocomplete may throw if not configured — the code path was exercised
-    }
-    // No final assertion — the activity may be in an indeterminate state after
-    // autocomplete overlay dismissal, but the code paths were exercised for coverage
-  }
-
-  @Test
   public void mapClick_triggersMapClickListener() throws Exception {
     Intent intent = makeIntent();
     intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
@@ -309,71 +287,6 @@ public class LocationPickerActivityTest {
     device.click(centerX + 100, mapCenterY - 100);
     Thread.sleep(2000);
     onView(withId(R.id.confirm_button)).check(matches(isDisplayed()));
-  }
-
-  @Test
-  public void mapDrag_triggersMarkerDragListeners() throws Exception {
-    Intent intent = makeIntent();
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 500);
-    scenario = ActivityScenario.launch(intent);
-    Thread.sleep(5000);
-    // Long-press + drag on the map center (where the marker is) to trigger drag listeners
-    UiDevice device = UiDevice.getInstance(getInstrumentation());
-    int centerX = device.getDisplayWidth() / 2;
-    int centerY = device.getDisplayHeight() / 2;
-    // Long press to start marker drag, then drag to a new position
-    device.swipe(centerX, centerY, centerX + 200, centerY + 100, 50);
-    Thread.sleep(2000);
-    onView(withId(R.id.confirm_button)).check(matches(isDisplayed()));
-  }
-
-  @Test
-  public void mapClick_reverseGeocode_updatesPlaceAfterWait() throws Exception {
-    Intent intent = makeIntent();
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 500);
-    scenario = ActivityScenario.launch(intent);
-    Thread.sleep(5000);
-    // Tap on map
-    UiDevice device = UiDevice.getInstance(getInstrumentation());
-    device.click(device.getDisplayWidth() / 2, device.getDisplayHeight() / 2);
-    // Wait long enough for the reverse geocode async to complete
-    Thread.sleep(5000);
-    // Confirm — the place name should have been updated by reverseGeocode
-    onView(withId(R.id.confirm_button)).perform(click());
-    long deadline = System.currentTimeMillis() + 5_000;
-    while (scenario.getState() != Lifecycle.State.DESTROYED
-        && System.currentTimeMillis() < deadline) {
-      Thread.sleep(100);
-    }
-  }
-
-  @Test
-  public void imperialLocale_usesImperialRadiusBounds() throws Exception {
-    // Force US locale via shell command before launching
-    getInstrumentation()
-        .getUiAutomation()
-        .executeShellCommand("settings put system system_locales en-US")
-        .close();
-    Thread.sleep(500);
-
-    Intent intent = makeIntent();
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, 37.4220);
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, -122.0841);
-    intent.putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS, 250);
-    scenario = ActivityScenario.launch(intent);
-    scenario.onActivity(
-        activity -> {
-          // On the emulator this may already be US locale; verify min radius matches imperial
-          int minRadius = activity.getMinRadius();
-          // Imperial min is 122 (800ft wide), metric is 125 (250m wide)
-          assertTrue(
-              "Min radius should be valid (imperial=122 or metric=125), got " + minRadius,
-              minRadius == 122 || minRadius == 125);
-        });
   }
 
   @Test

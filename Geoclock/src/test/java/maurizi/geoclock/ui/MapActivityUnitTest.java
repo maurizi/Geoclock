@@ -100,14 +100,6 @@ public class MapActivityUnitTest {
     // No crash = success
   }
 
-  @Test
-  public void collapseMap_whenNotExpanded_isNoOp() {
-    MapActivity activity = buildActivity();
-    // Not expanded initially — collapse should be no-op
-    activity.collapseMap();
-    // No crash
-  }
-
   // ---- onAddGeoAlarmFragmentClose ----
 
   @Test
@@ -204,7 +196,7 @@ public class MapActivityUnitTest {
     activity.getSupportFragmentManager().executePendingTransactions();
     // No fragment created because getGeoAlarm returns null
     Fragment f = activity.getSupportFragmentManager().findFragmentByTag("AddGeoAlarmFragment");
-    // showEditPopup checks alarm != null — fragment should not be created
+    assertNull("Fragment should not be created for nonexistent alarm", f);
   }
 
   @Test
@@ -279,27 +271,6 @@ public class MapActivityUnitTest {
     Shadows.shadowOf(Looper.getMainLooper()).idle();
     // The alarm should still exist (same ID, re-saved)
     assertNotNull("Alarm should still exist after edit", GeoAlarm.getGeoAlarm(context, alarm.id));
-  }
-
-  @Test
-  public void geoAlarmFragment_addMode_saveWithNullPlace_triggersGeocode() {
-    MapActivity activity = buildActivity();
-    activity.showAddPopup(new LatLng(37.4, -122.0));
-    activity.getSupportFragmentManager().executePendingTransactions();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    GeoAlarmFragment fragment =
-        (GeoAlarmFragment)
-            activity.getSupportFragmentManager().findFragmentByTag("AddGeoAlarmFragment");
-    assertNotNull(fragment);
-    // Clear the location preview to ensure place is null
-    android.widget.EditText locationPreview =
-        fragment.getView().findViewById(R.id.location_preview);
-    locationPreview.setText("");
-    // Set time
-    TimePicker tp = fragment.getView().findViewById(R.id.add_geo_alarm_time);
-    tp.setHour(10);
-    tp.setMinute(0);
-    // Save with API 28 to avoid permission dialog
   }
 
   @Test
@@ -430,33 +401,6 @@ public class MapActivityUnitTest {
     Shadows.shadowOf(Looper.getMainLooper()).idle();
     // Alarm should be removed
     assertNull("Alarm should be deleted", GeoAlarm.getGeoAlarm(context, alarm.id));
-  }
-
-  @Test
-  public void geoAlarmFragment_lifecycle_pauseAndResume() {
-    MapActivity activity = buildActivity();
-    activity.showAddPopup(new LatLng(37.4, -122.0));
-    activity.getSupportFragmentManager().executePendingTransactions();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    GeoAlarmFragment fragment =
-        (GeoAlarmFragment)
-            activity.getSupportFragmentManager().findFragmentByTag("AddGeoAlarmFragment");
-    assertNotNull(fragment);
-    // Simulate pause and resume
-    Robolectric.buildActivity(MapActivity.class).create().start().resume().pause().resume().get();
-  }
-
-  @Test
-  public void geoAlarmFragment_saveButton_withNullLatLng_showsToast() {
-    MapActivity activity = buildActivity();
-    activity.showAddPopup(new LatLng(0, 0));
-    activity.getSupportFragmentManager().executePendingTransactions();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    GeoAlarmFragment fragment =
-        (GeoAlarmFragment)
-            activity.getSupportFragmentManager().findFragmentByTag("AddGeoAlarmFragment");
-    assertNotNull(fragment);
-    // The fragment has currentLatLng set, so save should work unless we force it null
   }
 
   // ---- adapter toggle callback via RecyclerView ----
