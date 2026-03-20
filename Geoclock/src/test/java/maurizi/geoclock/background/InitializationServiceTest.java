@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import androidx.test.core.app.ApplicationProvider;
 import com.google.android.gms.maps.model.LatLng;
@@ -166,6 +167,58 @@ public class InitializationServiceTest {
 
     assertEquals(false, GeoAlarm.getGeoAlarm(context, expiredAlarm.id).enabled);
     assertEquals(true, GeoAlarm.getGeoAlarm(context, futureAlarm.id).enabled);
+  }
+
+  // ---- onHandleWork integration ----
+
+  @Test
+  public void onHandleWork_disablesExpiredAlarms_andClearsActiveAlarms() throws Exception {
+    long oneHourAgo = Instant.now().minusSeconds(3600).toEpochMilli();
+    GeoAlarm expiredAlarm =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .location(new LatLng(0, 0))
+            .radius(100)
+            .enabled(true)
+            .hour(8)
+            .minute(0)
+            .time(oneHourAgo)
+            .build();
+    GeoAlarm activeAlarm =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .location(new LatLng(37.4, -122.0))
+            .radius(200)
+            .enabled(true)
+            .hour(9)
+            .minute(0)
+            .days(ImmutableSet.copyOf(DayOfWeek.values()))
+            .build();
+    saveRaw(expiredAlarm);
+    saveRaw(activeAlarm);
+
+    // Call onHandleWork directly via reflection (it's protected)
+    Method m = InitializationService.class.getDeclaredMethod("onHandleWork", Intent.class);
+    m.setAccessible(true);
+    m.invoke(service, new Intent());
+
+    // Expired alarm should be disabled
+    GeoAlarm savedExpired = GeoAlarm.getGeoAlarm(context, expiredAlarm.id);
+    assertNotNull(savedExpired);
+    assertEquals("Expired alarm should be disabled", false, savedExpired.enabled);
+
+    // Active alarm should still be enabled
+    GeoAlarm savedActive = GeoAlarm.getGeoAlarm(context, activeAlarm.id);
+    assertNotNull(savedActive);
+    assertEquals("Active alarm should remain enabled", true, savedActive.enabled);
+  }
+
+  @Test
+  public void onHandleWork_noAlarms_doesNotCrash() throws Exception {
+    Method m = InitializationService.class.getDeclaredMethod("onHandleWork", Intent.class);
+    m.setAccessible(true);
+    m.invoke(service, new Intent());
+    // No crash = success
   }
 
   // ---- helpers ----
