@@ -35,7 +35,6 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
-import org.robolectric.shadows.ShadowAlarmManager;
 import org.robolectric.shadows.ShadowToast;
 
 @RunWith(RobolectricTestRunner.class)
@@ -47,7 +46,6 @@ public class MapActivityUnitTest {
   @Before
   public void setUp() {
     context = ApplicationProvider.getApplicationContext();
-    ShadowAlarmManager.setCanScheduleExactAlarms(true);
   }
 
   // ---- Activity launch ----

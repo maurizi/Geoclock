@@ -248,6 +248,8 @@ public class MapActivityTest {
     onView(withId(R.id.alarm_list))
         .perform(actionOnItemAtPosition(0, clickChildView(R.id.alarm_enabled_switch)));
     Thread.sleep(1000);
+    // Verify the activity survived the toggle + permission dialog
+    scenario.onActivity(activity -> assertNotNull("Activity should still exist", activity));
     AlarmRingingService.AUDIO_DISABLED = false;
   }
 
