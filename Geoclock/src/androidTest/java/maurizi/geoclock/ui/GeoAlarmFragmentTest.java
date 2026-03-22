@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.UUID;
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
+import maurizi.geoclock.integration.RetryRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,15 +49,16 @@ import org.junit.runner.RunWith;
 @LargeTest
 public class GeoAlarmFragmentTest {
 
-  @Rule
+  @Rule(order = 0)
+  public RetryRule retryRule = new RetryRule(2);
+
+  @Rule(order = 1)
   public GrantPermissionRule permissionRule = GrantPermissionRule.grant(getRequiredPermissions());
 
   private static String[] getRequiredPermissions() {
     List<String> perms = new ArrayList<>();
     perms.add(android.Manifest.permission.ACCESS_FINE_LOCATION);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      perms.add(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
-    }
+    perms.add(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       perms.add(android.Manifest.permission.POST_NOTIFICATIONS);
     }

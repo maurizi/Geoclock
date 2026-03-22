@@ -435,31 +435,6 @@ public class AlarmRingingServiceTest {
     // No crash during cleanup = success
   }
 
-  // ---- pre-Q startForeground path ----
-
-  @Test
-  @Config(sdk = 28)
-  public void normalStart_api28_startsForegroundWithoutServiceType() {
-    GeoAlarm alarm = saveAlarm(enabledAlarm());
-    ServiceController<AlarmRingingService> controller =
-        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-    controller.startCommand(0, 0);
-    assertNotNull(
-        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
-  }
-
-  @Test
-  @Config(sdk = 28)
-  public void normalStart_api28_vibrateOnly() {
-    GeoAlarm alarm = saveAlarm(enabledAlarm().withRingtoneUri(null));
-    AlarmRingingService.AUDIO_DISABLED = false;
-    ServiceController<AlarmRingingService> controller =
-        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
-    controller.startCommand(0, 0);
-    assertNotNull(
-        shadowNotificationManager.getNotification(AlarmClockReceiver.RINGING_NOTIFICATION_ID));
-  }
-
   // ---- helpers ----
 
   private GeoAlarm enabledAlarm() {
