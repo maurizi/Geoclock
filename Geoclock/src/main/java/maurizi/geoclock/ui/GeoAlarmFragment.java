@@ -612,7 +612,7 @@ public class GeoAlarmFragment extends DialogFragment {
     }
   }
 
-  private int getInitialRadius() {
+  int getInitialRadius() {
     Context ctx = getContext();
     if (ctx != null && DistanceUtils.useImperial(ctx)) {
       return INITIAL_RADIUS_IMPERIAL;
@@ -620,7 +620,7 @@ public class GeoAlarmFragment extends DialogFragment {
     return INITIAL_RADIUS_METRIC;
   }
 
-  private GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit) {
+  GeoAlarm getEffectiveGeoAlarm(final Bundle args, final boolean isEdit) {
     if (isEdit) {
       return gson.fromJson(args.getString(GeoAlarmFragment.EXISTING_ALARM), GeoAlarm.class);
     }
