@@ -32,14 +32,7 @@ public class PermissionHelperTest {
   // ---- needsBackgroundLocation ----
 
   @Test
-  @Config(sdk = 28)
-  public void needsBackgroundLocation_belowQ_returnsFalse() {
-    assertFalse(PermissionHelper.needsBackgroundLocation(context));
-  }
-
-  @Test
-  @Config(sdk = 29)
-  public void needsBackgroundLocation_api29_returnsTrue() {
+  public void needsBackgroundLocation_notGranted_returnsTrue() {
     // Background location not granted by default in Robolectric
     assertTrue(PermissionHelper.needsBackgroundLocation(context));
   }
@@ -61,7 +54,7 @@ public class PermissionHelperTest {
   // ---- needsExactAlarmPermission ----
 
   @Test
-  @Config(sdk = 28)
+  @Config(sdk = 29)
   public void needsExactAlarmPermission_belowS_returnsFalse() {
     assertFalse(PermissionHelper.needsExactAlarmPermission(context));
   }
@@ -85,13 +78,6 @@ public class PermissionHelperTest {
   @Test
   public void hasAllAlarmPermissions_nullContext_returnsFalse() {
     assertFalse(PermissionHelper.hasAllAlarmPermissions(null));
-  }
-
-  @Test
-  @Config(sdk = 28)
-  public void hasAllAlarmPermissions_oldApi_allGranted_returnsTrue() {
-    // On API 28, no background location, no notification permission, no exact alarm needed
-    assertTrue(PermissionHelper.hasAllAlarmPermissions(context));
   }
 
   // ---- needsFullScreenIntentPermission ----
@@ -153,17 +139,6 @@ public class PermissionHelperTest {
   // ---- requestAlarmPermissions chain ----
 
   @Test
-  @Config(sdk = 28)
-  public void requestAlarmPermissions_api28_allGranted_callsOnComplete() {
-    FragmentActivity activity =
-        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
-    boolean[] completed = {false};
-    PermissionHelper.requestAlarmPermissions(activity, () -> completed[0] = true);
-    assertTrue("onComplete should be called when all permissions already granted", completed[0]);
-  }
-
-  @Test
-  @Config(sdk = 29)
   public void requestAlarmPermissions_api29_showsDialogForBackgroundLocation() {
     FragmentActivity activity =
         Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();

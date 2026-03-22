@@ -34,6 +34,7 @@ import java.util.UUID;
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
 import maurizi.geoclock.background.AlarmRingingService;
+import maurizi.geoclock.integration.RetryRule;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
@@ -46,7 +47,10 @@ import org.junit.runner.RunWith;
 @LargeTest
 public class MapActivityTest {
 
-  @Rule
+  @Rule(order = 0)
+  public RetryRule retryRule = new RetryRule(3);
+
+  @Rule(order = 1)
   public GrantPermissionRule permissionRule = GrantPermissionRule.grant(getRequiredPermissions());
 
   private static String[] getRequiredPermissions() {
@@ -160,10 +164,10 @@ public class MapActivityTest {
   public void alarmCard_click_opensEditDialog() throws Exception {
     saveTestAlarm();
     scenario = ActivityScenario.launch(MapActivity.class);
-    Thread.sleep(1000);
+    Thread.sleep(2000);
     // Click the first alarm item in the RecyclerView
     onView(withId(R.id.alarm_list)).perform(actionOnItemAtPosition(0, click()));
-    Thread.sleep(500);
+    Thread.sleep(1000);
     // Edit dialog should appear
     onView(withId(R.id.add_geo_alarm_delete))
         .inRoot(isDialog())

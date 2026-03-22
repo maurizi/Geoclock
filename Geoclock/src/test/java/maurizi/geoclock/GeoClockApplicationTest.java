@@ -30,14 +30,4 @@ public class GeoClockApplicationTest {
                 .getApplicationContext();
     assertNotNull(app);
   }
-
-  @Test
-  @Config(sdk = 28)
-  public void onCreate_api28_doesNotCrash() {
-    GeoClockApplication app =
-        (GeoClockApplication)
-            androidx.test.core.app.ApplicationProvider.getApplicationContext()
-                .getApplicationContext();
-    assertNotNull(app);
-  }
 }

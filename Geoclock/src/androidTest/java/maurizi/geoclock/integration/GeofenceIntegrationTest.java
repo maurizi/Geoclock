@@ -67,9 +67,7 @@ public class GeofenceIntegrationTest {
   private static String[] getRequiredPermissions() {
     List<String> perms = new ArrayList<>();
     perms.add(Manifest.permission.ACCESS_FINE_LOCATION);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      perms.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
-    }
+    perms.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       perms.add(Manifest.permission.POST_NOTIFICATIONS);
     }

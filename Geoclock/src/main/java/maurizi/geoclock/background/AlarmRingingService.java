@@ -12,7 +12,6 @@ import android.content.pm.ServiceInfo;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -61,14 +60,10 @@ public class AlarmRingingService extends Service {
     // contract as early as possible after startForegroundService().
     ensureNotificationChannel();
     Notification placeholder = buildNotification(null);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      startForeground(
-          AlarmClockReceiver.RINGING_NOTIFICATION_ID,
-          placeholder,
-          ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-    } else {
-      startForeground(AlarmClockReceiver.RINGING_NOTIFICATION_ID, placeholder);
-    }
+    startForeground(
+        AlarmClockReceiver.RINGING_NOTIFICATION_ID,
+        placeholder,
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
   }
 
   @Override

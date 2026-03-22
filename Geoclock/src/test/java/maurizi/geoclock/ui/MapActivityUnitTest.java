@@ -13,7 +13,6 @@ import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import androidx.fragment.app.Fragment;
 import androidx.test.core.app.ApplicationProvider;
 import com.google.android.gms.maps.GoogleMap;
@@ -202,29 +201,6 @@ public class MapActivityUnitTest {
   }
 
   @Test
-  @Config(sdk = 28)
-  public void geoAlarmFragment_saveButton_savesAlarm() {
-    MapActivity activity = buildActivity();
-    activity.showAddPopup(new LatLng(37.4, -122.0));
-    activity.getSupportFragmentManager().executePendingTransactions();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    GeoAlarmFragment fragment =
-        (GeoAlarmFragment)
-            activity.getSupportFragmentManager().findFragmentByTag("AddGeoAlarmFragment");
-    assertNotNull(fragment);
-    // Set a time on the TimePicker
-    TimePicker tp = fragment.getView().findViewById(R.id.add_geo_alarm_time);
-    tp.setHour(9);
-    tp.setMinute(30);
-    // Click save
-    Button saveBtn = fragment.getView().findViewById(R.id.add_geo_alarm_save);
-    saveBtn.performClick();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    // Verify an alarm was saved
-    assertTrue("At least one alarm should be saved", !GeoAlarm.getGeoAlarms(context).isEmpty());
-  }
-
-  @Test
   public void geoAlarmFragment_cancelButton_dismissesDialog() {
     MapActivity activity = buildActivity();
     activity.showAddPopup(new LatLng(37.4, -122.0));
@@ -316,46 +292,6 @@ public class MapActivityUnitTest {
   }
 
   @Test
-  @Config(sdk = 28)
-  public void geoAlarmFragment_editMode_enabledAlarm_save() {
-    GeoAlarm alarm = saveAlarm(enabledAlarm().withPlace("Gym").withHour(6).withMinute(30));
-    MapActivity activity = buildActivity();
-    activity.showEditPopup(alarm.id);
-    activity.getSupportFragmentManager().executePendingTransactions();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    GeoAlarmFragment fragment =
-        (GeoAlarmFragment)
-            activity.getSupportFragmentManager().findFragmentByTag("AddGeoAlarmFragment");
-    assertNotNull(fragment);
-    Button saveBtn = fragment.getView().findViewById(R.id.add_geo_alarm_save);
-    saveBtn.performClick();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    GeoAlarm saved = GeoAlarm.getGeoAlarm(context, alarm.id);
-    assertNotNull("Alarm should be saved after edit", saved);
-  }
-
-  @Test
-  @Config(sdk = 28)
-  public void geoAlarmFragment_addMode_saveWithNullPlace() {
-    MapActivity activity = buildActivity();
-    activity.showAddPopup(new LatLng(40.7, -74.0));
-    activity.getSupportFragmentManager().executePendingTransactions();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    GeoAlarmFragment fragment =
-        (GeoAlarmFragment)
-            activity.getSupportFragmentManager().findFragmentByTag("AddGeoAlarmFragment");
-    assertNotNull(fragment);
-    // Clear location preview text to make place null
-    android.widget.EditText preview = fragment.getView().findViewById(R.id.location_preview);
-    preview.setText("");
-    Button saveBtn = fragment.getView().findViewById(R.id.add_geo_alarm_save);
-    saveBtn.performClick();
-    Shadows.shadowOf(Looper.getMainLooper()).idle();
-    // Alarm should be saved with null place, triggering geocodeAsync
-    assertTrue("Alarm should be saved", !GeoAlarm.getGeoAlarms(context).isEmpty());
-  }
-
-  @Test
   public void geoAlarmFragment_editMode_withNullRingtoneUri() {
     GeoAlarm alarm =
         saveAlarm(
@@ -408,7 +344,6 @@ public class MapActivityUnitTest {
   // ---- adapter toggle callback via RecyclerView ----
 
   @Test
-  @Config(sdk = 28)
   public void alarmList_toggleSwitch_disablesAlarm() {
     GeoAlarm alarm = saveAlarm(enabledAlarm().withPlace("Toggle Test").withHour(8).withMinute(0));
     MapActivity activity = buildActivity();

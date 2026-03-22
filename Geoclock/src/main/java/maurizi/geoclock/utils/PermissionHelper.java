@@ -26,10 +26,9 @@ public class PermissionHelper {
   public static final int REQUEST_NOTIFICATION_PERMISSION = 101;
 
   public static boolean needsBackgroundLocation(@NonNull Context context) {
-    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-        && ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-            != PERMISSION_GRANTED;
+    return ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        != PERMISSION_GRANTED;
   }
 
   public static boolean needsNotificationPermission(@NonNull Context context) {
