@@ -105,6 +105,10 @@ public class GeofenceIntegrationTest {
     latch.await(10, TimeUnit.SECONDS);
     mockModeEnabled = ok.get();
     assertTrue("FusedLocationProviderClient mock mode should be enabled", mockModeEnabled);
+
+    // Give Play Services time to fully initialize mock mode before registering geofences.
+    // API 28 emulators need extra settling time.
+    Thread.sleep(2000);
   }
 
   @After
@@ -268,7 +272,7 @@ public class GeofenceIntegrationTest {
               latch.countDown();
             })
         .addOnFailureListener(e -> latch.countDown());
-    latch.await(10, TimeUnit.SECONDS);
+    latch.await(30, TimeUnit.SECONDS);
     return ok.get();
   }
 
