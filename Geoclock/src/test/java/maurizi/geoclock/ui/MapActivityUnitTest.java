@@ -28,6 +28,8 @@ import java.time.DayOfWeek;
 import java.util.UUID;
 import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
+import maurizi.geoclock.shadows.ShadowMapsInitializer;
+import maurizi.geoclock.shadows.ShadowSupportMapFragment;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +40,9 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowToast;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 33)
+@Config(
+    sdk = 33,
+    shadows = {ShadowMapsInitializer.class, ShadowSupportMapFragment.class})
 public class MapActivityUnitTest {
 
   private Context context;
