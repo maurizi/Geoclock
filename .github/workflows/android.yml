@@ -64,11 +64,8 @@ jobs:
       matrix:
         api-level: [28, 31, 34, 35]
         include:
-          # API 28 emulator has unreliable geofence support (GEOFENCE_NOT_AVAILABLE),
-          # causing 4 geofence integration tests to fail intermittently.
           - api-level: 28
-            allow-failure: true
-    continue-on-error: ${{ matrix.allow-failure || false }}
+            exclude-tests: maurizi.geoclock.integration.GeofenceIntegrationTest
     steps:
       - uses: actions/checkout@v4
       - name: Enable KVM
@@ -93,7 +90,11 @@ jobs:
           script: |
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
-            ./gradlew createDebugAndroidTestCoverageReport --stacktrace > test-output.txt 2>&1; echo $? > exit-code.txt
+            EXCLUDE_ARGS=""
+            if [ -n "${{ matrix.exclude-tests }}" ]; then
+              EXCLUDE_ARGS="-Pandroid.testInstrumentationRunnerArguments.notClass=${{ matrix.exclude-tests }}"
+            fi
+            ./gradlew createDebugAndroidTestCoverageReport $EXCLUDE_ARGS --stacktrace > test-output.txt 2>&1; echo $? > exit-code.txt
             cat test-output.txt
             exit $(cat exit-code.txt)
         env:
@@ -109,7 +110,11 @@ jobs:
           script: |
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
-            ./gradlew createDebugAndroidTestCoverageReport --stacktrace > test-output.txt 2>&1; echo $? > exit-code.txt
+            EXCLUDE_ARGS=""
+            if [ -n "${{ matrix.exclude-tests }}" ]; then
+              EXCLUDE_ARGS="-Pandroid.testInstrumentationRunnerArguments.notClass=${{ matrix.exclude-tests }}"
+            fi
+            ./gradlew createDebugAndroidTestCoverageReport $EXCLUDE_ARGS --stacktrace > test-output.txt 2>&1; echo $? > exit-code.txt
             cat test-output.txt
             exit $(cat exit-code.txt)
         env:
