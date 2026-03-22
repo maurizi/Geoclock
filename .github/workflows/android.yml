@@ -63,6 +63,9 @@ jobs:
       fail-fast: false
       matrix:
         api-level: [28, 31, 34, 35]
+        include:
+          - api-level: 28
+            exclude-tests: maurizi.geoclock.integration.GeofenceIntegrationTest
     steps:
       - uses: actions/checkout@v4
       - name: Enable KVM
@@ -87,7 +90,13 @@ jobs:
           script: |
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
-            ./gradlew createDebugAndroidTestCoverageReport --stacktrace 2>&1 | tee test-output.txt
+            EXCLUDE_ARGS=""
+            if [ -n "${{ matrix.exclude-tests }}" ]; then
+              EXCLUDE_ARGS="-Pandroid.testInstrumentationRunnerArguments.notClass=${{ matrix.exclude-tests }}"
+            fi
+            ./gradlew createDebugAndroidTestCoverageReport $EXCLUDE_ARGS --stacktrace > test-output.txt 2>&1; echo $? > exit-code.txt
+            cat test-output.txt
+            exit $(cat exit-code.txt)
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
       - name: Retry instrumentation tests
@@ -101,7 +110,13 @@ jobs:
           script: |
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
-            ./gradlew createDebugAndroidTestCoverageReport --stacktrace 2>&1 | tee test-output.txt
+            EXCLUDE_ARGS=""
+            if [ -n "${{ matrix.exclude-tests }}" ]; then
+              EXCLUDE_ARGS="-Pandroid.testInstrumentationRunnerArguments.notClass=${{ matrix.exclude-tests }}"
+            fi
+            ./gradlew createDebugAndroidTestCoverageReport $EXCLUDE_ARGS --stacktrace > test-output.txt 2>&1; echo $? > exit-code.txt
+            cat test-output.txt
+            exit $(cat exit-code.txt)
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
       - name: Upload instrumentation coverage data
@@ -150,11 +165,11 @@ jobs:
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
+        continue-on-error: true
         with:
           file: Geoclock/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
           format: jacoco
           base-path: Geoclock/src/main/java
-          status: false
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

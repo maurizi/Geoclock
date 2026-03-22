@@ -57,11 +57,11 @@ public class LocationPickerActivity extends AppCompatActivity {
   private static final int MAX_RADIUS_IMPERIAL = 24140; // 30mi wide
   private static final int SEEKBAR_MAX = 1000;
 
-  private int getMinRadius() {
+  int getMinRadius() {
     return DistanceUtils.useImperial(this) ? MIN_RADIUS_IMPERIAL : MIN_RADIUS_METRIC;
   }
 
-  private int getMaxRadius() {
+  int getMaxRadius() {
     return DistanceUtils.useImperial(this) ? MAX_RADIUS_IMPERIAL : MAX_RADIUS_METRIC;
   }
 
@@ -177,13 +177,13 @@ public class LocationPickerActivity extends AppCompatActivity {
     return super.onOptionsItemSelected(item);
   }
 
-  private int progressToRadius(int progress) {
+  int progressToRadius(int progress) {
     int min = getMinRadius();
     double ratio = (double) progress / SEEKBAR_MAX;
     return (int) (min * Math.pow((double) getMaxRadius() / min, ratio));
   }
 
-  private int radiusToProgress(int radius) {
+  int radiusToProgress(int radius) {
     int min = getMinRadius();
     double ratio = Math.log((double) radius / min) / Math.log((double) getMaxRadius() / min);
     return (int) Math.round(ratio * SEEKBAR_MAX);
