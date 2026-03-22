@@ -152,11 +152,11 @@ jobs:
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
+        continue-on-error: true
         with:
           file: Geoclock/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
           format: jacoco
           base-path: Geoclock/src/main/java
-          status: false
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
