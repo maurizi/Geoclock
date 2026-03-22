@@ -85,6 +85,7 @@ jobs:
           target: google_apis
           ram-size: 4096M
           script: |
+            set -o pipefail
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
             ./gradlew createDebugAndroidTestCoverageReport --stacktrace 2>&1 | tee test-output.txt
@@ -99,6 +100,7 @@ jobs:
           target: google_apis
           ram-size: 4096M
           script: |
+            set -o pipefail
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
             ./gradlew createDebugAndroidTestCoverageReport --stacktrace 2>&1 | tee test-output.txt
