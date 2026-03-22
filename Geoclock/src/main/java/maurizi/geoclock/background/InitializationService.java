@@ -4,6 +4,7 @@ import static com.google.common.collect.Collections2.filter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.JobIntentService;
 import java.time.Instant;
@@ -31,14 +32,9 @@ public class InitializationService extends JobIntentService {
     LocationServiceGoogle locationService = new LocationServiceGoogle(this);
     locationService
         .addGeofences(filter(alarms, alarm -> alarm.enabled))
-        .addOnSuccessListener(
-            aVoid -> {
-              /* geofences registered */
-            })
+        .addOnSuccessListener(aVoid -> Log.d("InitializationService", "Geofences registered"))
         .addOnFailureListener(
-            e -> {
-              /* TODO: handle registration failure */
-            });
+            e -> Log.w("InitializationService", "Geofence registration failed", e));
   }
 
   private void disableExpiredAlarms(Collection<GeoAlarm> alarms) {

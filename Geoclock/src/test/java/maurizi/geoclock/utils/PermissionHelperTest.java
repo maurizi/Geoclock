@@ -1,11 +1,17 @@
 package maurizi.geoclock.utils;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
+import android.os.Looper;
+import android.provider.Settings;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.FragmentActivity;
 import androidx.test.core.app.ApplicationProvider;
 import org.junit.Before;
@@ -15,7 +21,9 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowAlarmManager;
+import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowApplication;
 
 @RunWith(RobolectricTestRunner.class)
@@ -252,5 +260,157 @@ public class PermissionHelperTest {
         Shadows.shadowOf((Application) ApplicationProvider.getApplicationContext());
     shadowApp.grantPermissions(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
     assertFalse(PermissionHelper.needsBackgroundLocation(context));
+  }
+
+  // ---- Dialog button callback tests ----
+  // Each request* method is private, so we call them via reflection to test in isolation.
+
+  private void invokePrivateRequest(String methodName, FragmentActivity activity, Runnable next)
+      throws Exception {
+    java.lang.reflect.Method method =
+        PermissionHelper.class.getDeclaredMethod(
+            methodName, FragmentActivity.class, Runnable.class);
+    method.setAccessible(true);
+    method.invoke(null, activity, next);
+  }
+
+  private AlertDialog getLatestAppCompatDialog() {
+    // ShadowAlertDialog tracks appcompat dialogs via ShadowAlertDialogCompat
+    return (AlertDialog) ShadowAlertDialog.getLatestDialog();
+  }
+
+  @Test
+  @Config(sdk = 29)
+  public void requestBackgroundLocation_positiveButton_requestsPermissionAndCallsNext()
+      throws Exception {
+    FragmentActivity activity =
+        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    boolean[] completed = {false};
+    invokePrivateRequest("requestBackgroundLocation", activity, () -> completed[0] = true);
+
+    AlertDialog dialog = getLatestAppCompatDialog();
+    assertNotNull("Background location dialog should be shown", dialog);
+    dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+    assertTrue("next.run() should be called after positive click", completed[0]);
+  }
+
+  @Test
+  @Config(sdk = 29)
+  public void requestBackgroundLocation_negativeButton_callsNext() throws Exception {
+    FragmentActivity activity =
+        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    boolean[] completed = {false};
+    invokePrivateRequest("requestBackgroundLocation", activity, () -> completed[0] = true);
+
+    AlertDialog dialog = getLatestAppCompatDialog();
+    assertNotNull(dialog);
+    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+    assertTrue("next.run() should be called after negative click", completed[0]);
+  }
+
+  @Test
+  @Config(sdk = 33)
+  public void requestNotificationPermission_positiveButton_requestsPermissionAndCallsNext()
+      throws Exception {
+    FragmentActivity activity =
+        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    boolean[] completed = {false};
+    invokePrivateRequest("requestNotificationPermission", activity, () -> completed[0] = true);
+
+    AlertDialog dialog = getLatestAppCompatDialog();
+    assertNotNull("Notification permission dialog should be shown", dialog);
+    dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+    assertTrue("next.run() should be called after positive click", completed[0]);
+  }
+
+  @Test
+  @Config(sdk = 33)
+  public void requestNotificationPermission_negativeButton_callsNext() throws Exception {
+    FragmentActivity activity =
+        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    boolean[] completed = {false};
+    invokePrivateRequest("requestNotificationPermission", activity, () -> completed[0] = true);
+
+    AlertDialog dialog = getLatestAppCompatDialog();
+    assertNotNull(dialog);
+    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+    assertTrue("next.run() should be called after negative click", completed[0]);
+  }
+
+  @Test
+  @Config(sdk = 31)
+  public void requestExactAlarm_positiveButton_startsSettingsIntentAndCallsNext() throws Exception {
+    ShadowAlarmManager.setCanScheduleExactAlarms(false);
+    FragmentActivity activity =
+        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    boolean[] completed = {false};
+    invokePrivateRequest("requestExactAlarm", activity, () -> completed[0] = true);
+
+    AlertDialog dialog = getLatestAppCompatDialog();
+    assertNotNull("Exact alarm dialog should be shown", dialog);
+    dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+
+    ShadowActivity shadowActivity = Shadows.shadowOf(activity);
+    Intent startedIntent = shadowActivity.getNextStartedActivity();
+    assertNotNull("Positive button should start settings intent", startedIntent);
+    assertEquals(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, startedIntent.getAction());
+    assertTrue("next.run() should be called after positive click", completed[0]);
+  }
+
+  @Test
+  @Config(sdk = 31)
+  public void requestExactAlarm_negativeButton_callsNext() throws Exception {
+    ShadowAlarmManager.setCanScheduleExactAlarms(false);
+    FragmentActivity activity =
+        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    boolean[] completed = {false};
+    invokePrivateRequest("requestExactAlarm", activity, () -> completed[0] = true);
+
+    AlertDialog dialog = getLatestAppCompatDialog();
+    assertNotNull(dialog);
+    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+    assertTrue("next.run() should be called after negative click", completed[0]);
+  }
+
+  @Test
+  @Config(sdk = 34)
+  public void requestFullScreenIntent_positiveButton_startsSettingsIntentAndCallsNext()
+      throws Exception {
+    FragmentActivity activity =
+        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    boolean[] completed = {false};
+    invokePrivateRequest("requestFullScreenIntent", activity, () -> completed[0] = true);
+
+    AlertDialog dialog = getLatestAppCompatDialog();
+    assertNotNull("Full screen intent dialog should be shown", dialog);
+    dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+
+    ShadowActivity shadowActivity = Shadows.shadowOf(activity);
+    Intent startedIntent = shadowActivity.getNextStartedActivity();
+    assertNotNull("Positive button should start settings intent", startedIntent);
+    assertEquals(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, startedIntent.getAction());
+    assertTrue("next.run() should be called after positive click", completed[0]);
+  }
+
+  @Test
+  @Config(sdk = 34)
+  public void requestFullScreenIntent_negativeButton_callsNext() throws Exception {
+    FragmentActivity activity =
+        Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    boolean[] completed = {false};
+    invokePrivateRequest("requestFullScreenIntent", activity, () -> completed[0] = true);
+
+    AlertDialog dialog = getLatestAppCompatDialog();
+    assertNotNull(dialog);
+    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+    assertTrue("next.run() should be called after negative click", completed[0]);
   }
 }

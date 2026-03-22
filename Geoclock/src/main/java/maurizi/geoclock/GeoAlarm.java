@@ -123,10 +123,7 @@ public class GeoAlarm {
   }
 
   private LocalDate getSoonestDayForRepeatingAlarm(LocalDateTime now) {
-    assert days != null;
-    if (isNonRepeating()) {
-      throw new AssertionError();
-    }
+    assert days != null && !isNonRepeating();
 
     final DayOfWeek currentDayOfWeek = now.getDayOfWeek();
 

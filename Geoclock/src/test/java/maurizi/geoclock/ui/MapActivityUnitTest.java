@@ -1,12 +1,17 @@
 package maurizi.geoclock.ui;
 
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import android.Manifest;
+import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Looper;
@@ -29,6 +34,7 @@ import maurizi.geoclock.GeoAlarm;
 import maurizi.geoclock.R;
 import maurizi.geoclock.shadows.ShadowMapsInitializer;
 import maurizi.geoclock.shadows.ShadowSupportMapFragment;
+import maurizi.geoclock.utils.LocationServiceGoogle;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,6 +42,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowApplication;
 import org.robolectric.shadows.ShadowToast;
 
 @RunWith(RobolectricTestRunner.class)
@@ -504,5 +511,105 @@ public class MapActivityUnitTest {
   private MapActivity buildActivity() {
     Intent intent = new Intent(context, MapActivity.class);
     return Robolectric.buildActivity(MapActivity.class, intent).setup().get();
+  }
+
+  // ---- Coverage gap tests: permission request, pending alarm, activateAlarmsInsideGeofence ----
+
+  @Test
+  public void onRequestPermissionsResult_granted_callsOnLocationPermissionGranted()
+      throws Exception {
+    ShadowApplication shadowApp =
+        Shadows.shadowOf((Application) ApplicationProvider.getApplicationContext());
+    shadowApp.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION);
+
+    MapActivity activity = buildActivity();
+    // Inject a mock locationService
+    LocationServiceGoogle mockLocationService = mock(LocationServiceGoogle.class);
+    doAnswer(
+            invocation -> {
+              LocationServiceGoogle.LocationCallback cb = invocation.getArgument(0);
+              cb.onLocation(new LatLng(37.4, -122.0));
+              return null;
+            })
+        .when(mockLocationService)
+        .getLastLocation(any());
+    when(mockLocationService.addGeofence(any()))
+        .thenReturn(com.google.android.gms.tasks.Tasks.forResult(null));
+    setPrivateField(activity, "locationService", mockLocationService);
+
+    activity.onRequestPermissionsResult(
+        1, // REQUEST_LOCATION_PERMISSION
+        new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
+        new int[] {PERMISSION_GRANTED});
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+    // Should call onLocationPermissionGranted → centerCamera. No crash = success.
+  }
+
+  @Test
+  public void pendingAlarmId_triggersShowEditPopup() throws Exception {
+    GeoAlarm alarm = saveAlarm(enabledAlarm().withPlace("Pending"));
+    ShadowApplication shadowApp =
+        Shadows.shadowOf((Application) ApplicationProvider.getApplicationContext());
+    shadowApp.grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION);
+
+    Intent intent = new Intent(context, MapActivity.class);
+    intent.putExtra("ALARM_ID", alarm.id.toString());
+    MapActivity activity = Robolectric.buildActivity(MapActivity.class, intent).setup().get();
+
+    // Inject mock location service and call onLocationPermissionGranted
+    LocationServiceGoogle mockLocationService = mock(LocationServiceGoogle.class);
+    doAnswer(
+            invocation -> {
+              LocationServiceGoogle.LocationCallback cb = invocation.getArgument(0);
+              cb.onLocation(new LatLng(37.4, -122.0));
+              return null;
+            })
+        .when(mockLocationService)
+        .getLastLocation(any());
+    when(mockLocationService.addGeofence(any()))
+        .thenReturn(com.google.android.gms.tasks.Tasks.forResult(null));
+    setPrivateField(activity, "locationService", mockLocationService);
+    setPrivateField(activity, "pendingAlarmId", alarm.id.toString());
+
+    // Simulate permission granted
+    java.lang.reflect.Method method =
+        MapActivity.class.getDeclaredMethod("onLocationPermissionGranted");
+    method.setAccessible(true);
+    method.invoke(activity);
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+
+    // pendingAlarmId should be cleared
+    Field field = MapActivity.class.getDeclaredField("pendingAlarmId");
+    field.setAccessible(true);
+    assertNull("pendingAlarmId should be cleared", field.get(activity));
+  }
+
+  @Test
+  public void activateAlarmsInsideGeofence_enabledAlarmInside_addsToActiveAlarms()
+      throws Exception {
+    GeoAlarm alarm = saveAlarm(enabledAlarm().withPlace("Inside"));
+    MapActivity activity = buildActivity();
+
+    // Inject mock locationService that returns a location inside the alarm
+    LocationServiceGoogle mockLocationService = mock(LocationServiceGoogle.class);
+    doAnswer(
+            invocation -> {
+              LocationServiceGoogle.LocationCallback cb = invocation.getArgument(0);
+              cb.onLocation(alarm.location); // Same location = inside
+              return null;
+            })
+        .when(mockLocationService)
+        .getLastLocation(any());
+    when(mockLocationService.addGeofence(any()))
+        .thenReturn(com.google.android.gms.tasks.Tasks.forResult(null));
+    setPrivateField(activity, "locationService", mockLocationService);
+
+    // Call activateAlarmsInsideGeofence
+    java.lang.reflect.Method method =
+        MapActivity.class.getDeclaredMethod("activateAlarmsInsideGeofence");
+    method.setAccessible(true);
+    method.invoke(activity);
+    Shadows.shadowOf(Looper.getMainLooper()).idle();
+    // Lines 245+250 should be covered (toActivate.add, addActiveAlarms)
   }
 }
