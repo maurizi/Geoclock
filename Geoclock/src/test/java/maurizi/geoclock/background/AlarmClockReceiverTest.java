@@ -128,6 +128,14 @@ public class AlarmClockReceiverTest {
     receiver.onReceive(context, intent); // should not throw
   }
 
+  @Test
+  public void onReceive_cancelUpcoming_noAlarmId_doesNotCrash() {
+    Intent intent = new Intent(context, AlarmClockReceiver.class);
+    intent.setAction(AlarmClockReceiver.ACTION_CANCEL_UPCOMING);
+    // No alarm_id extra
+    receiver.onReceive(context, intent);
+  }
+
   // ---- Snooze bypass ----
 
   @Test

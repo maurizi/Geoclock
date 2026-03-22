@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api-level: [28, 31, 34, 35]
+        api-level: [29, 30, 31, 34, 35]
     steps:
       - uses: actions/checkout@v4
       - name: Enable KVM
@@ -77,7 +77,6 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Run instrumentation tests
-        id: run-tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
@@ -87,21 +86,9 @@ jobs:
           script: |
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
-            ./gradlew createDebugAndroidTestCoverageReport --stacktrace 2>&1 | tee test-output.txt
-        env:
-          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-      - name: Retry instrumentation tests
-        if: failure() && steps.run-tests.outcome == 'failure'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ matrix.api-level }}
-          arch: x86_64
-          target: google_apis
-          ram-size: 4096M
-          script: |
-            adb shell settings put global location_mode 3
-            adb shell wm dismiss-keyguard
-            ./gradlew createDebugAndroidTestCoverageReport --stacktrace 2>&1 | tee test-output.txt
+            adb emu geo fix -122.0840 37.4219
+            sleep 5
+            ./gradlew createDebugAndroidTestCoverageReport --stacktrace
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
       - name: Upload instrumentation coverage data
@@ -150,11 +137,11 @@ jobs:
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
+        continue-on-error: true
         with:
           file: Geoclock/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
           format: jacoco
           base-path: Geoclock/src/main/java
-          status: false
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
