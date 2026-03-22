@@ -85,10 +85,11 @@ jobs:
           target: google_apis
           ram-size: 4096M
           script: |
-            set -o pipefail
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
-            ./gradlew createDebugAndroidTestCoverageReport --stacktrace 2>&1 | tee test-output.txt
+            ./gradlew createDebugAndroidTestCoverageReport --stacktrace > test-output.txt 2>&1; echo $? > exit-code.txt
+            cat test-output.txt
+            exit $(cat exit-code.txt)
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
       - name: Retry instrumentation tests
@@ -100,10 +101,11 @@ jobs:
           target: google_apis
           ram-size: 4096M
           script: |
-            set -o pipefail
             adb shell settings put global location_mode 3
             adb shell wm dismiss-keyguard
-            ./gradlew createDebugAndroidTestCoverageReport --stacktrace 2>&1 | tee test-output.txt
+            ./gradlew createDebugAndroidTestCoverageReport --stacktrace > test-output.txt 2>&1; echo $? > exit-code.txt
+            cat test-output.txt
+            exit $(cat exit-code.txt)
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
       - name: Upload instrumentation coverage data
