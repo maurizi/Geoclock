@@ -3,7 +3,6 @@ package maurizi.geoclock.integration;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.AlarmManager;
@@ -262,37 +261,46 @@ public class GeofenceIntegrationTest {
   }
 
   /**
-   * Registers a geofence, skipping the test if the emulator doesn't support geofencing
-   * (GEOFENCE_NOT_AVAILABLE / status code 1000).
+   * Registers a geofence, retrying on GEOFENCE_NOT_AVAILABLE since the location subsystem on some
+   * emulators needs time to warm up.
    */
   private void registerGeofence(LocationServiceGoogle locationService, GeoAlarm alarm)
       throws Exception {
-    CountDownLatch latch = new CountDownLatch(1);
-    AtomicBoolean ok = new AtomicBoolean(false);
-    final Exception[] failure = {null};
-    locationService
-        .addGeofence(alarm)
-        .addOnSuccessListener(
-            v -> {
-              ok.set(true);
-              latch.countDown();
-            })
-        .addOnFailureListener(
-            e -> {
-              failure[0] = e;
-              latch.countDown();
-            });
-    boolean completed = latch.await(30, TimeUnit.SECONDS);
-    if (!completed) {
-      throw new AssertionError("Geofence registration timed out after 30s");
+    int maxAttempts = 5;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      CountDownLatch latch = new CountDownLatch(1);
+      AtomicBoolean ok = new AtomicBoolean(false);
+      final Exception[] failure = {null};
+      locationService
+          .addGeofence(alarm)
+          .addOnSuccessListener(
+              v -> {
+                ok.set(true);
+                latch.countDown();
+              })
+          .addOnFailureListener(
+              e -> {
+                failure[0] = e;
+                latch.countDown();
+              });
+      boolean completed = latch.await(30, TimeUnit.SECONDS);
+      if (!completed) {
+        throw new AssertionError("Geofence registration timed out after 30s");
+      }
+      if (ok.get()) {
+        return;
+      }
+      // Retry on GEOFENCE_NOT_AVAILABLE — location subsystem may still be warming up
+      boolean retryable =
+          failure[0] instanceof ApiException
+              && ((ApiException) failure[0]).getStatusCode()
+                  == GeofenceStatusCodes.GEOFENCE_NOT_AVAILABLE;
+      if (!retryable || attempt == maxAttempts) {
+        assertTrue(
+            "Geofence registration failed after " + attempt + " attempts: " + failure[0], ok.get());
+      }
+      Thread.sleep(3000);
     }
-    if (!ok.get() && failure[0] instanceof ApiException) {
-      int statusCode = ((ApiException) failure[0]).getStatusCode();
-      assumeTrue(
-          "Geofencing not available on this emulator (status " + statusCode + ")",
-          statusCode != GeofenceStatusCodes.GEOFENCE_NOT_AVAILABLE);
-    }
-    assertTrue("Geofence registration failed: " + failure[0], ok.get());
   }
 
   private GeoAlarm repeatingAlarmAt(LatLng location) {
