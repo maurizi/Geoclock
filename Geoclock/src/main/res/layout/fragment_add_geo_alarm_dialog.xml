@@ -154,13 +154,13 @@
                 android:layout_marginBottom="8dp">
 
                 <TableRow>
-                    <CheckBox android:id="@+id/sun" android:layout_gravity="center_horizontal" android:contentDescription="@string/sunday"/>
-                    <CheckBox android:id="@+id/mon" android:layout_gravity="center_horizontal" android:contentDescription="@string/monday"/>
-                    <CheckBox android:id="@+id/tues" android:layout_gravity="center_horizontal" android:contentDescription="@string/tuesday"/>
-                    <CheckBox android:id="@+id/wed" android:layout_gravity="center_horizontal" android:contentDescription="@string/wednesday"/>
-                    <CheckBox android:id="@+id/thu" android:layout_gravity="center_horizontal" android:contentDescription="@string/thursday"/>
-                    <CheckBox android:id="@+id/fri" android:layout_gravity="center_horizontal" android:contentDescription="@string/friday"/>
-                    <CheckBox android:id="@+id/sat" android:layout_gravity="center_horizontal" android:contentDescription="@string/saturday"/>
+                    <CheckBox android:id="@+id/sun" android:layout_gravity="center_horizontal" android:minWidth="0dp" android:minHeight="0dp" android:contentDescription="@string/sunday"/>
+                    <CheckBox android:id="@+id/mon" android:layout_gravity="center_horizontal" android:minWidth="0dp" android:minHeight="0dp" android:contentDescription="@string/monday"/>
+                    <CheckBox android:id="@+id/tues" android:layout_gravity="center_horizontal" android:minWidth="0dp" android:minHeight="0dp" android:contentDescription="@string/tuesday"/>
+                    <CheckBox android:id="@+id/wed" android:layout_gravity="center_horizontal" android:minWidth="0dp" android:minHeight="0dp" android:contentDescription="@string/wednesday"/>
+                    <CheckBox android:id="@+id/thu" android:layout_gravity="center_horizontal" android:minWidth="0dp" android:minHeight="0dp" android:contentDescription="@string/thursday"/>
+                    <CheckBox android:id="@+id/fri" android:layout_gravity="center_horizontal" android:minWidth="0dp" android:minHeight="0dp" android:contentDescription="@string/friday"/>
+                    <CheckBox android:id="@+id/sat" android:layout_gravity="center_horizontal" android:minWidth="0dp" android:minHeight="0dp" android:contentDescription="@string/saturday"/>
                 </TableRow>
 
                 <TableRow>
