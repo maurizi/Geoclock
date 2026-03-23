@@ -368,10 +368,9 @@ public class GeoAlarmFragment extends DialogFragment {
   private void finishSave(MapActivity activity, @Nullable Dialog dialog, GeoAlarm newAlarm) {
     GeoAlarm.save(activity, newAlarm);
     if (newAlarm.enabled) {
+      // Geofence is already registered by completeSave(). INITIAL_TRIGGER_ENTER
+      // handles scheduling if inside. For instant feedback, also check location now.
       if (activity.locationService != null) {
-        activity.locationService.addGeofence(newAlarm);
-        // Schedule immediately if inside the geofence (avoids waiting
-        // for the INITIAL_TRIGGER_ENTER callback which can be delayed).
         final GeoAlarm toCheck = newAlarm;
         activity.locationService.getLastLocation(
             loc -> {
@@ -381,11 +380,7 @@ public class GeoAlarmFragment extends DialogFragment {
             });
       }
     } else {
-      ActiveAlarmManager aam = new ActiveAlarmManager(activity);
-      if (activity.locationService != null) {
-        activity.locationService.removeGeofence(newAlarm);
-      }
-      aam.removeActiveAlarms(ImmutableSet.of(newAlarm.id));
+      new ActiveAlarmManager(activity).removeActiveAlarms(ImmutableSet.of(newAlarm.id));
     }
     if (newAlarm.place == null) {
       geocodeAsync(activity, newAlarm);
