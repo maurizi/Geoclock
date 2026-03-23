@@ -35,6 +35,10 @@ public class InitializationService extends JobIntentService {
         .addOnSuccessListener(aVoid -> Log.d("InitializationService", "Geofences registered"))
         .addOnFailureListener(
             e -> Log.w("InitializationService", "Geofence registration failed", e));
+    // Geofences are registered with INITIAL_TRIGGER_ENTER, so the system will
+    // send a GEOFENCE_TRANSITION_ENTER to GeofenceReceiver if the device is
+    // already inside a geofence. That receiver calls addActiveAlarms, which
+    // schedules the alarm in AlarmManager. No manual scheduling needed here.
   }
 
   private void disableExpiredAlarms(Collection<GeoAlarm> alarms) {

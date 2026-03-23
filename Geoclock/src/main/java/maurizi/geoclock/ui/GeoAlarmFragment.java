@@ -179,7 +179,12 @@ public class GeoAlarmFragment extends DialogFragment {
     if (isEdit) {
       selectedRingtoneUri = alarm.ringtoneUri;
     } else {
-      selectedRingtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString();
+      Uri actualDefault =
+          RingtoneManager.getActualDefaultRingtoneUri(requireContext(), RingtoneManager.TYPE_ALARM);
+      selectedRingtoneUri =
+          actualDefault != null
+              ? actualDefault.toString()
+              : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString();
     }
     ringtoneUriSet = true;
     updateRingtoneLabel();
@@ -367,10 +372,24 @@ public class GeoAlarmFragment extends DialogFragment {
 
   private void finishSave(MapActivity activity, @Nullable Dialog dialog, GeoAlarm newAlarm) {
     GeoAlarm.save(activity, newAlarm);
-    ActiveAlarmManager aam = new ActiveAlarmManager(activity);
     if (newAlarm.enabled) {
-      aam.addActiveAlarms(ImmutableSet.of(newAlarm.id));
+      if (activity.locationService != null) {
+        activity.locationService.addGeofence(newAlarm);
+        // Schedule immediately if inside the geofence (avoids waiting
+        // for the INITIAL_TRIGGER_ENTER callback which can be delayed).
+        final GeoAlarm toCheck = newAlarm;
+        activity.locationService.getLastLocation(
+            loc -> {
+              if (loc != null && MapActivity.isInsideGeofence(loc, toCheck)) {
+                new ActiveAlarmManager(activity).addActiveAlarms(ImmutableSet.of(toCheck.id));
+              }
+            });
+      }
     } else {
+      ActiveAlarmManager aam = new ActiveAlarmManager(activity);
+      if (activity.locationService != null) {
+        activity.locationService.removeGeofence(newAlarm);
+      }
       aam.removeActiveAlarms(ImmutableSet.of(newAlarm.id));
     }
     if (newAlarm.place == null) {
@@ -429,7 +448,12 @@ public class GeoAlarmFragment extends DialogFragment {
     names.add(getString(R.string.ringtone_vibrate_only));
     uris.add(null);
     names.add(getString(R.string.ringtone_default));
-    uris.add(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
+    Uri actualDefault =
+        RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_ALARM);
+    uris.add(
+        actualDefault != null
+            ? actualDefault.toString()
+            : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
 
     java.util.Set<String> seenTitles = new java.util.HashSet<>();
     while (cursor.moveToNext()) {

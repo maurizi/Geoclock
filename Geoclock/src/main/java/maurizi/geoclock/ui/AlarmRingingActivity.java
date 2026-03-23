@@ -19,6 +19,7 @@ import maurizi.geoclock.background.AlarmRingingService;
 public class AlarmRingingActivity extends AppCompatActivity {
 
   public static final String EXTRA_ALARM_ID = "alarm_id";
+  private boolean userDismissed = false;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +41,7 @@ public class AlarmRingingActivity extends AppCompatActivity {
             new OnBackPressedCallback(true) {
               @Override
               public void handleOnBackPressed() {
+                userDismissed = true;
                 AlarmRingingService.stop(AlarmRingingActivity.this);
                 finish();
               }
@@ -61,18 +63,23 @@ public class AlarmRingingActivity extends AppCompatActivity {
     if (alarm != null && alarm.place != null) {
       nameView.setText(alarm.place);
     }
-    LocalTime alarmTime = alarm != null ? LocalTime.of(alarm.hour, alarm.minute) : LocalTime.now();
+    LocalTime alarmTime =
+        alarm != null && alarm.hour != null && alarm.minute != null
+            ? LocalTime.of(alarm.hour, alarm.minute)
+            : LocalTime.now();
     timeView.setText(alarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)));
 
     final GeoAlarm finalAlarm = alarm;
     dismissButton.setOnClickListener(
         v -> {
+          userDismissed = true;
           AlarmRingingService.stop(this);
           finish();
         });
 
     snoozeButton.setOnClickListener(
         v -> {
+          userDismissed = true;
           AlarmRingingService.stop(this);
           if (finalAlarm != null) {
             AlarmRingingService.scheduleSnooze(this, finalAlarm);
@@ -84,6 +91,11 @@ public class AlarmRingingActivity extends AppCompatActivity {
   @Override
   protected void onDestroy() {
     super.onDestroy();
-    AlarmRingingService.stop(this);
+    // Only stop the alarm service if the user explicitly dismissed/snoozed.
+    // The system may destroy this activity for config changes or memory pressure;
+    // in that case the foreground service should keep ringing.
+    if (userDismissed) {
+      AlarmRingingService.stop(this);
+    }
   }
 }

@@ -52,7 +52,8 @@ public class MapActivity extends AppCompatActivity {
   private static final int MAP_BOUNDS_PADDING = 60;
 
   private GoogleMap map = null;
-  private LocationServiceGoogle locationService = null;
+  // Package-private so GeoAlarmFragment can register geofences on save
+  LocationServiceGoogle locationService = null;
   private BiMap<UUID, Marker> markers = null;
   private @Nullable Location currentLocation = null;
   private String pendingAlarmId = null;
@@ -136,9 +137,11 @@ public class MapActivity extends AppCompatActivity {
       public void onToggleEnabled(GeoAlarm alarm, boolean enabled) {
         Runnable doToggle =
             () -> {
-              GeoAlarm updated = alarm.withEnabled(enabled);
+              GeoAlarm updated =
+                  enabled
+                      ? alarm.withEnabled(true).withTime(null) // clear time to force recalculation
+                      : alarm.withEnabled(false);
               GeoAlarm.save(MapActivity.this, updated);
-              ActiveAlarmManager aam = new ActiveAlarmManager(MapActivity.this);
               if (locationService != null) {
                 if (enabled) {
                   locationService
@@ -148,10 +151,20 @@ public class MapActivity extends AppCompatActivity {
                               Toast.makeText(
                                       MapActivity.this, R.string.fail_location, Toast.LENGTH_SHORT)
                                   .show());
-                  aam.addActiveAlarms(ImmutableSet.of(updated.id));
+                  // Schedule immediately if inside the geofence (avoids waiting
+                  // for the INITIAL_TRIGGER_ENTER callback which can be delayed).
+                  final GeoAlarm toCheck = updated;
+                  locationService.getLastLocation(
+                      loc -> {
+                        if (loc != null && isInsideGeofence(loc, toCheck)) {
+                          new ActiveAlarmManager(MapActivity.this)
+                              .addActiveAlarms(ImmutableSet.of(toCheck.id));
+                        }
+                      });
                 } else {
                   locationService.removeGeofence(updated);
-                  aam.removeActiveAlarms(ImmutableSet.of(updated.id));
+                  new ActiveAlarmManager(MapActivity.this)
+                      .removeActiveAlarms(ImmutableSet.of(updated.id));
                 }
               }
             };
@@ -253,7 +266,7 @@ public class MapActivity extends AppCompatActivity {
         });
   }
 
-  static boolean isInsideGeofence(LatLng location, GeoAlarm alarm) {
+  public static boolean isInsideGeofence(LatLng location, GeoAlarm alarm) {
     float[] results = new float[1];
     android.location.Location.distanceBetween(
         location.latitude,

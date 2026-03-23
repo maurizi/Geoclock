@@ -3,6 +3,7 @@ package maurizi.geoclock.ui;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.AlarmManager;
@@ -150,6 +151,69 @@ public class AlarmRingingActivityTest {
     Intent stopped = sa.getNextStoppedService();
     assertNotNull("Back press should stop the ringing service", stopped);
     assertTrue("Back press should finish the activity", activity.isFinishing());
+  }
+
+  // ---- Bug #7: NPE when alarm.hour or alarm.minute is null ----
+
+  @Test
+  public void onCreate_withNullHour_doesNotCrash() {
+    // Bug #7: LocalTime.of(alarm.hour, alarm.minute) will NPE if hour is null
+    GeoAlarm alarm =
+        saveAlarm(
+            GeoAlarm.builder()
+                .id(UUID.randomUUID())
+                .location(new LatLng(37.4, -122.0))
+                .radius(100)
+                .enabled(true)
+                // hour and minute are null
+                .build());
+    AlarmRingingActivity activity = buildActivity(alarm.id.toString());
+    TextView timeView = activity.findViewById(R.id.alarm_ringing_time);
+    assertNotNull("Time view should show something even with null hour/minute", timeView);
+    assertFalse("Time view should not be empty", timeView.getText().toString().isEmpty());
+  }
+
+  @Test
+  public void onCreate_withNullMinuteOnly_doesNotCrash() {
+    GeoAlarm alarm =
+        saveAlarm(
+            GeoAlarm.builder()
+                .id(UUID.randomUUID())
+                .location(new LatLng(37.4, -122.0))
+                .radius(100)
+                .enabled(true)
+                .hour(8)
+                // minute is null
+                .build());
+    AlarmRingingActivity activity = buildActivity(alarm.id.toString());
+    assertNotNull(activity.findViewById(R.id.alarm_ringing_time));
+  }
+
+  // ---- Bug #4: onDestroy unconditionally stops alarm service ----
+
+  @Test
+  public void onDestroy_withoutUserAction_shouldNotStopService() {
+    // Bug #4: onDestroy calls AlarmRingingService.stop() unconditionally.
+    // If the system destroys the activity (memory pressure, config change)
+    // without the user pressing dismiss/snooze, the alarm gets silenced.
+    GeoAlarm alarm = saveAlarm(enabledAlarm());
+    Intent intent = new Intent(context, AlarmRingingActivity.class);
+    intent.putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, alarm.id.toString());
+    org.robolectric.android.controller.ActivityController<AlarmRingingActivity> controller =
+        Robolectric.buildActivity(AlarmRingingActivity.class, intent).setup();
+    ShadowApplication sa = Shadows.shadowOf((Application) context);
+    // Drain any setup-time service stops
+    while (sa.getNextStoppedService() != null) {}
+
+    // Simulate system destroying the activity without user action
+    controller.destroy();
+
+    // The service should NOT have been stopped just because the activity was destroyed
+    Intent stopped = sa.getNextStoppedService();
+    assertNull(
+        "onDestroy should not stop the alarm service without user action "
+            + "(system may destroy activity for config change or memory pressure)",
+        stopped);
   }
 
   // ---- helpers ----
