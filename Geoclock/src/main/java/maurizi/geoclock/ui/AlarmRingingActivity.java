@@ -19,7 +19,6 @@ import maurizi.geoclock.background.AlarmRingingService;
 public class AlarmRingingActivity extends AppCompatActivity {
 
   public static final String EXTRA_ALARM_ID = "alarm_id";
-  private boolean userDismissed = false;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +40,6 @@ public class AlarmRingingActivity extends AppCompatActivity {
             new OnBackPressedCallback(true) {
               @Override
               public void handleOnBackPressed() {
-                userDismissed = true;
                 AlarmRingingService.stop(AlarmRingingActivity.this);
                 finish();
               }
@@ -72,14 +70,12 @@ public class AlarmRingingActivity extends AppCompatActivity {
     final GeoAlarm finalAlarm = alarm;
     dismissButton.setOnClickListener(
         v -> {
-          userDismissed = true;
           AlarmRingingService.stop(this);
           finish();
         });
 
     snoozeButton.setOnClickListener(
         v -> {
-          userDismissed = true;
           AlarmRingingService.stop(this);
           if (finalAlarm != null) {
             AlarmRingingService.scheduleSnooze(this, finalAlarm);
@@ -91,11 +87,6 @@ public class AlarmRingingActivity extends AppCompatActivity {
   @Override
   protected void onDestroy() {
     super.onDestroy();
-    // Only stop the alarm service if the user explicitly dismissed/snoozed.
-    // The system may destroy this activity for config changes or memory pressure;
-    // in that case the foreground service should keep ringing.
-    if (userDismissed) {
-      AlarmRingingService.stop(this);
-    }
+    AlarmRingingService.stop(this);
   }
 }

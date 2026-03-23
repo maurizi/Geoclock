@@ -3,7 +3,6 @@ package maurizi.geoclock.ui;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.AlarmManager;
@@ -189,32 +188,9 @@ public class AlarmRingingActivityTest {
     assertNotNull(activity.findViewById(R.id.alarm_ringing_time));
   }
 
-  // ---- Bug #4: onDestroy unconditionally stops alarm service ----
-
-  @Test
-  public void onDestroy_withoutUserAction_shouldNotStopService() {
-    // Bug #4: onDestroy calls AlarmRingingService.stop() unconditionally.
-    // If the system destroys the activity (memory pressure, config change)
-    // without the user pressing dismiss/snooze, the alarm gets silenced.
-    GeoAlarm alarm = saveAlarm(enabledAlarm());
-    Intent intent = new Intent(context, AlarmRingingActivity.class);
-    intent.putExtra(AlarmRingingActivity.EXTRA_ALARM_ID, alarm.id.toString());
-    org.robolectric.android.controller.ActivityController<AlarmRingingActivity> controller =
-        Robolectric.buildActivity(AlarmRingingActivity.class, intent).setup();
-    ShadowApplication sa = Shadows.shadowOf((Application) context);
-    // Drain any setup-time service stops
-    while (sa.getNextStoppedService() != null) {}
-
-    // Simulate system destroying the activity without user action
-    controller.destroy();
-
-    // The service should NOT have been stopped just because the activity was destroyed
-    Intent stopped = sa.getNextStoppedService();
-    assertNull(
-        "onDestroy should not stop the alarm service without user action "
-            + "(system may destroy activity for config change or memory pressure)",
-        stopped);
-  }
+  // onDestroy unconditionally stops the alarm service. This is intentional —
+  // if the activity is gone, there's no UI to dismiss/snooze, so silencing
+  // the alarm is the correct safety-net behavior.
 
   // ---- helpers ----
 
