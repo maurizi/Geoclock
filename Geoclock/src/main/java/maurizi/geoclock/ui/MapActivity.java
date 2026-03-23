@@ -52,10 +52,9 @@ public class MapActivity extends AppCompatActivity {
   private static final int MAP_BOUNDS_PADDING = 60;
 
   private GoogleMap map = null;
-  // Package-private so GeoAlarmFragment can register geofences on save
-  LocationServiceGoogle locationService = null;
+  private LocationServiceGoogle locationService = null;
   private BiMap<UUID, Marker> markers = null;
-  private @Nullable Location currentLocation = null;
+  @Nullable Location currentLocation = null;
   private String pendingAlarmId = null;
 
   private ConstraintLayout mainConstraint;

@@ -370,14 +370,13 @@ public class GeoAlarmFragment extends DialogFragment {
     if (newAlarm.enabled) {
       // Geofence is already registered by completeSave(). INITIAL_TRIGGER_ENTER
       // handles scheduling if inside. For instant feedback, also check location now.
-      if (activity.locationService != null) {
-        final GeoAlarm toCheck = newAlarm;
-        activity.locationService.getLastLocation(
-            loc -> {
-              if (loc != null && MapActivity.isInsideGeofence(loc, toCheck)) {
-                new ActiveAlarmManager(activity).addActiveAlarms(ImmutableSet.of(toCheck.id));
-              }
-            });
+      if (activity.currentLocation != null) {
+        LatLng deviceLoc =
+            new LatLng(
+                activity.currentLocation.getLatitude(), activity.currentLocation.getLongitude());
+        if (MapActivity.isInsideGeofence(deviceLoc, newAlarm)) {
+          new ActiveAlarmManager(activity).addActiveAlarms(ImmutableSet.of(newAlarm.id));
+        }
       }
     } else {
       new ActiveAlarmManager(activity).removeActiveAlarms(ImmutableSet.of(newAlarm.id));
