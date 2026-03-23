@@ -496,11 +496,12 @@ public class AlarmRingingServiceTest {
             && firedAlarmIds.contains(alarm2.id.toString()));
   }
 
-  // ---- Bug #1: symbolic ringtone URI should be resolved ----
-  // The actual ringtone playback bug (content://settings/system/alarm_alert can't be
-  // opened by MediaPlayer) was confirmed on the emulator. Robolectric doesn't actually
-  // play audio, so we test the URI resolution logic in the GeoAlarmFragment/save path
-  // instead. See GeoAlarmFragmentUnitTest for the corresponding test.
+  // ---- Bug #1: symbolic ringtone URI resolved at playback ----
+  // Alarms store the symbolic URI content://settings/system/alarm_alert so they track
+  // the system default. startAlarm() resolves it via getActualDefaultRingtoneUri() before
+  // passing to RingtoneManager.getRingtone(). Robolectric doesn't exercise real audio
+  // playback, so this was confirmed on the emulator. The service-side resolution logic
+  // is in AlarmRingingService.startAlarm() lines 195-201.
 
   // ---- helpers ----
 

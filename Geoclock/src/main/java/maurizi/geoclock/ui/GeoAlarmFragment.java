@@ -179,12 +179,7 @@ public class GeoAlarmFragment extends DialogFragment {
     if (isEdit) {
       selectedRingtoneUri = alarm.ringtoneUri;
     } else {
-      Uri actualDefault =
-          RingtoneManager.getActualDefaultRingtoneUri(requireContext(), RingtoneManager.TYPE_ALARM);
-      selectedRingtoneUri =
-          actualDefault != null
-              ? actualDefault.toString()
-              : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString();
+      selectedRingtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString();
     }
     ringtoneUriSet = true;
     updateRingtoneLabel();
@@ -448,12 +443,7 @@ public class GeoAlarmFragment extends DialogFragment {
     names.add(getString(R.string.ringtone_vibrate_only));
     uris.add(null);
     names.add(getString(R.string.ringtone_default));
-    Uri actualDefault =
-        RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_ALARM);
-    uris.add(
-        actualDefault != null
-            ? actualDefault.toString()
-            : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
+    uris.add(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString());
 
     java.util.Set<String> seenTitles = new java.util.HashSet<>();
     while (cursor.moveToNext()) {

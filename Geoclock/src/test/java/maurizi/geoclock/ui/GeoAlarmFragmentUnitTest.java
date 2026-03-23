@@ -218,42 +218,10 @@ public class GeoAlarmFragmentUnitTest {
   // showRingtonePicker tests removed — RingtoneManager.getCursor() crashes in Robolectric.
   // Ringtone picker lines (446, 448, 473) are covered by instrumentation tests.
 
-  // ---- Bug #1: symbolic ringtone URI stored instead of actual media URI ----
-
-  @Test
-  @Config(
-      sdk = 33,
-      shadows = {ShadowMapsInitializer.class, ShadowSupportMapFragment.class})
-  public void addDialog_defaultRingtoneUri_isNotSymbolic() throws Exception {
-    // Bug #1: GeoAlarmFragment stores content://settings/system/alarm_alert (symbolic)
-    // instead of the actual media URI. The symbolic URI can't be opened by MediaPlayer.
-    //
-    // Set up a real alarm ringtone in system settings so getActualDefaultRingtoneUri
-    // returns a concrete media URI instead of null.
-    android.net.Uri realUri = android.net.Uri.parse("content://media/internal/audio/media/42");
-    android.media.RingtoneManager.setActualDefaultRingtoneUri(
-        context, android.media.RingtoneManager.TYPE_ALARM, realUri);
-
-    MapActivity activity = buildMapActivity();
-    GeoAlarmFragment fragment = showAddFragment(activity);
-    assertNotNull(fragment);
-
-    Field uriField = GeoAlarmFragment.class.getDeclaredField("selectedRingtoneUri");
-    uriField.setAccessible(true);
-    String uri = (String) uriField.get(fragment);
-
-    assertNotNull("Default ringtone URI should be set", uri);
-    // The symbolic URI is content://settings/system/alarm_alert — this should NOT be stored
-    String symbolicUri =
-        android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
-            .toString();
-    assertTrue(
-        "Ringtone URI should be the actual media URI, not the symbolic settings URI "
-            + "(got: "
-            + uri
-            + ")",
-        !uri.equals(symbolicUri));
-  }
+  // ---- Bug #1: symbolic ringtone URI resolved at playback time ----
+  // The fragment intentionally stores the symbolic URI (content://settings/system/alarm_alert)
+  // so alarms track the system default. AlarmRingingService resolves it to the actual media
+  // URI at playback time via getActualDefaultRingtoneUri(). See AlarmRingingServiceTest.
 
   @Test
   @Config(
