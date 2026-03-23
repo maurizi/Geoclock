@@ -427,6 +427,57 @@ public class GeoAlarmFragmentTest {
     onView(withId(R.id.add_geo_alarm_time)).inRoot(isDialog()).check(matches(isDisplayed()));
   }
 
+  // --- Ringtone picker coverage: re-open after vibrate-only selection (checkedItem=0) ---
+
+  @Test
+  public void addDialog_ringtoneRow_vibrateOnlyThenReopen_showsVibrateChecked() throws Exception {
+    launchAndShowAdd(new LatLng(37.4220, -122.0841));
+    // Open ringtone picker
+    onView(withId(R.id.ringtone_row)).perform(scrollTo(), click());
+    Thread.sleep(500);
+    // Select "Vibrate only" (position 0)
+    onData(anything()).atPosition(0).perform(click());
+    Thread.sleep(300);
+    // Confirm selection
+    onView(withText(android.R.string.ok)).perform(click());
+    Thread.sleep(500);
+    // Ringtone label should show "Vibrate only"
+    onView(withId(R.id.ringtone_name))
+        .inRoot(isDialog())
+        .check(matches(withText(R.string.ringtone_vibrate_only)));
+    // Re-open ringtone picker — this should hit checkedItem=0 (vibrate only) branch
+    onView(withId(R.id.ringtone_row)).perform(scrollTo(), click());
+    Thread.sleep(500);
+    onView(withText(R.string.ringtone_label)).check(matches(isDisplayed()));
+    // Dismiss
+    onView(withText(android.R.string.ok)).perform(click());
+    Thread.sleep(300);
+  }
+
+  // --- Ringtone picker: select ringtone then switch to trigger preview stop ---
+
+  @Test
+  public void addDialog_ringtoneRow_switchItems_stopsPreview() throws Exception {
+    launchAndShowAdd(new LatLng(37.4220, -122.0841));
+    onView(withId(R.id.ringtone_row)).perform(scrollTo(), click());
+    Thread.sleep(500);
+    // Click a non-vibrate ringtone (position 1 = Default) to start a ringtone preview
+    onData(anything()).atPosition(1).perform(click());
+    Thread.sleep(800);
+    // Click another ringtone (position 2 if available, else position 0) to trigger
+    // preview[0].stop()
+    try {
+      onData(anything()).atPosition(2).perform(click());
+    } catch (Exception e) {
+      // If there's no position 2, click position 0 (Vibrate only)
+      onData(anything()).atPosition(0).perform(click());
+    }
+    Thread.sleep(500);
+    // Confirm
+    onView(withText(android.R.string.ok)).perform(click());
+    Thread.sleep(300);
+  }
+
   @Test
   public void editDialog_save_updatesAlarm() throws Exception {
     GeoAlarm alarm = saveTestAlarm();

@@ -139,6 +139,19 @@ public class AlarmRingingActivityTest {
     assertTrue("Activity should finish after dismiss even with no alarm", activity.isFinishing());
   }
 
+  // ---- back press ----
+
+  @Test
+  public void backPress_stopsServiceAndFinishesActivity() {
+    GeoAlarm alarm = saveAlarm(enabledAlarm());
+    AlarmRingingActivity activity = buildActivity(alarm.id.toString());
+    activity.getOnBackPressedDispatcher().onBackPressed();
+    ShadowApplication sa = Shadows.shadowOf((Application) context);
+    Intent stopped = sa.getNextStoppedService();
+    assertNotNull("Back press should stop the ringing service", stopped);
+    assertTrue("Back press should finish the activity", activity.isFinishing());
+  }
+
   // ---- helpers ----
 
   private GeoAlarm enabledAlarm() {

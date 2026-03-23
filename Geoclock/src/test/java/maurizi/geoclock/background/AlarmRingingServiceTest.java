@@ -435,6 +435,14 @@ public class AlarmRingingServiceTest {
     // No crash during cleanup = success
   }
 
+  @Test
+  public void onBind_returnsNull() {
+    GeoAlarm alarm = saveAlarm(enabledAlarm());
+    ServiceController<AlarmRingingService> controller =
+        Robolectric.buildService(AlarmRingingService.class, startIntent(alarm)).create();
+    assertNull("onBind should return null", controller.get().onBind(null));
+  }
+
   // ---- helpers ----
 
   private GeoAlarm enabledAlarm() {
