@@ -172,13 +172,23 @@ public class GeoAlarm {
   }
 
   public static void save(Context context, GeoAlarm newAlarm) {
-    if (newAlarm.enabled && newAlarm.time == null) {
-      // Only calculate time when it hasn't been set yet (new alarm or just enabled).
-      // Re-saves that only change non-time fields (e.g. place from geocode callback)
-      // must not recalculate, as that can push a just-passed alarm to tomorrow.
-      final ZonedDateTime alarmTime = newAlarm.calculateAlarmTime(LocalDateTime.now());
-      if (alarmTime != null) {
-        newAlarm = newAlarm.withTime(alarmTime.toInstant().toEpochMilli());
+    if (newAlarm.enabled) {
+      // Recalculate time if hour/minute/days changed, or if time was never set.
+      // Compare against the previously saved alarm to detect changes. This avoids
+      // recalculating on re-saves that only change non-time fields (e.g. place from
+      // geocode callback), which could push a just-passed alarm to tomorrow.
+      GeoAlarm existing = getGeoAlarm(context, newAlarm.id);
+      boolean timeFieldsChanged =
+          existing == null
+              || !newAlarm.enabled == existing.enabled
+              || !java.util.Objects.equals(newAlarm.hour, existing.hour)
+              || !java.util.Objects.equals(newAlarm.minute, existing.minute)
+              || !java.util.Objects.equals(newAlarm.days, existing.days);
+      if (timeFieldsChanged) {
+        final ZonedDateTime alarmTime = newAlarm.calculateAlarmTime(LocalDateTime.now());
+        if (alarmTime != null) {
+          newAlarm = newAlarm.withTime(alarmTime.toInstant().toEpochMilli());
+        }
       }
     }
     SharedPreferences prefs = getSharedAlarmPreferences(context);

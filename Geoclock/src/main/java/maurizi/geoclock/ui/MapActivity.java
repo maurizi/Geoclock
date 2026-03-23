@@ -136,10 +136,7 @@ public class MapActivity extends AppCompatActivity {
       public void onToggleEnabled(GeoAlarm alarm, boolean enabled) {
         Runnable doToggle =
             () -> {
-              GeoAlarm updated =
-                  enabled
-                      ? alarm.withEnabled(true).withTime(null) // clear time to force recalculation
-                      : alarm.withEnabled(false);
+              GeoAlarm updated = alarm.withEnabled(enabled);
               GeoAlarm.save(MapActivity.this, updated);
               if (locationService != null) {
                 if (enabled) {
