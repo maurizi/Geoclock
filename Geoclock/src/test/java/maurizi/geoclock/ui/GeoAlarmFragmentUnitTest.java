@@ -218,6 +218,11 @@ public class GeoAlarmFragmentUnitTest {
   // showRingtonePicker tests removed — RingtoneManager.getCursor() crashes in Robolectric.
   // Ringtone picker lines (446, 448, 473) are covered by instrumentation tests.
 
+  // ---- Bug #1: symbolic ringtone URI resolved at playback time ----
+  // The fragment intentionally stores the symbolic URI (content://settings/system/alarm_alert)
+  // so alarms track the system default. AlarmRingingService resolves it to the actual media
+  // URI at playback time via getActualDefaultRingtoneUri(). See AlarmRingingServiceTest.
+
   @Test
   @Config(
       sdk = 33,

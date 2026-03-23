@@ -61,7 +61,10 @@ public class AlarmRingingActivity extends AppCompatActivity {
     if (alarm != null && alarm.place != null) {
       nameView.setText(alarm.place);
     }
-    LocalTime alarmTime = alarm != null ? LocalTime.of(alarm.hour, alarm.minute) : LocalTime.now();
+    LocalTime alarmTime =
+        alarm != null && alarm.hour != null && alarm.minute != null
+            ? LocalTime.of(alarm.hour, alarm.minute)
+            : LocalTime.now();
     timeView.setText(alarmTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)));
 
     final GeoAlarm finalAlarm = alarm;

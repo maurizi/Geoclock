@@ -17,6 +17,7 @@ import com.google.android.gms.location.Geofence;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -554,6 +555,61 @@ public class GeoAlarmTest {
     GeoAlarm loaded = GeoAlarm.getGeoAlarm(context, alarm.id);
     assertNotNull(loaded);
     assertNull("Time should remain null when hour/minute not set", loaded.time);
+  }
+
+  // ---- Bug #6: re-save with place update should not push time forward ----
+
+  @Test
+  public void save_reSaveWithPlace_doesNotRecalculateTime() {
+    // Bug #6: GeoAlarm.save() recalculates 'time' on every save of an enabled alarm.
+    // When geocodeAsync saves alarm.withPlace(newPlace), it recalculates from "now",
+    // which can push a just-passed alarm to tomorrow.
+    //
+    // Demonstrate: write an alarm with a specific past 'time' (simulating an alarm
+    // that was correctly scheduled but whose time just passed). A re-save should
+    // preserve the time, not recalculate it.
+    Context context = ApplicationProvider.getApplicationContext();
+    SharedPreferences prefs = context.getSharedPreferences("alarms", Context.MODE_PRIVATE);
+
+    // An alarm whose time was 2 minutes ago (already scheduled, hasn't fired yet)
+    java.time.LocalDateTime twoMinutesAgo = java.time.LocalDateTime.now().minusMinutes(2);
+    long pastTimeMs =
+        twoMinutesAgo.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+    GeoAlarm alarm =
+        GeoAlarm.builder()
+            .id(UUID.randomUUID())
+            .location(new LatLng(37.4, -122.0))
+            .radius(100)
+            .enabled(true)
+            .hour(twoMinutesAgo.getHour())
+            .minute(twoMinutesAgo.getMinute())
+            .time(pastTimeMs)
+            .build();
+    // Write directly to SharedPrefs to preserve the specific 'time' value
+    prefs.edit().putString(alarm.id.toString(), new Gson().toJson(alarm, GeoAlarm.class)).commit();
+
+    // Now re-save with place update (simulating geocodeAsync callback)
+    GeoAlarm loaded = GeoAlarm.getGeoAlarm(context, alarm.id);
+    assertNotNull(loaded);
+    GeoAlarm.save(context, loaded.withPlace("123 Main St"));
+
+    GeoAlarm saved = GeoAlarm.getGeoAlarm(context, alarm.id);
+    assertNotNull(saved);
+    // The time should not have jumped to tomorrow
+    long tomorrowThreshold =
+        java.time.LocalDateTime.now()
+            .plusHours(12)
+            .atZone(java.time.ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli();
+    assertTrue(
+        "Re-save with place should not push alarm time to tomorrow "
+            + "(was "
+            + pastTimeMs
+            + ", now "
+            + saved.time
+            + ")",
+        saved.time < tomorrowThreshold);
   }
 
   // ---- remove ----

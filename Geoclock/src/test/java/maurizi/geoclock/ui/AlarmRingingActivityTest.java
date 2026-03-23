@@ -152,6 +152,46 @@ public class AlarmRingingActivityTest {
     assertTrue("Back press should finish the activity", activity.isFinishing());
   }
 
+  // ---- Bug #7: NPE when alarm.hour or alarm.minute is null ----
+
+  @Test
+  public void onCreate_withNullHour_doesNotCrash() {
+    // Bug #7: LocalTime.of(alarm.hour, alarm.minute) will NPE if hour is null
+    GeoAlarm alarm =
+        saveAlarm(
+            GeoAlarm.builder()
+                .id(UUID.randomUUID())
+                .location(new LatLng(37.4, -122.0))
+                .radius(100)
+                .enabled(true)
+                // hour and minute are null
+                .build());
+    AlarmRingingActivity activity = buildActivity(alarm.id.toString());
+    TextView timeView = activity.findViewById(R.id.alarm_ringing_time);
+    assertNotNull("Time view should show something even with null hour/minute", timeView);
+    assertFalse("Time view should not be empty", timeView.getText().toString().isEmpty());
+  }
+
+  @Test
+  public void onCreate_withNullMinuteOnly_doesNotCrash() {
+    GeoAlarm alarm =
+        saveAlarm(
+            GeoAlarm.builder()
+                .id(UUID.randomUUID())
+                .location(new LatLng(37.4, -122.0))
+                .radius(100)
+                .enabled(true)
+                .hour(8)
+                // minute is null
+                .build());
+    AlarmRingingActivity activity = buildActivity(alarm.id.toString());
+    assertNotNull(activity.findViewById(R.id.alarm_ringing_time));
+  }
+
+  // onDestroy unconditionally stops the alarm service. This is intentional —
+  // if the activity is gone, there's no UI to dismiss/snooze, so silencing
+  // the alarm is the correct safety-net behavior.
+
   // ---- helpers ----
 
   private GeoAlarm enabledAlarm() {

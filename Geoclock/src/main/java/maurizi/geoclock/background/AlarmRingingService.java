@@ -107,10 +107,11 @@ public class AlarmRingingService extends Service {
     Intent alarmIntent = new Intent(context, AlarmClockReceiver.class);
     alarmIntent.putExtra(EXTRA_ALARM_ID, alarm.id.toString());
     alarmIntent.putExtra(AlarmClockReceiver.EXTRA_IS_SNOOZE, true);
+    // Use alarm-specific request code so multiple snoozes can coexist
     PendingIntent operationPi =
         PendingIntent.getBroadcast(
             context,
-            SNOOZE_REQUEST_CODE,
+            alarm.id.hashCode(),
             alarmIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
@@ -193,6 +194,13 @@ public class AlarmRingingService extends Service {
     boolean playRingtone = currentAlarm != null && currentAlarm.ringtoneUri != null;
     if (playRingtone) {
       alarmUri = Uri.parse(currentAlarm.ringtoneUri);
+      // Resolve symbolic default URI (content://settings/system/alarm_alert) to the
+      // actual media URI — the symbolic form can't be opened by MediaPlayer directly.
+      Uri defaultSymbolic = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+      if (defaultSymbolic.equals(alarmUri)) {
+        Uri actual = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM);
+        if (actual != null) alarmUri = actual;
+      }
     }
     if (playRingtone && alarmUri != null) {
       ringtone = RingtoneManager.getRingtone(this, alarmUri);

@@ -221,6 +221,11 @@ public class InitializationServiceTest {
     // No crash = success
   }
 
+  // ---- Post-reboot: geofence INITIAL_TRIGGER_ENTER handles already-inside case ----
+  // No additional code needed in InitializationService — geofences are registered with
+  // INITIAL_TRIGGER_ENTER, so the system sends GEOFENCE_TRANSITION_ENTER to
+  // GeofenceReceiver if the device is already inside, which calls addActiveAlarms.
+
   // ---- helpers ----
 
   /** Write alarm directly to SharedPreferences without GeoAlarm.save()'s time recalculation. */

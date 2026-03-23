@@ -443,6 +443,66 @@ public class AlarmRingingServiceTest {
     assertNull("onBind should return null", controller.get().onBind(null));
   }
 
+  // ---- Bug #5: fixed snooze request code — two snoozes overwrite each other ----
+
+  @Test
+  public void scheduleSnooze_twoAlarms_bothPending() {
+    // Bug #5: SNOOZE_REQUEST_CODE is fixed (9001) with FLAG_UPDATE_CURRENT, so the
+    // second snooze overwrites the first. Both should remain pending.
+    GeoAlarm alarm1 = saveAlarm(enabledAlarm());
+    GeoAlarm alarm2 = saveAlarm(enabledAlarm());
+    AlarmRingingService.scheduleSnooze(context, alarm1);
+    AlarmRingingService.scheduleSnooze(context, alarm2);
+
+    // There should be 2 scheduled alarms (one per snoozed alarm)
+    // Currently this fails because both share the same request code
+    int alarmClockCount = 0;
+    for (ShadowAlarmManager.ScheduledAlarm a : shadowAlarmManager.getScheduledAlarms()) {
+      if (a.type == AlarmManager.RTC_WAKEUP) {
+        alarmClockCount++;
+      }
+    }
+    assertTrue(
+        "Two snoozed alarms should produce two pending alarms, got " + alarmClockCount,
+        alarmClockCount >= 2);
+  }
+
+  @Test
+  public void scheduleSnooze_twoAlarms_firstAlarmIdPreserved() {
+    // Verify that the first alarm's ID is not lost when a second snooze is scheduled
+    GeoAlarm alarm1 = saveAlarm(enabledAlarm());
+    GeoAlarm alarm2 = saveAlarm(enabledAlarm());
+    AlarmRingingService.scheduleSnooze(context, alarm1);
+    AlarmRingingService.scheduleSnooze(context, alarm2);
+
+    // Fire all pending snooze alarms and collect the broadcast alarm IDs
+    ShadowApplication sa = Shadows.shadowOf((Application) context);
+    java.util.Set<String> firedAlarmIds = new java.util.HashSet<>();
+    for (ShadowAlarmManager.ScheduledAlarm a : shadowAlarmManager.getScheduledAlarms()) {
+      if (a.operation != null) {
+        try {
+          a.operation.send();
+        } catch (Exception ignored) {
+        }
+      }
+    }
+    for (Intent broadcast : sa.getBroadcastIntents()) {
+      String id = broadcast.getStringExtra(AlarmRingingService.EXTRA_ALARM_ID);
+      if (id != null) firedAlarmIds.add(id);
+    }
+    assertTrue(
+        "Both alarm IDs should be present in pending snooze intents",
+        firedAlarmIds.contains(alarm1.id.toString())
+            && firedAlarmIds.contains(alarm2.id.toString()));
+  }
+
+  // ---- Bug #1: symbolic ringtone URI resolved at playback ----
+  // Alarms store the symbolic URI content://settings/system/alarm_alert so they track
+  // the system default. startAlarm() resolves it via getActualDefaultRingtoneUri() before
+  // passing to RingtoneManager.getRingtone(). Robolectric doesn't exercise real audio
+  // playback, so this was confirmed on the emulator. The service-side resolution logic
+  // is in AlarmRingingService.startAlarm() lines 195-201.
+
   // ---- helpers ----
 
   private GeoAlarm enabledAlarm() {
